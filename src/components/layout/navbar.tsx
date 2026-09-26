@@ -14,6 +14,7 @@ import { AccountTierBadge } from "@/features/subscription/components/account-tie
 import { getEffectiveAccountTier } from "@/features/subscription/utils";
 import { desktopNavigationItems } from "@/components/layout/navigation-items";
 import { isAdminEmail } from "@/features/auth/lib/is-admin-email";
+import { NotificationBell } from "@/features/notifications/notification-bell";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -34,7 +35,7 @@ export function Navbar() {
       <div className="mx-auto flex h-[72px] w-full max-w-[1320px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/home" className="flex shrink-0 items-center gap-2.5 rounded-md" aria-label="FlyDo — Trang chủ">
           <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 rounded-md object-cover" />
-          <span className="text-2xl font-bold tracking-tight text-foreground">Fly<span className="text-primary">Do</span></span>
+          <span className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">Fly<span className="text-primary">Do</span></span>
         </Link>
         <div className="hidden items-center gap-1 xl:flex">
           {navItems.map((item) => {
@@ -82,6 +83,7 @@ export function Navbar() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
+          <NotificationBell />
           {user ? (
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
