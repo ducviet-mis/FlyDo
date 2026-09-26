@@ -50,9 +50,13 @@ function getInitials(name: string) {
 export function LoginForm({
   oauthError = false,
   sessionReplaced = false,
+  deviceLimit = false,
+  deviceSetup = false,
 }: {
   oauthError?: boolean;
   sessionReplaced?: boolean;
+  deviceLimit?: boolean;
+  deviceSetup?: boolean;
 }) {
   const { login, isLoading, error, clearError, user, initialized } = useAuthStore();
   const router = useRouter();
@@ -186,11 +190,23 @@ export function LoginForm({
         >
           <ShieldAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
           <div className="space-y-1">
-            <p className="font-bold">Phiên đăng nhập đã kết thúc</p>
+            <p className="font-bold">Thiết bị không còn được phép đăng nhập</p>
             <p className="leading-relaxed text-muted-foreground">
-              Tài khoản này vừa được đăng nhập trên một thiết bị khác. Hãy nhập lại mật khẩu để tiếp tục.
+              Thiết bị này đã bị xóa khỏi danh sách hoặc phiên đăng nhập đã kết thúc. Hãy dùng thiết bị khác đang được phép.
             </p>
           </div>
+        </div>
+      )}
+
+      {deviceLimit && (
+        <div role="alert" className="rounded-lg border border-warning/35 bg-warning/10 p-4 text-sm text-foreground">
+          Loại thiết bị này đã đủ 2 máy. Hãy dùng một thiết bị đang đăng nhập để vào Thông tin tài khoản → Bảo mật và xóa thiết bị cũ trước khi thay thế.
+        </div>
+      )}
+
+      {deviceSetup && (
+        <div role="alert" className="rounded-lg bg-destructive-soft p-4 text-sm text-destructive">
+          Không thể xác nhận thiết bị. Hãy bật bộ nhớ trình duyệt và kiểm tra bản cập nhật cơ sở dữ liệu quản lý thiết bị.
         </div>
       )}
 

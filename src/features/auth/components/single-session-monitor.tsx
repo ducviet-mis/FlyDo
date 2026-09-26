@@ -32,7 +32,7 @@ export function SingleSessionMonitor() {
         {
           event: "UPDATE",
           schema: "public",
-          table: "active_account_sessions",
+          table: "account_devices",
           filter: `user_id=eq.${userId}`,
         },
         () => void runCheck(),

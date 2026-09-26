@@ -1,4 +1,6 @@
 export const SESSION_REPLACED_QUERY = "session_replaced";
+export const DEVICE_LIMIT_QUERY = "device_limit";
+export const DEVICE_SETUP_QUERY = "device_setup";
 
 export function getSessionIdFromAccessToken(accessToken?: string | null): string | null {
   if (!accessToken) return null;

@@ -21,6 +21,7 @@ import { ReferralProgram } from '@/features/subscription/components/referral-pro
 import { ACCOUNT_TIER_META } from '@/features/subscription/config';
 import { formatExpiryDate, getEffectiveAccountTier } from '@/features/subscription/utils';
 import { isAdminEmail } from '@/features/auth/lib/is-admin-email';
+import { AccountDevices } from '@/features/auth/components/account-devices';
 
 type Tab = 'personal' | 'membership' | 'security';
 
@@ -74,7 +75,7 @@ export default function ProfilePage() {
         <div className="flex-1 min-w-0">
           {activeTab === 'personal' && <PersonalInfoTab user={user} refreshUser={refreshUser} />}
           {activeTab === 'membership' && <MembershipTab user={user} />}
-          {activeTab === 'security' && <SecurityTab logoutAllDevices={logoutAllDevices} />}
+          {activeTab === 'security' && <SecurityTab userId={user.id} logoutAllDevices={logoutAllDevices} />}
         </div>
       </div>
     </div>
@@ -269,7 +270,7 @@ function MembershipTab({ user }: { user: any }) {
 }
 
 // ─── Security Tab ────────────────────────────────────────────────
-function SecurityTab({ logoutAllDevices }: { logoutAllDevices: () => Promise<void> }) {
+function SecurityTab({ userId, logoutAllDevices }: { userId: string; logoutAllDevices: () => Promise<void> }) {
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
@@ -332,6 +333,7 @@ function SecurityTab({ logoutAllDevices }: { logoutAllDevices: () => Promise<voi
 
   return (
     <div className="space-y-6">
+      <AccountDevices userId={userId} />
       {/* Change Password */}
       <Card className="rounded-2xl md:rounded-xl border-border shadow-soft">
         <CardHeader className="pb-4 border-b border-border mb-6">
@@ -394,7 +396,7 @@ function SecurityTab({ logoutAllDevices }: { logoutAllDevices: () => Promise<voi
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            Hành động này sẽ đăng xuất tài khoản khỏi tất cả các trình duyệt và thiết bị đang đăng nhập. Bạn sẽ cần đăng nhập lại.
+            Hành động này sẽ kết thúc các phiên đăng nhập. Danh sách thiết bị đã ghi nhận và 2 lượt xóa thiết bị không thay đổi.
           </p>
           <Button variant="destructive" onClick={handleLogoutAll} disabled={loggingOut} className="gap-2">
             {loggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}

@@ -5,7 +5,7 @@ import { GraduationCap } from 'lucide-react';
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams?: { oauth_error?: string; session_replaced?: string };
+  searchParams?: { oauth_error?: string; session_replaced?: string; device_limit?: string; device_setup?: string };
 }) {
   return (
     <div className="flex-1 flex items-center justify-center p-4">
@@ -23,6 +23,8 @@ export default function LoginPage({
           <LoginForm
             oauthError={searchParams?.oauth_error === '1'}
             sessionReplaced={searchParams?.session_replaced === '1'}
+            deviceLimit={searchParams?.device_limit === '1'}
+            deviceSetup={searchParams?.device_setup === '1'}
           />
         </CardContent>
       </Card>

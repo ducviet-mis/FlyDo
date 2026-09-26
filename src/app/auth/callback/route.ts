@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getSessionIdFromAccessToken } from '@/lib/auth/single-session';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -14,15 +13,11 @@ export async function GET(request: Request) {
     const supabase = createServerSupabaseClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.session) {
-      const sessionId = getSessionIdFromAccessToken(data.session.access_token);
-      if (sessionId) {
-        await supabase.rpc('register_current_session', {
-          p_session_id: sessionId,
-          p_replace: true,
-        });
-      }
-      await supabase.auth.signOut({ scope: 'others' });
-      return NextResponse.redirect(new URL(next, requestUrl.origin));
+      // Device registration runs in the browser after the OAuth redirect,
+      // where the stable device key is available.
+      const destination = new URL(next, requestUrl.origin);
+      destination.searchParams.set('device_oauth', '1');
+      return NextResponse.redirect(destination);
     }
   }
 

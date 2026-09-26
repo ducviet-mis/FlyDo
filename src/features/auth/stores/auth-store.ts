@@ -3,7 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { getSessionIdFromAccessToken, SESSION_REPLACED_QUERY } from "@/lib/auth/single-session";
+import { getSessionIdFromAccessToken, SESSION_REPLACED_QUERY, DEVICE_LIMIT_QUERY, DEVICE_SETUP_QUERY } from "@/lib/auth/single-session";
+import { getBrowserDeviceInfo, getBrowserDeviceKey } from "@/lib/auth/device-identity";
 import { rememberAccount } from "../lib/remembered-accounts";
 import type { User } from "../types";
 
@@ -79,36 +80,51 @@ function mapProfile(profile: any): User {
   };
 }
 
-type SessionRegistrationStatus = "active" | "replaced" | "unavailable";
+type DeviceRegistrationStatus = "active" | "legacy" | "limit" | "removed" | "unavailable";
 type SetAuthState = (state: Partial<AuthState>) => void;
 
 let forcedLogoutInProgress = false;
 
-async function registerCurrentSession(
-  accessToken: string | null | undefined,
-  replace: boolean,
-): Promise<SessionRegistrationStatus> {
+async function registerCurrentDevice(accessToken: string | null | undefined, replaceLegacy = false): Promise<DeviceRegistrationStatus> {
   const sessionId = getSessionIdFromAccessToken(accessToken);
-  if (!sessionId) return "unavailable";
+  const deviceKey = getBrowserDeviceKey();
+  if (!sessionId || !deviceKey) return "unavailable";
+  const device = getBrowserDeviceInfo();
 
-  const { data, error } = await getSupabaseClient().rpc("register_current_session", {
+  const { data, error } = await getSupabaseClient().rpc("register_login_device", {
+    p_device_key: deviceKey,
+    p_device_type: device.type,
+    p_device_name: device.name,
     p_session_id: sessionId,
-    p_replace: replace,
   });
 
-  // Giữ đăng nhập hoạt động nếu quản trị viên chưa chạy migration SQL.
-  // Sau khi migration được chạy, RPC là nguồn xác thực phiên duy nhất.
   if (error) {
-    console.warn("Single-session check is unavailable:", error.message);
+    // Safe rollout: the old one-session policy remains in force until the
+    // account-devices.sql migration has been applied in Supabase.
+    if (error.code === 'PGRST202') {
+      const legacy = await getSupabaseClient().rpc('register_current_session', {
+        p_session_id: sessionId,
+        p_replace: replaceLegacy,
+      });
+      if (!legacy.error) return legacy.data?.active === true ? 'legacy' : 'removed';
+    }
+    console.warn("Device registration is unavailable:", error.message);
     return "unavailable";
   }
 
-  return data && typeof data === "object" && "active" in data && data.active === false
-    ? "replaced"
-    : "active";
+  if (data?.active === true) return "active";
+  if (data?.reason === "limit") return "limit";
+  if (data?.reason === "removed") return "removed";
+  return "unavailable";
 }
 
-async function endReplacedSession(set: SetAuthState) {
+function deviceError(status: DeviceRegistrationStatus): string {
+  if (status === "limit") return "Loại thiết bị này đã đủ 2 máy. Hãy đăng nhập từ một thiết bị đang dùng và xóa thiết bị cũ trong Bảo mật trước khi thay thế.";
+  if (status === "removed") return "Thiết bị này đã bị xóa khỏi tài khoản. Vui lòng dùng thiết bị khác hoặc liên hệ quản trị viên.";
+  return "Không thể xác nhận thiết bị. Hãy bật bộ nhớ trình duyệt và kiểm tra cấu hình quản lý thiết bị, rồi thử lại.";
+}
+
+async function endInactiveSession(set: SetAuthState, reason: DeviceRegistrationStatus) {
   if (forcedLogoutInProgress) return;
   forcedLogoutInProgress = true;
 
@@ -120,7 +136,9 @@ async function endReplacedSession(set: SetAuthState) {
   }
 
   if (typeof window !== "undefined") {
-    window.location.replace(`/login?${SESSION_REPLACED_QUERY}=1`);
+    const query = reason === "limit" ? DEVICE_LIMIT_QUERY
+      : reason === "unavailable" ? DEVICE_SETUP_QUERY : SESSION_REPLACED_QUERY;
+    window.location.replace(`/login?${query}=1`);
   }
 }
 
@@ -141,9 +159,18 @@ export const useAuthStore = create<AuthState>()(
           const { data: { session } } = await supabase.auth.getSession();
 
           if (session?.user) {
-            const sessionStatus = await registerCurrentSession(session.access_token, false);
-            if (sessionStatus === "replaced") {
-              await endReplacedSession(set);
+            const oauthReturn = new URLSearchParams(window.location.search).has('device_oauth');
+            const sessionStatus = await registerCurrentDevice(session.access_token, oauthReturn);
+            if (oauthReturn) {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('device_oauth');
+              window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+            }
+            if (sessionStatus === 'legacy' && oauthReturn) {
+              await supabase.auth.signOut({ scope: 'others' });
+            }
+            if (sessionStatus !== "active" && sessionStatus !== 'legacy') {
+              await endInactiveSession(set, sessionStatus);
               return;
             }
 
@@ -167,21 +194,21 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // Listen for auth state changes
-          supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+          supabase.auth.onAuthStateChange((event: string, session: any) => {
             if (event === 'SIGNED_OUT') {
               set({ user: null });
             } else if (event === 'SIGNED_IN' && session?.user) {
-              await supabase.rpc('sync_my_membership_status');
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("id", session.user.id)
-                .single();
-              if (profile) {
-                const mappedUser = mapProfile(profile);
-                rememberAccount(mappedUser);
-                set({ user: mappedUser });
-              }
+              // Supabase auth callbacks must not await another Supabase request.
+              window.setTimeout(async () => {
+                if (get().isLoading) return; // password login/register handles its own registration
+                const status = await registerCurrentDevice(session.access_token, true);
+                if (status === 'legacy') await supabase.auth.signOut({ scope: 'others' });
+                if (status !== "active" && status !== 'legacy') {
+                  await endInactiveSession(set, status);
+                  return;
+                }
+                await get().refreshUser();
+              }, 0);
             }
           });
         } catch {
@@ -205,9 +232,13 @@ export const useAuthStore = create<AuthState>()(
 
           if (data.user) {
             if (data.session) {
-              await registerCurrentSession(data.session.access_token, true);
-              // Thu hồi refresh token của các thiết bị cũ nhưng giữ phiên hiện tại.
-              await supabase.auth.signOut({ scope: "others" });
+              const status = await registerCurrentDevice(data.session.access_token, true);
+              if (status === 'legacy') await supabase.auth.signOut({ scope: 'others' });
+              if (status !== "active" && status !== 'legacy') {
+                await supabase.auth.signOut({ scope: "local" });
+                set({ user: null, error: deviceError(status), isLoading: false });
+                return false;
+              }
             }
 
             await supabase.rpc('sync_my_membership_status');
@@ -288,7 +319,13 @@ export const useAuthStore = create<AuthState>()(
               return { success: true, requiresEmailConfirmation: true, email: data.user.email || email };
             }
 
-            await registerCurrentSession(data.session.access_token, true);
+            const status = await registerCurrentDevice(data.session.access_token, true);
+            if (status === 'legacy') await supabase.auth.signOut({ scope: 'others' });
+            if (status !== "active" && status !== 'legacy') {
+              await supabase.auth.signOut({ scope: "local" });
+              set({ user: null, error: deviceError(status), isLoading: false });
+              return { success: false, requiresEmailConfirmation: false };
+            }
 
             const { data: profile } = await supabase
               .from("profiles")
@@ -341,10 +378,12 @@ export const useAuthStore = create<AuthState>()(
           const supabase = getSupabaseClient();
           const { data: { session } } = await supabase.auth.getSession();
           const sessionId = getSessionIdFromAccessToken(session?.access_token);
-          if (sessionId) {
-            await supabase.rpc("release_current_session", { p_session_id: sessionId });
+          const deviceKey = getBrowserDeviceKey();
+          if (sessionId && deviceKey) {
+            const { error } = await supabase.rpc("release_device_session", { p_device_key: deviceKey, p_session_id: sessionId });
+            if (error?.code === 'PGRST202') await supabase.rpc('release_current_session', { p_session_id: sessionId });
           }
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
         } catch { /* ignore */ }
         set({ user: null, error: null });
       },
@@ -352,7 +391,8 @@ export const useAuthStore = create<AuthState>()(
       logoutAllDevices: async () => {
         try {
           const supabase = getSupabaseClient();
-          await supabase.rpc("clear_my_active_session");
+          const { error } = await supabase.rpc("clear_my_device_sessions");
+          if (error?.code === 'PGRST202') await supabase.rpc('clear_my_active_session');
           await supabase.auth.signOut({ scope: 'global' });
         } catch { /* ignore */ }
         set({ user: null, error: null });
@@ -368,9 +408,26 @@ export const useAuthStore = create<AuthState>()(
             return false;
           }
 
-          const sessionStatus = await registerCurrentSession(session.access_token, false);
-          if (sessionStatus === "replaced") {
-            await endReplacedSession(set);
+          const sessionId = getSessionIdFromAccessToken(session.access_token);
+          const deviceKey = getBrowserDeviceKey();
+          if (!sessionId || !deviceKey) {
+            await endInactiveSession(set, 'unavailable');
+            return false;
+          }
+          const { data, error } = await supabase.rpc('check_registered_device', {
+            p_device_key: deviceKey,
+            p_session_id: sessionId,
+          });
+          if (error?.code === 'PGRST202') {
+            const legacy = await supabase.rpc('register_current_session', { p_session_id: sessionId, p_replace: false });
+            if (!legacy.error && legacy.data?.active === false) {
+              await endInactiveSession(set, 'removed');
+              return false;
+            }
+            return true;
+          }
+          if (!error && data?.active === false) {
+            await endInactiveSession(set, 'removed');
             return false;
           }
 
