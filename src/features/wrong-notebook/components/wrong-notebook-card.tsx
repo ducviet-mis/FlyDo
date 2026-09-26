@@ -4,20 +4,11 @@ import { BookX, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWrongNotebook } from '../hooks/use-wrong-notebook';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { MathRenderer } from '@/features/practice/components/math-renderer';
 
 export function WrongNotebookCard() {
   const { wrongQuestions, totalCount, loading } = useWrongNotebook();
-  const router = useRouter();
-
-  const handleClick = () => {
-    if (totalCount === 0) return;
-    const firstLessonId = wrongQuestions[0]?.lessonId;
-    if (firstLessonId) {
-      router.push(`/practice/wrong/${firstLessonId}`);
-    }
-  };
 
   return (
     <Card level="compact">
@@ -52,12 +43,8 @@ export function WrongNotebookCard() {
           </div>
         )}
         
-        <Button 
-          disabled={totalCount === 0} 
-          variant="outline" className="w-full"
-          onClick={handleClick}
-        >
-          Luyện lại ngay <ArrowRight className="w-5 h-5 ml-2" />
+        <Button asChild={totalCount > 0} disabled={totalCount === 0} variant="outline" className="w-full">
+          {totalCount > 0 ? <Link href="/practice/wrong">Luyện lại ngay <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" /></Link> : <span>Luyện lại ngay <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" /></span>}
         </Button>
       </CardContent>
     </Card>

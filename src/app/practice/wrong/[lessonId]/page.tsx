@@ -26,13 +26,21 @@ export default function WrongLessonPracticePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCompletion, setShowCompletion] = useState(false);
+  const [lessonRecord, setLessonRecord] = useState<{ id: string; grade: number; chapter: string; title: string } | null>(null);
 
   const supabase = getSupabaseClient();
   const { user } = useAuthStore();
   const { savedIds, toggleSave } = useSavedQuestions(lessonId);
 
+  useEffect(() => {
+    let active = true;
+    void getSupabaseClient().from('practice_lessons').select('id, grade, chapter, title').eq('id', lessonId).maybeSingle()
+      .then(({ data }: { data: { id: string; grade: number; chapter: string; title: string } | null }) => { if (active) setLessonRecord(data); });
+    return () => { active = false; };
+  }, [lessonId]);
+
   const lessonInfo = useMemo(() => {
-    const meta = LESSON_META[lessonId];
+    const meta = lessonRecord?.id === lessonId ? lessonRecord : LESSON_META[lessonId];
     if (meta) {
       return {
         grade: { id: meta.grade, label: GRADE_LABELS[meta.grade] || `Lớp ${meta.grade}` },
@@ -46,7 +54,7 @@ export default function WrongLessonPracticePage() {
       chapter: { title: 'Chuyên đề' },
       lesson: { title: `Bài học ${lessonId}` }
     };
-  }, [lessonId]);
+  }, [lessonId, lessonRecord]);
 
   useEffect(() => {
     async function loadData() {
@@ -143,7 +151,7 @@ export default function WrongLessonPracticePage() {
     <div className="min-h-screen bg-background py-8">
       <div className="container max-w-5xl">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-md">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/practice/wrong')} className="rounded-md" aria-label="Về danh sách câu sai">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
@@ -185,7 +193,7 @@ export default function WrongLessonPracticePage() {
           onOpenChange={setShowCompletion}
           lessonTitle={lesson.title}
           totalQuestions={questions.length}
-          onChooseAnother={() => router.push(`/practice?grade=${grade.id}`)}
+          onChooseAnother={() => router.push('/practice/wrong')}
         />
       </div>
     </div>
