@@ -59,9 +59,19 @@ export function useNotifications(limit = 40) {
     void refresh();
     if (!userId) return;
     const supabase = getSupabaseClient();
-    const channel = supabase.channel(`notifications:${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_notifications' }, () => void refresh())
-      .subscribe();
+    // RealtimeClient reuses channels with the same topic. The header bell and
+    // inbox page each mount this hook, so they must not share a subscribed topic.
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      const channelId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+      channel = supabase.channel(`notifications:${userId}:${channelId}`);
+      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'app_notifications' }, () => void refresh());
+      channel.subscribe();
+    } catch {
+      if (channel) void supabase.removeChannel(channel);
+      channel = null;
+      // The focus and interval refresh below keep the inbox usable without Realtime.
+    }
     const interval = window.setInterval(() => void refresh(), 60_000);
     const onFocus = () => void refresh();
     const onVisibility = () => { if (document.visibilityState === 'visible') void refresh(); };
@@ -69,7 +79,7 @@ export function useNotifications(limit = 40) {
     window.addEventListener(CHANGE_EVENT, onFocus);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener(CHANGE_EVENT, onFocus);
