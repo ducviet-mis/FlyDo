@@ -18,7 +18,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "FlyDo — Nền tảng Học & Tự luyện Toán thông minh",
   description:
-    "Hệ thống quản lý lớp học, thi thử trực tuyến, cẩm nang toán học và tự luyện toán thông minh.",
+    "Nền tảng học Toán với lý thuyết, tự luyện, thi thử trực tuyến và cẩm nang kiến thức.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

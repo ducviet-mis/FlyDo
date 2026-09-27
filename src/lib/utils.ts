@@ -35,11 +35,6 @@ export function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
-/** Generate a random class ID (4-digit) */
-export function generateClassId(): string {
-  return Math.floor(1000 + Math.random() * 9000).toString();
-}
-
 /** Generate a random password (6 chars) */
 export function generatePassword(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
