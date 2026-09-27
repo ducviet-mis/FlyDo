@@ -30,6 +30,7 @@ import { FlytieeEvents, FlytieeRewardOverlay } from './flytiee-events';
 import { FlytieeAdventure } from './flytiee-adventure';
 import type { FlytieeAccessorySlot, FlytieeMood, FlytieeRewardResult } from './types';
 import { useFlytiee } from './use-flytiee';
+import { localStudyDate } from '@/features/daily-goal/stores/online-study-store';
 import styles from './flytiee-widget.module.css';
 
 const IDLE_ACTIONS: Array<{ mood: FlytieeMood; line: string; duration: number }> = [
@@ -61,8 +62,7 @@ function levelTitle(level: number) {
 }
 
 function claimedToday(claimedIds: string[], missionId: string) {
-  const now = new Date();
-  const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}:${missionId}`;
+  const key = `${localStudyDate()}:${missionId}`;
   return claimedIds.includes(key);
 }
 
@@ -142,8 +142,8 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
     return () => window.clearTimeout(timer);
   }, [flytiee.clearMessage, flytiee.message]);
 
-  const handleFeed = () => {
-    flytiee.feed();
+  const handleFeed = async () => {
+    if (!await flytiee.feed()) return;
     setMood('eat');
     setSpeech('Măm măm… ngon quá!');
     window.setTimeout(() => {
@@ -165,8 +165,8 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
     setPetTapCount((count) => count + 1);
   };
 
-  const saveName = () => {
-    if (flytiee.rename(draftName)) setEditingName(false);
+  const saveName = async () => {
+    if (await flytiee.rename(draftName)) setEditingName(false);
   };
 
   const changeTab = (value: string) => {
@@ -174,8 +174,8 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
     if (value === 'missions' || value === 'events') void flytiee.refreshMissions();
   };
 
-  const claimMission = (mission: (typeof flytiee.missions)[number]) => {
-    if (flytiee.claimMission(mission)) {
+  const claimMission = async (mission: (typeof flytiee.missions)[number]) => {
+    if (await flytiee.claimMission(mission)) {
       setMissionReward({ kind: 'coins', title: mission.title, description: 'Nhiệm vụ hoàn thành — phần thưởng đã vào tài khoản.', amount: mission.coins, xp: mission.xp });
     }
   };
@@ -191,6 +191,16 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
         )}
         aria-label="Đang gọi FlyTiee"
       />
+    );
+  }
+
+  if (!flytiee.available) {
+    return (
+      <div className={cn('flex min-h-[120px] flex-col justify-center gap-3 rounded-xl border border-border bg-card p-5', variant === 'hero' && 'h-full')}>
+        <p className="font-semibold">FlyTiee tạm chưa sẵn sàng</p>
+        <p className="text-sm text-muted-foreground">Dữ liệu và phần thưởng của bạn vẫn được giữ an toàn. Hãy thử kết nối lại.</p>
+        <Button type="button" variant="outline" className="w-fit" onClick={() => void flytiee.reloadProfile()}>Thử lại</Button>
+      </div>
     );
   }
 

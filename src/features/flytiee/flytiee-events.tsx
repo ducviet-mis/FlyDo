@@ -141,15 +141,19 @@ export function FlytieeEvents({ flytiee }: { flytiee: FlytieeController }) {
     if (result) { setOpenedTier(null); setReward(result); }
   };
 
+  const claimAndReveal = async (request: Promise<FlytieeRewardResult | null>) => {
+    reveal(await request);
+  };
+
   const handleOpenChest = (tier: FlytieeChestTier) => {
-    if (flytiee.profile.chests[tier] < 1 || openingTier) return;
+    if (flytiee.profile.chests[tier] < 1 || openingTier || flytiee.saving) return;
     setReward(null);
     setOpenedTier(tier);
     setOpeningTier(tier);
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 100 : CHEST_OPEN_MS[tier];
-    chestTimerRef.current = window.setTimeout(() => {
+    chestTimerRef.current = window.setTimeout(async () => {
       chestTimerRef.current = null;
-      const result = flytiee.openChest(tier);
+      const result = await flytiee.openChest(tier);
       setOpeningTier(null);
       if (result) setReward(result);
       else setOpenedTier(null);
@@ -201,7 +205,7 @@ export function FlytieeEvents({ flytiee }: { flytiee: FlytieeController }) {
       </div>
 
       <section className={styles.streakCard} aria-labelledby="streak-event-title">
-        <div className="flex flex-wrap items-start justify-between gap-4"><div className="flex items-center gap-3"><div className={styles.streakIcon}><Flame aria-hidden="true" className="h-6 w-6" /></div><div><p className={styles.eyebrow}>7-day reward path</p><h4 id="streak-event-title" className="mt-1 text-lg font-extrabold">Đường đua streak</h4><p className="mt-1 text-sm text-muted-foreground">Bạn đã giữ lửa <span className="font-extrabold text-warning">{flytiee.eventStats.streak} ngày</span> — tiến tới kho báu ngày 7!</p></div></div><Button type="button" className={styles.eventPrimary} onClick={() => reveal(flytiee.claimStreakReward())} disabled={flytiee.dailyEvent.streakClaimed || flytiee.eventStats.streak < 1}>{flytiee.dailyEvent.streakClaimed ? <><Check aria-hidden="true" className="h-4 w-4" />Đã nhận hôm nay</> : `Nhận quà ngày ${cycleDay}`}</Button></div>
+        <div className="flex flex-wrap items-start justify-between gap-4"><div className="flex items-center gap-3"><div className={styles.streakIcon}><Flame aria-hidden="true" className="h-6 w-6" /></div><div><p className={styles.eyebrow}>7-day reward path</p><h4 id="streak-event-title" className="mt-1 text-lg font-extrabold">Đường đua streak</h4><p className="mt-1 text-sm text-muted-foreground">Bạn đã giữ lửa <span className="font-extrabold text-warning">{flytiee.eventStats.streak} ngày</span> — tiến tới kho báu ngày 7!</p></div></div><Button type="button" className={styles.eventPrimary} onClick={() => void claimAndReveal(flytiee.claimStreakReward())} disabled={flytiee.saving || flytiee.dailyEvent.streakClaimed || flytiee.eventStats.streak < 1}>{flytiee.dailyEvent.streakClaimed ? <><Check aria-hidden="true" className="h-4 w-4" />Đã nhận hôm nay</> : `Nhận quà ngày ${cycleDay}`}</Button></div>
         <div className="mt-4 overflow-x-auto pb-2" aria-label="Hành trình phần thưởng streak 7 ngày">
           <div className={styles.rewardTrack}>
           {STREAK_REWARDS.map((item) => {
@@ -232,7 +236,7 @@ export function FlytieeEvents({ flytiee }: { flytiee: FlytieeController }) {
             {STUDY_MILESTONES.map((milestone) => {
               const reached = flytiee.eventStats.studyMinutes >= milestone.minutes;
               const claimed = flytiee.dailyEvent.studyClaimedMilestones.includes(milestone.minutes);
-              return <div key={milestone.minutes} className={cn('flex items-center justify-between gap-3 p-3', styles.milestoneRow)}><div className="min-w-0"><p className="text-sm font-extrabold">{milestone.minutes} phút · {milestone.label}</p><p className="mt-0.5 text-xs text-muted-foreground">{milestone.reward.kind === 'coins' ? `${milestone.reward.amount} xu` : '1 Rương bạc'}</p></div><Button type="button" size="sm" className={reached && !claimed ? styles.eventPrimary : styles.eventSecondary} variant={claimed ? 'secondary' : reached ? 'default' : 'outline'} disabled={!reached || claimed} onClick={() => reveal(flytiee.claimStudyReward(milestone.minutes))}>{claimed ? <><Check aria-hidden="true" className="h-4 w-4" />Đã nhận</> : reached ? 'Nhận quà' : `${Math.max(0, milestone.minutes - flytiee.eventStats.studyMinutes)}p nữa`}</Button></div>;
+              return <div key={milestone.minutes} className={cn('flex items-center justify-between gap-3 p-3', styles.milestoneRow)}><div className="min-w-0"><p className="text-sm font-extrabold">{milestone.minutes} phút · {milestone.label}</p><p className="mt-0.5 text-xs text-muted-foreground">{milestone.reward.kind === 'coins' ? `${milestone.reward.amount} xu` : '1 Rương bạc'}</p></div><Button type="button" size="sm" className={reached && !claimed ? styles.eventPrimary : styles.eventSecondary} variant={claimed ? 'secondary' : reached ? 'default' : 'outline'} disabled={flytiee.saving || !reached || claimed} onClick={() => void claimAndReveal(flytiee.claimStudyReward(milestone.minutes))}>{claimed ? <><Check aria-hidden="true" className="h-4 w-4" />Đã nhận</> : reached ? 'Nhận quà' : `${Math.max(0, milestone.minutes - flytiee.eventStats.studyMinutes)}p nữa`}</Button></div>;
             })}
           </div>
         </section>
@@ -243,12 +247,12 @@ export function FlytieeEvents({ flytiee }: { flytiee: FlytieeController }) {
           <div className="mt-4 grid grid-cols-2 gap-2">
             {([1, 2, 3, 4] as const).map((level) => <div key={level} className={cn('p-3', styles.levelTile)}><p className="text-xs font-bold text-info">Level {level}</p><p className="mt-1 text-sm font-extrabold">{flytiee.eventStats.correctByLevel[level]} câu · +{level} xu/câu</p></div>)}
           </div>
-          <div className="mt-auto pt-4"><p className="mb-3 text-xs leading-5 text-muted-foreground">Tối đa 100 xu mỗi ngày. Câu đúng được tính theo Level tại thời điểm làm bài.</p><Button type="button" className={cn('w-full', availablePracticeCoins > 0 ? styles.eventPrimary : styles.eventSecondary)} disabled={availablePracticeCoins < 1} onClick={() => reveal(flytiee.claimPracticeCoins())}><FlytieeCoin className="h-5 w-5" />{availablePracticeCoins > 0 ? `Nhận ${availablePracticeCoins} xu` : flytiee.dailyEvent.practiceCoinsClaimed >= 100 ? 'Đã nhận đủ 100 xu' : 'Chưa có xu mới'}</Button></div>
+          <div className="mt-auto pt-4"><p className="mb-3 text-xs leading-5 text-muted-foreground">Tối đa 100 xu mỗi ngày. Câu đúng được tính theo Level tại thời điểm làm bài.</p><Button type="button" className={cn('w-full', availablePracticeCoins > 0 ? styles.eventPrimary : styles.eventSecondary)} disabled={flytiee.saving || availablePracticeCoins < 1} onClick={() => void claimAndReveal(flytiee.claimPracticeCoins())}><FlytieeCoin className="h-5 w-5" />{availablePracticeCoins > 0 ? `Nhận ${availablePracticeCoins} xu` : flytiee.dailyEvent.practiceCoinsClaimed >= 100 ? 'Đã nhận đủ 100 xu' : 'Chưa có xu mới'}</Button></div>
         </section>
       </div>
 
       <section className={cn('p-4 sm:p-5', styles.completionCard)}>
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><div className={cn(styles.cardIcon, 'bg-warning-soft text-warning')}><Sparkles aria-hidden="true" className="h-6 w-6" /></div><div><p className={styles.eyebrow}>Golden finale</p><h4 className="mt-1 text-lg font-extrabold">Kho báu hoàn thành kép</h4><p className="mt-1 text-sm text-muted-foreground">Hoàn tất 90 phút học và nhận đủ 100 xu câu đúng để mở khóa 1 Rương vàng.</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-bold"><span className={cn('rounded-full px-3 py-1.5', studyComplete ? 'bg-success-soft text-success' : 'bg-muted text-muted-foreground')}>{studyComplete ? '✓' : '○'} 90 phút học</span><span className={cn('rounded-full px-3 py-1.5', practiceComplete ? 'bg-success-soft text-success' : 'bg-muted text-muted-foreground')}>{practiceComplete ? '✓' : '○'} 100 xu câu đúng</span></div></div></div><Button type="button" className={completionReady && !flytiee.dailyEvent.completionChestClaimed ? styles.eventPrimary : styles.eventSecondary} disabled={!completionReady || flytiee.dailyEvent.completionChestClaimed} onClick={() => reveal(flytiee.claimDailyCompletionChest())}><Gift aria-hidden="true" className="h-4 w-4" />{flytiee.dailyEvent.completionChestClaimed ? 'Đã nhận Rương vàng' : 'Nhận Rương vàng'}</Button></div>
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><div className={cn(styles.cardIcon, 'bg-warning-soft text-warning')}><Sparkles aria-hidden="true" className="h-6 w-6" /></div><div><p className={styles.eyebrow}>Golden finale</p><h4 className="mt-1 text-lg font-extrabold">Kho báu hoàn thành kép</h4><p className="mt-1 text-sm text-muted-foreground">Hoàn tất 90 phút học và nhận đủ 100 xu câu đúng để mở khóa 1 Rương vàng.</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-bold"><span className={cn('rounded-full px-3 py-1.5', studyComplete ? 'bg-success-soft text-success' : 'bg-muted text-muted-foreground')}>{studyComplete ? '✓' : '○'} 90 phút học</span><span className={cn('rounded-full px-3 py-1.5', practiceComplete ? 'bg-success-soft text-success' : 'bg-muted text-muted-foreground')}>{practiceComplete ? '✓' : '○'} 100 xu câu đúng</span></div></div></div><Button type="button" className={completionReady && !flytiee.dailyEvent.completionChestClaimed ? styles.eventPrimary : styles.eventSecondary} disabled={flytiee.saving || !completionReady || flytiee.dailyEvent.completionChestClaimed} onClick={() => void claimAndReveal(flytiee.claimDailyCompletionChest())}><Gift aria-hidden="true" className="h-4 w-4" />{flytiee.dailyEvent.completionChestClaimed ? 'Đã nhận Rương vàng' : 'Nhận Rương vàng'}</Button></div>
       </section>
 
       <section aria-labelledby="chest-inventory-title">
@@ -262,7 +266,7 @@ export function FlytieeEvents({ flytiee }: { flytiee: FlytieeController }) {
                 </div>
                 <h4 className={cn('font-extrabold', tier === 'gold' && 'text-lg text-warning')}>{CHEST_LABELS[tier]}</h4>
                 <p className="mt-1 text-sm text-muted-foreground">Đang có <span className="font-extrabold text-foreground">{flytiee.profile.chests[tier]}</span></p>
-                <Button type="button" className={cn('mt-4 w-full', flytiee.profile.chests[tier] > 0 ? styles.eventPrimary : styles.eventSecondary)} variant={flytiee.profile.chests[tier] > 0 ? 'default' : 'outline'} disabled={flytiee.profile.chests[tier] < 1 || Boolean(openingTier)} onClick={() => handleOpenChest(tier)}>
+                <Button type="button" className={cn('mt-4 w-full', flytiee.profile.chests[tier] > 0 ? styles.eventPrimary : styles.eventSecondary)} variant={flytiee.profile.chests[tier] > 0 ? 'default' : 'outline'} disabled={flytiee.saving || flytiee.profile.chests[tier] < 1 || Boolean(openingTier)} onClick={() => handleOpenChest(tier)}>
                   <PackageOpen aria-hidden="true" className="h-4 w-4" />
                   {flytiee.profile.chests[tier] > 0 ? tier === 'gold' ? 'Mở kho báu' : 'Mở rương' : 'Chưa có rương'}
                 </Button>
