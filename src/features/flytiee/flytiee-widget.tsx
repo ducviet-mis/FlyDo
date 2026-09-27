@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ArrowRight,
   CalendarDays,
   Check,
   Compass,
@@ -9,7 +10,9 @@ import {
   Gift,
   RefreshCw,
   Sparkles,
+  Star,
   Ticket,
+  Trophy,
   Utensils,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -74,6 +77,7 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
   const [tab, setTab] = useState('home');
   const [mood, setMood] = useState<FlytieeMood>('idle');
   const [speech, setSpeech] = useState('Học cùng tớ nhé?');
+  const [petTapCount, setPetTapCount] = useState(0);
   const [draftName, setDraftName] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [selectedAccessoryId, setSelectedAccessoryId] = useState(FLYTIEE_ACCESSORIES[0].id);
@@ -83,6 +87,8 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
   const [missionReward, setMissionReward] = useState<FlytieeRewardResult | null>(null);
 
   const isHungry = flytiee.satiety <= 35;
+  const levelProgress = Math.min(100, Math.round(flytiee.profile.xp / flytiee.xpNeeded * 100));
+  const readyMissions = flytiee.missions.filter((mission) => mission.current >= mission.target && !claimedToday(flytiee.profile.claimedMissionIds, mission.id)).length;
   const selectedAccessory = FLYTIEE_ACCESSORIES.find((item) => item.id === selectedAccessoryId) ?? FLYTIEE_ACCESSORIES[0];
   const selectedSkin = FLYTIEE_SKINS.find((item) => item.id === selectedSkinId) ?? FLYTIEE_SKINS[0];
   const selectedSet = FLYTIEE_SETS.find((item) => item.id === selectedSetId) ?? FLYTIEE_SETS[0];
@@ -146,6 +152,19 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
     }, 3300);
   };
 
+  const handlePet = () => {
+    if (isHungry) {
+      setMood('hungry');
+      setSpeech('Tớ đói rồi, cho tớ ăn trước nhé!');
+      return;
+    }
+    const reactions = IDLE_ACTIONS.filter((action) => ['happy', 'sway', 'fly', 'look'].includes(action.mood));
+    const reaction = reactions[petTapCount % reactions.length];
+    setMood(reaction.mood);
+    setSpeech(reaction.line);
+    setPetTapCount((count) => count + 1);
+  };
+
   const saveName = () => {
     if (flytiee.rename(draftName)) setEditingName(false);
   };
@@ -181,20 +200,23 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
         <button
           type="button"
           className={cn(
-            'group grid w-full items-center overflow-hidden rounded-xl border border-border text-left shadow-soft transition-colors hover:border-primary/50 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            'group grid w-full items-center overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            styles.widgetTeaser,
             variant === 'hero'
-              ? 'h-full min-h-[120px] grid-cols-[92px_minmax(0,1fr)] bg-card/75 p-3 sm:grid-cols-[108px_minmax(0,1fr)]'
-              : 'min-h-[172px] grid-cols-[132px_minmax(0,1fr)] bg-card p-4 sm:grid-cols-[145px_minmax(0,1fr)]',
+              ? 'h-full min-h-[120px] grid-cols-[92px_minmax(0,1fr)] p-3 sm:grid-cols-[108px_minmax(0,1fr)]'
+              : 'min-h-[172px] grid-cols-[132px_minmax(0,1fr)] p-4 sm:grid-cols-[145px_minmax(0,1fr)]',
           )}
           aria-label={`Mở cửa sổ của ${flytiee.profile.name}`}
         >
+          <span className={styles.widgetTeaserGlow} aria-hidden="true" />
           <div className={cn(
-            'self-end',
+            'relative z-10 self-end',
             variant === 'hero' ? 'h-[92px] w-[92px] sm:h-[108px] sm:w-[108px]' : 'h-[138px] w-[138px] sm:h-[150px] sm:w-[150px]',
           )}>
             <FlytieeBird mood={mood} profile={flytiee.profile} />
           </div>
           <div className="relative z-10 min-w-0 pl-1">
+            <span className={styles.widgetEyebrow}><Sparkles aria-hidden="true" className="h-3 w-3" /> Vương quốc FlyTiee</span>
             <div className="mb-1 flex items-center gap-2">
               <span className={cn('truncate font-bold text-foreground', variant === 'hero' ? 'text-base sm:text-lg' : 'text-lg')}>{flytiee.profile.name}</span>
               {isHungry && <span className="rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning">Đang đói</span>}
@@ -204,26 +226,29 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
               <span className="text-primary">Cấp {flytiee.profile.level}</span>
               <span className="flex items-center gap-1 text-warning"><FlytieeCoin className="h-4 w-4" />{flytiee.profile.coins} xu</span>
             </div>
-            <span className={cn('inline-flex items-center gap-1.5 text-xs font-semibold text-primary group-hover:underline', variant === 'hero' ? 'mt-2' : 'mt-3')}>
-              <Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Chơi cùng FlyTiee
+            <span className={cn(styles.widgetCta, variant === 'hero' ? 'mt-2' : 'mt-3')}>
+              Khám phá ngay <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
             </span>
           </div>
         </button>
       </DialogTrigger>
 
-      <DialogContent className={cn('flex h-[calc(100dvh-1rem)] max-h-[840px] min-h-0 w-[calc(100%-1rem)] max-w-[1180px] flex-col gap-0 overflow-hidden p-0 sm:h-[calc(100dvh-2rem)] [&>button]:right-3 [&>button]:top-3 [&>button]:z-20 [&>button]:rounded-full [&>button]:bg-card/70 [&>button]:backdrop-blur', styles.world)}>
+      <DialogContent className={cn('flex h-[calc(100dvh-1rem)] max-h-[900px] min-h-0 w-[calc(100%-1rem)] max-w-[1180px] flex-col gap-0 overflow-hidden p-0 sm:h-[calc(100dvh-2rem)] [&>button]:right-3 [&>button]:top-3 [&>button]:z-20 [&>button]:rounded-full [&>button]:bg-card/80 [&>button]:backdrop-blur', styles.world)}>
         <DialogHeader className={cn('shrink-0 px-5 py-5 sm:px-7 sm:py-6', styles.header)}>
           <div className="flex items-center gap-3 pr-10 sm:gap-4">
             <span className={styles.brandMark}><Sparkles aria-hidden="true" className="h-6 w-6" /></span>
             <div className="min-w-0 flex-1">
-              <DialogDescription className="mb-1 text-xs font-bold uppercase tracking-[.18em] text-primary">FlyDo companion lounge</DialogDescription>
+              <DialogDescription className={styles.headerKicker}>Vương quốc FlyTiee</DialogDescription>
               <DialogTitle className="flex flex-wrap items-center gap-2 text-xl sm:text-2xl">
-                Nhà của {flytiee.profile.name}
+                Hành trình cùng {flytiee.profile.name}
                 {flytiee.saving && <RefreshCw aria-label="Đang lưu" className="h-4 w-4 animate-spin text-muted-foreground" />}
               </DialogTitle>
-              <DialogDescription className="mt-1 hidden sm:block">Góc nghỉ ngơi, nhận thưởng và lớn lên cùng những tiến bộ nhỏ mỗi ngày.</DialogDescription>
+              <DialogDescription className="mt-1 hidden sm:block">Chăm sóc người bạn nhỏ, vượt thử thách và mở khóa những phần thưởng kỳ diệu.</DialogDescription>
             </div>
-            <span className={styles.headerBadge}><FlytieeCoin className="h-5 w-5" />{flytiee.profile.coins} xu</span>
+            <div className={styles.headerStats}>
+              <span className={styles.headerLevel}><Trophy aria-hidden="true" className="h-4 w-4" />Cấp {flytiee.profile.level}</span>
+              <span className={styles.headerBadge}><FlytieeCoin className="h-5 w-5" />{flytiee.profile.coins} xu</span>
+            </div>
           </div>
         </DialogHeader>
 
@@ -246,13 +271,18 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
             <TabsContent value="home" className="mt-0">
               <div className={styles.homeGrid}>
                 <section className={styles.petStage}>
-                  <span className={styles.stageLabel}><Sparkles aria-hidden="true" className="h-3.5 w-3.5" />Góc thư giãn</span>
+                  <div className={styles.stageStars} aria-hidden="true" />
+                  <div className={styles.stagePortal} aria-hidden="true" />
+                  <span className={styles.stageLabel}><Sparkles aria-hidden="true" className="h-3.5 w-3.5" />Sân khấu FlyTiee</span>
                   <div className={styles.speechBubble}>{speech}</div>
-                  <FlytieeBird mood={mood} profile={flytiee.profile} className={styles.petVisual} />
+                  <button type="button" className={styles.petInteraction} onClick={handlePet} disabled={mood === 'eat'} aria-label={`Chạm ${flytiee.profile.name} để chơi cùng`}>
+                    <FlytieeBird mood={mood} profile={flytiee.profile} className={styles.petVisual} />
+                  </button>
+                  <div className={styles.stageFooter}><span><Star aria-hidden="true" className="h-4 w-4" /> Chạm FlyTiee để chơi</span><span>Cấp {flytiee.profile.level}</span></div>
                 </section>
 
                 <section className={styles.sidePanel}>
-                  <div className={cn('p-4 sm:p-5', styles.softCard)}>
+                  <div className={cn('p-4 sm:p-5', styles.softCard, styles.profileCard)}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-xs font-bold uppercase tracking-[.16em] text-primary">Người bạn của bạn</p>
@@ -265,14 +295,24 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
                   </div>
 
                   <div className={cn('p-4 sm:p-5', styles.softCard, styles.levelCard)}>
-                    <div className="flex items-center gap-3"><span className={styles.miniIcon}><Sparkles aria-hidden="true" className="h-5 w-5" /></span><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3"><p className="text-sm font-bold">Cấp {flytiee.profile.level} · {levelTitle(flytiee.profile.level)}</p><span className="text-xs font-bold tabular-nums text-info">{Math.round(flytiee.profile.xp / flytiee.xpNeeded * 100)}%</span></div><p className="mt-1 text-xs text-muted-foreground">{flytiee.profile.xp}/{flytiee.xpNeeded} EXP tới cấp tiếp theo</p></div></div>
-                    <Progress value={flytiee.profile.xp / flytiee.xpNeeded * 100} className="mt-3" />
+                    <div className="flex items-center gap-3"><span className={styles.miniIcon}><Sparkles aria-hidden="true" className="h-5 w-5" /></span><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3"><p className="text-sm font-bold">Cấp {flytiee.profile.level} · {levelTitle(flytiee.profile.level)}</p><span className="text-xs font-bold tabular-nums text-info">{levelProgress}%</span></div><p className="mt-1 text-xs text-muted-foreground">{flytiee.profile.xp}/{flytiee.xpNeeded} EXP tới cấp tiếp theo</p></div></div>
+                    <Progress value={levelProgress} className={cn('mt-3', styles.levelProgress)} />
                   </div>
 
                   <div className={cn('p-4 sm:p-5', styles.softCard, styles.careCard)}>
                     <div className="flex items-center justify-between"><div className="flex items-center gap-3"><span className={cn(styles.miniIcon, 'text-success')}><Utensils aria-hidden="true" className="h-5 w-5" /></span><div><p className="text-sm font-bold">Năng lượng yêu thương</p><p className="text-xs text-muted-foreground">Thức ăn luôn miễn phí.</p></div></div><span className={cn('text-sm font-extrabold tabular-nums', isHungry ? 'text-warning' : 'text-success')}>{flytiee.satiety}%</span></div>
-                    <Progress value={flytiee.satiety} className="mt-3" />
+                    <Progress value={flytiee.satiety} className={cn('mt-3', styles.careProgress)} />
                     <Button type="button" className={cn('mt-4 w-full', styles.primaryButton)} onClick={handleFeed} disabled={mood === 'eat'}><Utensils aria-hidden="true" className="h-4 w-4" />{mood === 'eat' ? 'Đang ăn…' : 'Cho FlyTiee ăn'}</Button>
+                  </div>
+
+                  <div className={styles.journeyCard}>
+                    <span className={styles.journeyKicker}><Compass aria-hidden="true" className="h-4 w-4" /> Cánh cổng phiêu lưu</span>
+                    <h3>Hành trình tiếp theo đang chờ bạn</h3>
+                    <p>Chọn một thử thách, kiếm phần thưởng và cùng FlyTiee lớn lên.</p>
+                    <div className={styles.journeyActions}>
+                      <Button type="button" className={styles.journeyPrimary} onClick={() => changeTab('adventure')}>Vào Kỳ thú <ArrowRight aria-hidden="true" className="h-4 w-4" /></Button>
+                      <Button type="button" className={styles.journeySecondary} onClick={() => changeTab('missions')}>Nhiệm vụ {readyMissions > 0 && <span className={styles.journeyCount}>{readyMissions}</span>}</Button>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -284,8 +324,9 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
                 {flytiee.missions.map((mission) => {
                   const complete = mission.current >= mission.target;
                   const claimed = claimedToday(flytiee.profile.claimedMissionIds, mission.id);
-                  return <article key={mission.id} className={cn('flex min-h-[210px] flex-col p-5', styles.missionCard)}>
+                  return <article key={mission.id} className={cn('flex min-h-[210px] flex-col p-5', styles.missionCard, complete && !claimed && styles.missionReady)}>
                     <div className="relative z-10 flex items-start justify-between gap-3"><span className={styles.miniIcon}><Gift aria-hidden="true" className="h-5 w-5" /></span><span className={styles.rewardPill}>+{mission.xp} EXP <span aria-hidden="true">·</span> <FlytieeCoin className="h-4 w-4" />+{mission.coins} xu</span></div>
+                    <span className={styles.missionState}>{claimed ? 'Đã hoàn thành' : complete ? 'Sẵn sàng nhận quà' : 'Đang phiêu lưu'}</span>
                     <h4 className="relative z-10 mt-4 text-base font-extrabold">{mission.title}</h4><p className="relative z-10 mt-1 text-sm leading-6 text-muted-foreground">{mission.description}</p>
                     <div className="relative z-10 mt-auto pt-4"><div className="mb-2 flex justify-between text-xs font-bold"><span>{mission.current}/{mission.target}</span><span className="text-primary">{Math.round(mission.current / mission.target * 100)}%</span></div><Progress value={mission.current / mission.target * 100} /><Button type="button" className={cn('mt-4 w-full', complete && !claimed ? styles.primaryButton : styles.secondaryButton)} variant={claimed ? 'secondary' : complete ? 'default' : 'outline'} disabled={!complete || claimed} onClick={() => claimMission(mission)}>{claimed ? <><Check aria-hidden="true" className="h-4 w-4" />Đã nhận</> : complete ? 'Nhận thưởng ngay' : 'Đang tiến hành'}</Button></div>
                   </article>;
