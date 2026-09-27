@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Bell, Check, CheckCheck, Loader2, RefreshCw, ArrowUpRight } from 'lucide-react';
+import { Bell, Check, CheckCheck, Eye, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoginRequiredSection } from '@/components/layout/login-required-section';
 import { PageHeader } from '@/components/shared/page-header';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
+import { NotificationDetailDialog } from '@/features/notifications/notification-detail-dialog';
+import type { AppNotification } from '@/features/notifications/use-notifications';
 import { useNotifications } from '@/features/notifications/use-notifications';
 
 function displayDate(value: string) {
@@ -14,23 +15,27 @@ function displayDate(value: string) {
 }
 
 export default function NotificationsPage() {
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const initialized = useAuthStore((state) => state.initialized);
   const { items, unreadCount, loading, available, error, refresh, markRead, markAllRead } = useNotifications(100);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [busy, setBusy] = useState<string | null>(null);
+  const [selected, setSelected] = useState<AppNotification | null>(null);
 
   if (!initialized) return <div role="status" className="container py-16 text-center text-muted-foreground">Đang kiểm tra tài khoản...</div>;
   if (!user) return <LoginRequiredSection sectionName="thông báo" />;
 
   const visible = filter === 'unread' ? items.filter((item) => !item.read_at) : items;
 
-  const readOne = async (id: string, actionUrl?: string | null) => {
+  const readOne = async (id: string) => {
     setBusy(id);
-    const success = await markRead(id);
+    await markRead(id);
     setBusy(null);
-    if (success && actionUrl) router.push(actionUrl);
+  };
+
+  const showDetail = (item: AppNotification) => {
+    setSelected(item);
+    if (!item.read_at) void markRead(item.id);
   };
 
   const readAll = async () => {
@@ -92,9 +97,9 @@ export default function NotificationsPage() {
                         {busy === item.id ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Check aria-hidden="true" className="h-4 w-4" />}
                         Đánh dấu đã đọc
                       </Button>}
-                      {item.action_url && <Button type="button" variant="tertiary" size="sm" onClick={() => void readOne(item.id, item.action_url)} disabled={busy !== null}>
-                        Xem nội dung <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
-                      </Button>}
+                      <Button type="button" variant="tertiary" size="sm" onClick={() => showDetail(item)} disabled={busy !== null}>
+                        Xem chi tiết <Eye aria-hidden="true" className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -104,6 +109,7 @@ export default function NotificationsPage() {
           </div>
         )}
       </>}
+      <NotificationDetailDialog notification={selected} onClose={() => setSelected(null)} error={error} />
     </div>
   );
 }
