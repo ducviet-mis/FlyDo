@@ -202,37 +202,37 @@
 .prizeReveal strong { position: relative; z-index: 1; margin-top: 5px; color: #fff; font-size: 32px; font-weight: 900; letter-spacing: -.03em; }
 .prizeReveal p { position: relative; z-index: 1; margin: 6px 0 0; color: #dbe6f6; font-size: 13px; }
 
-:global(html:not(.dark)) .world { --a-ink: #1d2946; --a-muted: #586780; --a-panel: #fff; --a-panel-border: rgb(104 120 184 / .22); }
-:global(html:not(.dark)) .preparation, :global(html:not(.dark)) .challenge, :global(html:not(.dark)) .finalPanel { background: linear-gradient(155deg, #fff, #f3f7ff); box-shadow: 0 12px 30px rgb(35 53 112 / .08); }
-:global(html:not(.dark)) .step { color: #345cbb; }
-:global(html:not(.dark)) .todayPill { color: #12604c; background: #e7f9f2; border-color: #a9dcc9; }
-:global(html:not(.dark)) .selectedDoor { color: #55469b; background: #f1edff; border-color: #d9d0f7; }
-:global(html:not(.dark)) .selectWrap select { color: #1d2946; background: #f8faff; border-color: #c8d2e8; }
-:global(html:not(.dark)) .selectWrap > svg { color: #5e6e91; }
-:global(html:not(.dark)) .lessonSummary { color: #136d58; }
-:global(html:not(.dark)) .previewRewards { background: #f6f8ff; border-color: #dbe3f1; }
-:global(html:not(.dark)) .previewRewards > div > span { background: #fff; border-color: #dce4f3; }
-:global(html:not(.dark)) .previewRewards b { color: #23618a; }
-:global(html:not(.dark)) .preparationBottom { border-top-color: #dae1ef; }
-:global(html:not(.dark)) .error { color: #8f2444; background: #fff0f2; border-color: #f2b8c1; }
-:global(html:not(.dark)) .challenge::before { background: radial-gradient(ellipse at 70% -40%, rgb(141 168 240 / .17), transparent 70%); }
-:global(html:not(.dark)) .questionBody { border-top-color: #e0e7f3; background: rgb(244 248 255 / .6); }
-:global(html:not(.dark)) .questionText { color: #1c2944; }
-:global(html:not(.dark)) .scorePill { color: #866017; background: #fff6df; border-color: #ead398; }
-:global(html:not(.dark)) .progressTrack span { color: #50607b; background: #f4f6fc; border-color: #dce3f0; }
-:global(html:not(.dark)) .progressTrack span[data-state='current'] { color: #324d98; background: #eaf0ff; border-color: #90aef2; }
-:global(html:not(.dark)) .progressTrack span[data-state='correct'] { color: #17654f; background: #e8f9f1; border-color: #83d1b5; }
-:global(html:not(.dark)) .progressTrack span[data-state='wrong'] { color: #a23551; background: #fff0f2; border-color: #eda8b9; }
-:global(html:not(.dark)) .option { color: #1e2a45; background: #fff; border-color: #d4ddec; }
-:global(html:not(.dark)) .option:not(:disabled):hover { background: #f2f6ff; }
-:global(html:not(.dark)) .option[data-state='correct'] { background: #e8f8f0; border-color: #5ccba2; }
-:global(html:not(.dark)) .option[data-state='wrong'] { background: #fff0f3; border-color: #e98aa2; }
-:global(html:not(.dark)) .optionLetter { color: #546587; background: #edf1fb; }
-:global(html:not(.dark)) .feedback { color: #16634e; background: #eaf9f1; border-color: #94d5b9; }
-:global(html:not(.dark)) .feedback[data-correct='false'] { color: #a23c58; background: #fff0f3; border-color: #edb0bf; }
-:global(html:not(.dark)) .solution { color: #243656; border-top-color: #c8d8d3; }
-:global(html:not(.dark)) .nextButton { color: #fff; background: #626ed5; border-color: #626ed5; }
-:global(html:not(.dark)) .finalNote { color: #4b5d83; background: #f4f6fe; border-color: #dce2f3; }
+:global(html.light) .world { --a-ink: #1d2946; --a-muted: #586780; --a-panel: #fff; --a-panel-border: rgb(104 120 184 / .22); }
+:global(html.light) .preparation, :global(html.light) .challenge, :global(html.light) .finalPanel { background: linear-gradient(155deg, #fff, #f3f7ff); box-shadow: 0 12px 30px rgb(35 53 112 / .08); }
+:global(html.light) .step { color: #345cbb; }
+:global(html.light) .todayPill { color: #12604c; background: #e7f9f2; border-color: #a9dcc9; }
+:global(html.light) .selectedDoor { color: #55469b; background: #f1edff; border-color: #d9d0f7; }
+:global(html.light) .selectWrap select { color: #1d2946; background: #f8faff; border-color: #c8d2e8; }
+:global(html.light) .selectWrap > svg { color: #5e6e91; }
+:global(html.light) .lessonSummary { color: #136d58; }
+:global(html.light) .previewRewards { background: #f6f8ff; border-color: #dbe3f1; }
+:global(html.light) .previewRewards > div > span { background: #fff; border-color: #dce4f3; }
+:global(html.light) .previewRewards b { color: #23618a; }
+:global(html.light) .preparationBottom { border-top-color: #dae1ef; }
+:global(html.light) .error { color: #8f2444; background: #fff0f2; border-color: #f2b8c1; }
+:global(html.light) .challenge::before { background: radial-gradient(ellipse at 70% -40%, rgb(141 168 240 / .17), transparent 70%); }
+:global(html.light) .questionBody { border-top-color: #e0e7f3; background: rgb(244 248 255 / .6); }
+:global(html.light) .questionText { color: #1c2944; }
+:global(html.light) .scorePill { color: #866017; background: #fff6df; border-color: #ead398; }
+:global(html.light) .progressTrack span { color: #50607b; background: #f4f6fc; border-color: #dce3f0; }
+:global(html.light) .progressTrack span[data-state='current'] { color: #324d98; background: #eaf0ff; border-color: #90aef2; }
+:global(html.light) .progressTrack span[data-state='correct'] { color: #17654f; background: #e8f9f1; border-color: #83d1b5; }
+:global(html.light) .progressTrack span[data-state='wrong'] { color: #a23551; background: #fff0f2; border-color: #eda8b9; }
+:global(html.light) .option { color: #1e2a45; background: #fff; border-color: #d4ddec; }
+:global(html.light) .option:not(:disabled):hover { background: #f2f6ff; }
+:global(html.light) .option[data-state='correct'] { background: #e8f8f0; border-color: #5ccba2; }
+:global(html.light) .option[data-state='wrong'] { background: #fff0f3; border-color: #e98aa2; }
+:global(html.light) .optionLetter { color: #546587; background: #edf1fb; }
+:global(html.light) .feedback { color: #16634e; background: #eaf9f1; border-color: #94d5b9; }
+:global(html.light) .feedback[data-correct='false'] { color: #a23c58; background: #fff0f3; border-color: #edb0bf; }
+:global(html.light) .solution { color: #243656; border-top-color: #c8d8d3; }
+:global(html.light) .nextButton { color: #fff; background: #626ed5; border-color: #626ed5; }
+:global(html.light) .finalNote { color: #4b5d83; background: #f4f6fe; border-color: #dce2f3; }
 
 @media (max-width: 900px) {
   .heroBird { right: 8px; width: 180px; height: 180px; }

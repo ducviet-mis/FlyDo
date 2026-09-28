@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
+import "@/styles/star-map-system.css";
 import { Providers } from "./providers";
 import { ClientLayout } from "@/components/layout/client-layout";
 

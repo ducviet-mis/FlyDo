@@ -13,6 +13,7 @@ import { StreakCheckIn } from '@/features/streak/components/streak-check-in';
 import { OnlineStudyTracker } from '@/features/daily-goal/components/online-study-tracker';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { StarMapRibbon } from '@/components/layout/star-map-ribbon';
 
 const LOGIN_REQUIRED_SECTIONS: Record<string, string> = {
   '/theory': 'Lý thuyết',
@@ -35,6 +36,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const isImmersiveMode = isMockExamRoom || isPracticeRoom;
   const showMobileNav = !isImmersiveMode && pathname !== '/login' && pathname !== '/register';
   const loginRequiredSection = pathname ? LOGIN_REQUIRED_SECTIONS[pathname] : undefined;
+  const pageContext = pathname?.split('/')[1] || 'home';
 
   return (
     <AuthGuard>
@@ -53,7 +55,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
           "min-w-0 flex-1 focus-visible:outline-none",
           isMockExamRoom ? "w-full" : isImmersiveMode ? "w-full md:vivux-page" : "vivux-page",
           showMobileNav && "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8"
-        )}>
+        )} data-star-page={pageContext} data-star-immersive={isImmersiveMode ? 'true' : undefined}>
+          {!isImmersiveMode && <StarMapRibbon pageContext={pageContext} />}
           {loginRequiredSection && !initialized ? (
             <div role="status" className="container flex min-h-[440px] items-center justify-center gap-3 text-muted-foreground">
               <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />

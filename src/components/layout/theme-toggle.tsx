@@ -1,12 +1,19 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
+import { Check, Moon, Orbit, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 
+const options = [
+  { id: "light", label: "Sáng", description: "Dịu và rõ ràng", icon: Sun },
+  { id: "dark", label: "Tối", description: "Tập trung và dễ đọc", icon: Moon },
+  { id: "starmap", label: "Bản đồ Sao", description: "Một hành trình học khác biệt", icon: Orbit },
+] as const;
+
 export function ThemeToggle() {
-  const { resolvedTheme: theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -21,19 +28,27 @@ export function ThemeToggle() {
     );
   }
 
+  const active = theme === "system" ? resolvedTheme : theme;
+  const ActiveIcon = options.find((option) => option.id === active)?.icon ?? Sun;
+
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-11 w-11 rounded-md border border-border bg-surface hover:bg-muted"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      aria-label={theme === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
-    >
-      {theme === "dark" ? (
-        <Sun className="h-[18px] w-[18px] text-warning" />
-      ) : (
-        <Moon className="h-[18px] w-[18px] text-primary" />
-      )}
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-11 w-11 rounded-md border border-border bg-surface hover:bg-muted" aria-label={`Giao diện hiện tại: ${options.find((option) => option.id === active)?.label ?? 'Sáng'}. Chọn giao diện`} title="Chọn giao diện">
+          <ActiveIcon className="h-[18px] w-[18px] text-primary" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64 p-2">
+        <DropdownMenuLabel className="px-2 py-1 text-xs uppercase tracking-widest text-muted-foreground">Giao diện FlyDo</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {options.map(({ id, label, description, icon: Icon }) => (
+          <DropdownMenuItem key={id} aria-label={`${label}${active === id ? ', đang chọn' : ''}`} onSelect={() => setTheme(id)} className="flex min-h-14 w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-primary-soft focus:bg-primary-soft">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary"><Icon className="h-[18px] w-[18px]" aria-hidden="true" /></span>
+            <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-foreground">{label}</span><span className="block text-xs text-muted-foreground">{description}</span></span>
+            {active === id && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

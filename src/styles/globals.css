@@ -87,6 +87,43 @@
     --gradient-hero: radial-gradient(ellipse at 100% 0%, rgb(57 215 242 / .08), transparent 65%), linear-gradient(115deg, rgb(27 34 63), rgb(22 30 49));
     --gradient-quote: radial-gradient(ellipse at 100% 0%, rgb(168 85 247 / .10), transparent 70%), linear-gradient(145deg, rgb(30 30 55), rgb(24 29 49));
   }
+  .starmap {
+    color-scheme: dark;
+    --color-background: 7 13 29;
+    --color-surface: 13 24 46;
+    --color-card: 17 29 53;
+    --color-surface-elevated: 25 40 69;
+    --color-text-primary: 244 248 255;
+    --color-text-secondary: 172 191 219;
+    --color-text-muted: 172 191 219;
+    --color-border: 56 77 112;
+    --color-control: 132 153 183;
+    --color-primary: 135 203 255;
+    --color-primary-hover: 172 221 255;
+    --color-on-primary: 9 26 49;
+    --color-primary-soft: 25 54 87;
+    --color-brand: 123 166 255;
+    --color-brand-cyan: 148 237 255;
+    --color-accent: 109 222 242;
+    --color-info: 117 221 234;
+    --color-info-soft: 20 52 67;
+    --color-special: 200 172 255;
+    --color-special-soft: 48 41 84;
+    --color-success: 117 228 187;
+    --color-success-soft: 23 57 54;
+    --color-warning: 255 211 134;
+    --color-warning-soft: 61 48 39;
+    --color-danger: 255 160 181;
+    --color-danger-soft: 67 35 55;
+    --color-on-danger: 43 17 29;
+    --color-muted: 24 37 65;
+    --color-track: 52 70 105;
+    --shadow-soft: 0 1px 0 rgb(160 196 255 / .06);
+    --shadow-card: 0 1px 0 rgb(188 214 255 / .05), 0 16px 38px -24px rgb(0 0 0 / .58);
+    --shadow-float: 0 22px 68px -18px rgb(0 0 0 / .72);
+    --gradient-hero: radial-gradient(ellipse at 88% 5%, rgb(101 171 255 / .13), transparent 58%), linear-gradient(120deg, rgb(18 35 66), rgb(12 24 47));
+    --gradient-quote: radial-gradient(ellipse at 85% 0%, rgb(167 139 250 / .15), transparent 65%), linear-gradient(145deg, rgb(24 34 65), rgb(16 28 54));
+  }
   * { @apply border-border; }
   body { @apply bg-background text-foreground antialiased; font-feature-settings: "rlig" 1, "calt" 1; line-height: 1.6; }
   h1, h2, h3, h4 { text-wrap: balance; line-height: 1.3; }
@@ -136,6 +173,8 @@
   .vivux-stat-number { @apply font-bold tracking-tight tabular-nums text-foreground; }
 }
 @media (max-width: 1023px) { .study-heading > div { max-width: 100%; } }
+.starmap nav[aria-label="Điều hướng chính"] { background: rgb(var(--color-surface) / .9); border-bottom-color: rgb(var(--color-primary) / .2); }
+.starmap .vivux-nav-link[aria-current="page"] { background: rgb(var(--color-primary) / .13); }
 .katex-display { margin: .5em 0; overflow-x: auto; overflow-y: hidden; }
 .katex { font-size: 1.1em; }
 .vivux-prose {

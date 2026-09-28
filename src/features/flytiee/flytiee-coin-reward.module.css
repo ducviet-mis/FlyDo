@@ -12,7 +12,7 @@
 .amount { position: relative; z-index: 1; margin-top: 3px; color: #E6A739; font-size: 30px; font-weight: 900; letter-spacing: -.04em; line-height: 1.15; font-variant-numeric: tabular-nums; text-shadow: 0 2px 12px rgb(216 138 42 / .13); animation: amount-in 480ms 330ms ease-out both; }
 .amount span { font-size: .58em; font-weight: 800; letter-spacing: 0; }
 .compact .amount { font-size: 25px; }
-:global(html:not(.dark)) .amount { color: #A46316; }
+:global(html.light) .amount { color: #A46316; }
 
 @keyframes coin-land { 0% { opacity: 0; transform: translateY(-32px) scale(.65) rotate(-28deg); } 60% { opacity: 1; transform: translateY(5px) scale(1.08) rotate(7deg); } 100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); } }
 @keyframes halo-in { from { opacity: 0; transform: scale(.65); } 65% { opacity: 1; } to { opacity: .72; transform: scale(1.25); } }

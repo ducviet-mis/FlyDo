@@ -3,7 +3,7 @@ import { Heart } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-surface py-6 mt-8">
+    <footer className="site-footer border-t border-border bg-surface py-6 mt-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-2 px-4 text-center text-sm text-muted-foreground sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt={APP_NAME} className="h-5 w-5 rounded-md object-cover" />
