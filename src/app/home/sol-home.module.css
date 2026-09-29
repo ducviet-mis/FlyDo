@@ -17,7 +17,7 @@
 .kickerLine { width: 26px; height: 1px; background: rgb(var(--sol-amber-ink)); }
 .greeting { margin: 0 0 8px; color: rgb(var(--color-text-secondary)); font-size: 15px; font-weight: 600; }
 .hero h1 { max-width: 540px; color: rgb(var(--color-text-primary)); font-size: clamp(36px, 4vw, 55px); font-weight: 760; line-height: 1.08; letter-spacing: -.055em; text-wrap: balance; }
-.hero h1 em { display: block; color: rgb(var(--sol-amber-ink)); font-family: Georgia, 'Times New Roman', serif; font-weight: 500; font-style: italic; letter-spacing: -.045em; }
+.hero h1 em { display: block; color: rgb(var(--sol-amber-ink)); font-family: 'Times New Roman', serif; font-weight: 500; font-style: italic; letter-spacing: -.01em; }
 .description { max-width: 44ch; margin: 18px 0 0; color: rgb(var(--color-text-secondary)); font-size: 15px; line-height: 1.75; }
 .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; }
 .primaryAction, .secondaryAction { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 9px; border-radius: 10px; padding: 0 16px; font-size: 14px; font-weight: 750; text-decoration: none; transition: transform var(--motion-normal) var(--ease-out), box-shadow var(--motion-normal) var(--ease-out), background-color var(--motion-normal) var(--ease-out), border-color var(--motion-normal) var(--ease-out); }
