@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/star-map-system.css";
 import "@/styles/sol-system.css";
+import "@/styles/luna-system.css";
 import { Providers } from "./providers";
 import { ClientLayout } from "@/components/layout/client-layout";
 

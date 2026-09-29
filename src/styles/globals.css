@@ -59,40 +59,46 @@
   }
   .dark {
     color-scheme: dark;
-    --color-background: 13 16 32;
-    --color-surface: 21 25 43;
-    --color-card: 26 30 50;
-    --color-surface-elevated: 32 37 60;
-    --color-text-primary: 245 247 255;
-    --color-text-secondary: 154 164 192;
-    --color-text-muted: 160 170 196;
-    --color-border: 43 48 67;
-    --color-control: 110 122 153;
-    --color-primary: 133 152 255;
-    --color-primary-hover: 156 171 255;
-    --color-on-primary: 13 16 32;
-    --color-primary-soft: 36 44 77;
-    --color-brand: 102 124 255;
+    --color-background: 13 20 34;
+    --color-surface: 20 30 48;
+    --color-card: 25 37 57;
+    --color-surface-elevated: 30 44 66;
+    --color-text-primary: 234 240 250;
+    --color-text-secondary: 177 190 211;
+    --color-text-muted: 170 183 204;
+    --color-border: 51 67 92;
+    --color-control: 145 160 186;
+    --color-primary: 141 192 239;
+    --color-primary-hover: 172 213 248;
+    --color-on-primary: 13 29 52;
+    --color-primary-soft: 34 51 77;
+    --color-brand: 111 166 242;
     --color-brand-cyan: 146 238 255;
-    --color-accent: 57 215 242;
-    --color-info: 91 215 237;
-    --color-info-soft: 22 48 60;
-    --color-special: 190 150 255;
-    --color-special-soft: 46 35 70;
-    --color-success: 99 214 169;
-    --color-success-soft: 22 48 45;
-    --color-warning: 239 193 108;
-    --color-warning-soft: 53 43 33;
-    --color-danger: 255 145 163;
-    --color-danger-soft: 60 30 46;
-    --color-on-danger: 37 12 23;
-    --color-muted: 30 35 56;
-    --color-track: 47 55 80;
-    --shadow-soft: 0 1px 0 rgb(255 255 255 / .025);
-    --shadow-card: 0 1px 0 rgb(255 255 255 / .025), 0 8px 24px -16px rgb(0 0 0 / .32);
-    --shadow-float: 0 20px 60px -12px rgb(0 0 0 / .4);
-    --gradient-hero: radial-gradient(ellipse at 100% 0%, rgb(57 215 242 / .08), transparent 65%), linear-gradient(115deg, rgb(27 34 63), rgb(22 30 49));
-    --gradient-quote: radial-gradient(ellipse at 100% 0%, rgb(168 85 247 / .10), transparent 70%), linear-gradient(145deg, rgb(30 30 55), rgb(24 29 49));
+    --color-accent: 130 185 232;
+    --color-info: 136 203 227;
+    --color-info-soft: 24 50 67;
+    --color-special: 194 181 232;
+    --color-special-soft: 45 43 76;
+    --color-success: 117 217 177;
+    --color-success-soft: 23 56 50;
+    --color-warning: 233 199 120;
+    --color-warning-soft: 58 48 34;
+    --color-danger: 255 155 169;
+    --color-danger-soft: 65 35 49;
+    --color-on-danger: 43 17 29;
+    --color-muted: 30 44 66;
+    --color-track: 51 68 94;
+    --luna-moon: 199 215 242;
+    --luna-ice: 130 185 232;
+    --luna-gold: 233 199 120;
+    --luna-orbit: 98 128 169;
+    --luna-selected: 34 51 77;
+    --luna-reading-paper: 24 36 55;
+    --shadow-soft: 0 1px 0 rgb(225 237 255 / .035), 0 10px 22px -18px rgb(2 8 21 / .52);
+    --shadow-card: 0 1px 0 rgb(225 237 255 / .04), 0 18px 38px -25px rgb(2 8 21 / .72);
+    --shadow-float: 0 24px 58px -22px rgb(2 8 21 / .82);
+    --gradient-hero: radial-gradient(ellipse at 86% 8%, rgb(130 185 232 / .13), transparent 48%), linear-gradient(115deg, rgb(31 47 72), rgb(20 31 50));
+    --gradient-quote: radial-gradient(ellipse at 92% 7%, rgb(199 215 242 / .09), transparent 54%), linear-gradient(145deg, rgb(30 44 67), rgb(23 35 55));
   }
   .starmap {
     color-scheme: dark;
@@ -132,7 +138,7 @@
     --gradient-quote: radial-gradient(ellipse at 85% 0%, rgb(167 139 250 / .15), transparent 65%), linear-gradient(145deg, rgb(24 34 65), rgb(16 28 54));
   }
   * { @apply border-border; }
-  body { @apply bg-background text-foreground antialiased; font-feature-settings: "rlig" 1, "calt" 1; line-height: 1.6; }
+  body { @apply bg-background text-foreground antialiased; font-feature-settings: "rlig" 1, "calt" 1; line-height: 1.6; transition: background-color var(--motion-normal) var(--ease-out), color var(--motion-normal) var(--ease-out); }
   h1, h2, h3, h4 { text-wrap: balance; line-height: 1.3; }
   h1 { letter-spacing: -.035em; }
   button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }

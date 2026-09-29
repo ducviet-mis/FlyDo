@@ -37,6 +37,14 @@
 }
 :global(html.light) .widgetTeaserGlow { background: radial-gradient(circle, rgb(var(--sol-daylight) / .18), transparent 68%); }
 
+:global(html.dark) .widgetTeaser {
+  border-color: rgb(var(--luna-ice) / .32);
+  background: radial-gradient(circle at 87% 5%, rgb(var(--luna-moon) / .13), transparent 39%), rgb(var(--color-card));
+  box-shadow: var(--shadow-card);
+}
+:global(html.dark) .widgetTeaser:hover { border-color: rgb(var(--luna-ice) / .6); box-shadow: var(--shadow-float); }
+:global(html.dark) .widgetTeaserGlow { background: radial-gradient(circle, rgb(var(--luna-moon) / .12), transparent 70%); }
+
 .widgetTeaserGlow {
   position: absolute;
   z-index: -1;
@@ -685,6 +693,25 @@
   box-shadow: 0 -12px 38px rgb(4 8 28 / .3), inset 0 1px 0 rgb(255 255 255 / .06);
   backdrop-filter: blur(16px);
 }
+
+/* LUNA tones the lounge frame down without dimming the character or earned items. */
+:global(html.dark) .world {
+  border-color: rgb(var(--luna-ice) / .29);
+  background:
+    radial-gradient(circle at 91% 6%, rgb(var(--luna-moon) / .10), transparent 31%),
+    linear-gradient(145deg, rgb(var(--color-surface-elevated)), rgb(var(--color-background)));
+  box-shadow: var(--shadow-float), inset 0 1px 0 rgb(var(--luna-moon) / .08);
+}
+:global(html.dark) .header {
+  border-bottom-color: rgb(var(--color-border));
+  background: radial-gradient(circle at 89% 18%, rgb(var(--luna-moon) / .11), transparent 32%), rgb(var(--color-surface));
+}
+:global(html.dark) .tabBar { background: rgb(var(--color-background) / .84); }
+:global(html.dark) .tabList { border-color: rgb(var(--color-border)); background: rgb(var(--color-surface)); box-shadow: var(--shadow-soft); }
+:global(html.dark) .softCard,
+:global(html.dark) .missionCard { border-color: rgb(var(--color-border)); background: rgb(var(--color-card)); box-shadow: var(--shadow-soft); }
+:global(html.dark) .statusMessage { border-color: rgb(var(--luna-ice) / .28); background: rgb(var(--color-primary-soft)); }
+:global(html.dark) .actionDock { border-color: rgb(var(--color-border)); background: rgb(var(--color-surface-elevated) / .96); box-shadow: 0 -12px 34px rgb(2 8 21 / .36); }
 
 /* SOL only changes FlyTiee's frame; the game stage and character retain their own world. */
 :global(html.light) .world {

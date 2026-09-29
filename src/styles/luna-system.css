@@ -1,0 +1,78 @@
+/* LUNA keeps the saved "dark" theme id. Sol and Star Map never match these rules. */
+html.dark body { background-color: rgb(var(--color-background)); }
+
+/* An observatory uses depth in its surfaces, not glow around every card. */
+html.dark nav[aria-label="Điều hướng chính"] {
+  background: rgb(var(--color-surface) / .96);
+  border-bottom-color: rgb(var(--color-border) / .82);
+  box-shadow: 0 10px 28px -24px rgb(2 8 21 / .8);
+}
+html.dark nav[aria-label="Điều hướng mobile"] {
+  background: rgb(var(--color-surface-elevated) / .97);
+  border-color: rgb(var(--color-border));
+  box-shadow: var(--shadow-float);
+}
+html.dark .vivux-nav-link[aria-current="page"] { background: rgb(var(--color-primary) / .12); }
+html.dark .vivux-nav-link[aria-current="page"]::after { background: rgb(var(--luna-gold)); }
+html.dark [data-vivux-card="main"] { border-color: rgb(var(--color-border) / .82); background-color: rgb(var(--color-card)); box-shadow: var(--shadow-card); }
+html.dark [data-vivux-card="supporting"] { border-color: rgb(var(--color-border) / .68); background-color: rgb(var(--color-surface-elevated)); box-shadow: var(--shadow-soft); }
+html.dark [data-vivux-card="compact"] { border-color: rgb(var(--color-border) / .78); background-color: rgb(var(--color-surface)); box-shadow: none; }
+html.dark :where(.widget-card, .widget-card-static) { border-color: rgb(var(--color-border) / .82); }
+html.dark :where(input, textarea, select):not([type="checkbox"]):not([type="radio"]):focus-visible {
+  border-color: rgb(var(--color-primary));
+  box-shadow: 0 0 0 3px rgb(var(--luna-ice) / .16);
+}
+
+/* Shared chapter hierarchy across theory and practice. */
+html.dark .study-heading { border-bottom-color: rgb(var(--color-border)); }
+html.dark .study-heading::before { position: absolute; bottom: -1px; left: 0; width: 66px; height: 2px; border-radius: 2px; background: rgb(var(--luna-moon) / .72); content: ''; }
+html.dark .study-heading .study-geometry { color: rgb(var(--luna-ice)); opacity: .33; }
+html.dark .study-eyebrow { color: rgb(var(--luna-moon)); text-transform: uppercase; letter-spacing: .10em; }
+html.dark .study-eyebrow::before { background: rgb(var(--luna-gold)); }
+html.dark .study-description { max-width: 66ch; }
+html.dark .study-resume { border-color: rgb(var(--luna-ice) / .23); background-color: rgb(var(--color-card)); background-image: linear-gradient(110deg, rgb(var(--luna-ice) / .10), transparent 55%); }
+html.dark .study-resume .study-geometry { color: rgb(var(--luna-moon)); opacity: .2; }
+html.dark .study-chapter-button:hover:not([aria-pressed="true"]) { background: rgb(var(--color-surface-elevated)); color: rgb(var(--color-text-primary)); }
+html.dark .study-chapter-button[aria-pressed="true"] {
+  border-color: rgb(var(--luna-ice) / .36);
+  background: rgb(var(--luna-selected));
+  color: rgb(var(--color-text-primary));
+  box-shadow: inset 3px 0 rgb(var(--luna-gold));
+}
+html.dark .study-lesson-card { border-color: rgb(var(--color-border)); background: rgb(var(--color-card)); box-shadow: var(--shadow-soft); }
+html.dark .study-lesson-card::before { background: rgb(var(--luna-ice) / .66); }
+html.dark .study-lesson-card:hover { border-color: rgb(var(--luna-ice) / .45); box-shadow: var(--shadow-card); }
+html.dark .study-reading-guide { border-color: rgb(var(--color-border)); background: rgb(var(--color-card)); box-shadow: var(--shadow-soft); }
+html.dark .study-article-body blockquote { border-left-color: rgb(var(--luna-moon)); background: rgb(var(--luna-selected)); }
+html.dark .study-article-body .katex-display { background: rgb(var(--color-surface)); border: 1px solid rgb(var(--color-border) / .7); }
+html.dark .study-reading-progress { background: rgb(var(--luna-ice)); }
+
+/* Answer selection and scoring retain their semantic success/error cues. */
+html.dark .sol-answer-option, html.dark .sol-exam-option { border-color: rgb(var(--color-border)); background: rgb(var(--color-card)); }
+html.dark :where(.sol-answer-option, .sol-exam-option):hover:not(:disabled) { border-color: rgb(var(--luna-ice) / .57); background: rgb(var(--color-surface-elevated)); }
+html.dark .sol-answer-option[data-answer-state="selected"], html.dark .sol-exam-option[aria-pressed="true"] {
+  border-color: rgb(var(--luna-ice) / .7);
+  background: rgb(var(--luna-selected));
+  box-shadow: inset 3px 0 rgb(var(--luna-gold)), 0 0 0 2px rgb(var(--luna-ice) / .1);
+}
+html.dark .sol-answer-option[data-answer-state="correct"] { border-color: rgb(var(--color-success) / .75); background: rgb(var(--color-success-soft)); box-shadow: inset 3px 0 rgb(var(--color-success)); }
+html.dark .sol-answer-option[data-answer-state="wrong"] { border-color: rgb(var(--color-danger) / .75); background: rgb(var(--color-danger-soft)); box-shadow: inset 3px 0 rgb(var(--color-danger)); }
+html.dark main[data-star-immersive="true"] { background: rgb(var(--color-background)); }
+html.dark main[data-star-immersive="true"] .study-question { border-color: rgb(var(--color-border)); background: rgb(var(--color-card)); }
+html.dark main[data-star-page="mock-exams"][data-star-immersive="true"] .animate-pulse { animation: none; }
+html.dark .timer-danger { color: rgb(var(--color-danger)); }
+html.dark .flag-active { color: rgb(var(--luna-gold)); }
+
+/* Exams, results, profile, and subscriptions stay quiet and legible. */
+html.dark main[data-star-page="mock-exams"]:not([data-star-immersive="true"]) [data-vivux-card="main"]:hover { border-color: rgb(var(--luna-ice) / .45); }
+html.dark .sol-result-hero { border-color: rgb(var(--luna-ice) / .32); background: radial-gradient(ellipse at 88% 6%, rgb(var(--luna-moon) / .11), transparent 47%), rgb(var(--color-surface-elevated)); }
+html.dark .sol-result-question { border-color: rgb(var(--color-border)); background: rgb(var(--color-card)); }
+html.dark .sol-profile-tab[aria-pressed="true"] { background: rgb(var(--luna-selected)); color: rgb(var(--color-text-primary)); box-shadow: inset 3px 0 rgb(var(--luna-gold)); }
+html.dark .sol-profile-tab:hover:not([aria-pressed="true"]) { background: rgb(var(--color-surface-elevated)); }
+html.dark .sol-pricing-featured { border-color: rgb(var(--luna-ice) / .52); background: rgb(var(--color-surface-elevated)); box-shadow: var(--shadow-float); }
+html.dark .sol-pricing-featured > :first-child { border-bottom: 1px solid rgb(var(--luna-ice) / .22); background: rgb(var(--luna-selected)); color: rgb(var(--luna-gold)); }
+html.dark main[data-star-page="pricing"] details[open] { border-color: rgb(var(--luna-ice) / .39); background: rgb(var(--color-surface-elevated)); }
+
+@media (prefers-reduced-motion: reduce) {
+  html.dark *, html.dark *::before, html.dark *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

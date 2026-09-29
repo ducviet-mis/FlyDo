@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const options = [
   { id: "light", label: "Sol", description: "Nắng ấm, sáng rõ để học", icon: Sun },
-  { id: "dark", label: "Luna", description: "Không gian tối để tập trung", icon: Moon },
+  { id: "dark", label: "Luna", description: "Đài quan sát dưới ánh trăng", icon: Moon },
   { id: "starmap", label: "Bản đồ Sao", description: "Một hành trình học khác biệt", icon: Orbit },
 ] as const;
 

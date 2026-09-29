@@ -1,0 +1,35 @@
+.page { position: relative; padding-bottom: 32px; }
+.hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .91fr); min-height: 414px; overflow: hidden; border: 1px solid rgb(var(--color-border)); border-radius: 24px; background: radial-gradient(ellipse at 92% 4%, rgb(var(--luna-ice) / .09), transparent 48%), rgb(var(--color-surface)); box-shadow: var(--shadow-card); }
+.hero::before { position: absolute; inset: 11px; border: 1px solid rgb(var(--luna-moon) / .09); border-radius: 16px; pointer-events: none; content: ''; }
+.heroCopy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; padding: 40px clamp(26px, 4.5vw, 60px); }
+.kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 28px; color: rgb(var(--luna-moon)); font-size: 11px; font-weight: 750; letter-spacing: .15em; }
+.kickerLine { width: 25px; height: 1px; background: rgb(var(--luna-gold)); }
+.hero h1 { max-width: 14ch; color: rgb(var(--color-text-primary)); font-size: clamp(34px, 3.7vw, 52px); font-weight: 730; line-height: 1.14; letter-spacing: -.045em; overflow-wrap: anywhere; }
+.hero h1 span { color: rgb(var(--luna-moon)); }
+.description { max-width: 42ch; margin: 17px 0 0; color: rgb(var(--color-text-secondary)); font-size: 16px; line-height: 1.7; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.primaryAction, .secondaryAction { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 9px; border-radius: 10px; padding: 0 16px; font-size: 14px; font-weight: 700; text-decoration: none; transition: background-color var(--motion-normal) var(--ease-out), border-color var(--motion-normal) var(--ease-out), transform var(--motion-normal) var(--ease-out); }
+.primaryAction { background: rgb(var(--color-primary)); color: rgb(var(--color-on-primary)); }
+.primaryAction:hover { background: rgb(var(--color-primary-hover)); color: rgb(var(--color-on-primary)); transform: translateY(-2px); }
+.secondaryAction { border: 1px solid rgb(var(--luna-moon) / .26); background: rgb(var(--color-surface-elevated) / .56); color: rgb(var(--luna-moon)); }
+.secondaryAction:hover { border-color: rgb(var(--luna-moon) / .55); background: rgb(var(--color-surface-elevated)); transform: translateY(-2px); }
+.footnote { display: flex; align-items: center; gap: 8px; margin: 25px 0 0; color: rgb(var(--color-text-secondary)); font-size: 12px; }
+.footnote svg { color: rgb(var(--luna-gold)); }
+.art { position: relative; min-width: 0; padding: 13px 13px 13px 0; }
+.artwork { display: block; width: 100%; height: 100%; min-height: 388px; overflow: hidden; border-radius: 18px; }
+.moonDisc { transform-box: fill-box; transform-origin: center; animation: lunaMoonEnter 800ms var(--ease-out) both; }
+.orbits { animation: lunaOrbitEnter 900ms var(--ease-out) both; }
+.artLabelTop, .artLabelBottom { position: absolute; z-index: 1; color: rgb(var(--luna-moon)); font-size: 9px; font-weight: 750; letter-spacing: .15em; }
+.artLabelTop { top: 34px; right: 32px; }
+.artLabelBottom { right: 31px; bottom: 32px; }
+.artLabelBottom span { font-size: 16px; vertical-align: -2px; }
+.companionRow { grid-template-columns: minmax(0, 1fr) minmax(190px, .5fr); }
+.gradeLink { text-decoration: none; }
+.gradeCard { transition: transform var(--motion-normal) var(--ease-out), border-color var(--motion-normal) var(--ease-out), box-shadow var(--motion-normal) var(--ease-out); }
+.gradeLink:hover .gradeCard, .gradeLink:focus-visible .gradeCard { transform: translateY(-2px); border-color: rgb(var(--luna-ice) / .5); box-shadow: var(--shadow-card); }
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr .8fr; } .heroCopy { padding: 34px 28px; } .hero h1 { font-size: clamp(32px, 4.8vw, 47px); } }
+@media (max-width: 700px) { .hero { display: flex; flex-direction: column; } .heroCopy { padding: 30px 26px 18px; } .kicker { margin-bottom: 23px; } .hero h1 { max-width: 100%; font-size: clamp(33px, 8.5vw, 46px); } .art { height: 225px; padding: 0 13px 13px; } .artwork { min-height: 0; height: 100%; } .artLabelTop { top: 14px; right: 28px; } .artLabelBottom { right: 27px; bottom: 26px; } .companionRow { grid-template-columns: 1fr; } }
+@media (max-width: 380px) { .heroCopy { padding-inline: 20px; } .hero h1 { font-size: 32px; } .art { height: 205px; } }
+@keyframes lunaMoonEnter { from { opacity: .52; transform: scale(.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes lunaOrbitEnter { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .moonDisc, .orbits { animation: none; } .primaryAction, .secondaryAction, .gradeCard { transition: none; } .primaryAction:hover, .secondaryAction:hover, .gradeLink:hover .gradeCard { transform: none; } }
