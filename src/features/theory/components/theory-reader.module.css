@@ -18,6 +18,16 @@
 }
 .reader[data-theme='light'] { --paper: #f7f8fa; --ink: #374151; --heading: #202c3b; --muted: #566476; --line: #d7dfe7; --accent: #355f89; --tint: #eaf0f6; color-scheme: light; }
 .reader[data-theme='paper'] { --paper: #f6efdf; --ink: #51483d; --heading: #342e27; --muted: #695f51; --line: #d9cdb6; --accent: #77532b; --tint: #ede3cd; color-scheme: light; }
+:global(html.light) .reader[data-theme='light'] {
+  --paper: rgb(var(--sol-reading-paper));
+  --ink: rgb(var(--color-text-primary));
+  --heading: rgb(var(--color-text-primary));
+  --muted: rgb(var(--color-text-secondary));
+  --line: rgb(var(--sol-line) / .75);
+  --accent: rgb(var(--color-primary));
+  --tint: rgb(var(--sol-blue-wash));
+  box-shadow: var(--shadow-card);
+}
 .reader[data-size='small'] { --font-size: 17px; }
 .reader[data-size='large'] { --font-size: 20px; }
 .reader[data-spacing='normal'] { --leading: 1.7; }

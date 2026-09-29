@@ -411,7 +411,7 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
                         onClick={() => setAnswers(prev => ({ ...prev, [currentQuestion.id]: idx }))}
                         aria-pressed={isSelected}
                         className={cn(
-                          "w-full min-w-0 flex items-center gap-3 sm:gap-4 p-4 rounded-xl border transition-colors duration-200 text-left group",
+                          "sol-exam-option w-full min-w-0 flex items-center gap-3 sm:gap-4 p-4 rounded-xl border transition-colors duration-200 text-left group",
                           isSelected
                             ? "border-primary bg-primary-soft shadow-card ring-2 ring-primary/20"
                             : "border-border hover:border-primary hover:bg-muted bg-card dark:bg-transparent"

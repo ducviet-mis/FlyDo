@@ -58,7 +58,7 @@ export default function ProfilePage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)} aria-pressed={activeTab === tab.id}
-                className={`flex items-center justify-center md:justify-start gap-2.5 px-5 py-3 rounded-xl text-sm font-semibold transition-all whitespace-nowrap snap-start flex-1 md:flex-none ${
+                className={`sol-profile-tab flex items-center justify-center md:justify-start gap-2.5 px-5 py-3 rounded-xl text-sm font-semibold transition-all whitespace-nowrap snap-start flex-1 md:flex-none ${
                   activeTab === tab.id
                     ? 'bg-primary-soft text-primary'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'

@@ -87,7 +87,7 @@ export default function MockExamResultPage({ params }: { params: { examId: strin
         </div>
 
         {/* Banner */}
-        <div className="bg-hero border border-border rounded-xl p-6 sm:p-8 text-foreground shadow-card mb-8 text-center relative overflow-hidden">
+        <div className="sol-result-hero bg-hero border border-border rounded-xl p-6 sm:p-8 text-foreground shadow-card mb-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full opacity-10 mix-blend-overlay"></div>
           <div className="relative z-10">
             <h1 className="text-2xl font-bold opacity-90 mb-6">{exam.title}</h1>
@@ -133,7 +133,7 @@ export default function MockExamResultPage({ params }: { params: { examId: strin
             const isSkipped = studentAns === undefined;
 
             return (
-              <div key={q.id} className="bg-card rounded-xl p-6 shadow-card border border-border relative overflow-hidden">
+              <div key={q.id} className="sol-result-question bg-card rounded-xl p-6 shadow-card border border-border relative overflow-hidden">
                 {/* Status indicator strip */}
                 <div className={cn(
                   "absolute top-0 left-0 w-2 h-full",

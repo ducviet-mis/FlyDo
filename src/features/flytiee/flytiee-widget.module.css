@@ -26,6 +26,17 @@
   transform: translateY(-2px);
 }
 
+:global(html.light) .widgetTeaser {
+  border-color: rgb(var(--sol-line) / .72);
+  background: radial-gradient(circle at 84% 7%, rgb(var(--sol-daylight) / .20), transparent 32%), rgb(var(--color-surface-elevated));
+  box-shadow: var(--shadow-card);
+}
+:global(html.light) .widgetTeaser:hover {
+  border-color: rgb(var(--color-primary) / .48);
+  box-shadow: var(--shadow-float);
+}
+:global(html.light) .widgetTeaserGlow { background: radial-gradient(circle, rgb(var(--sol-daylight) / .18), transparent 68%); }
+
 .widgetTeaserGlow {
   position: absolute;
   z-index: -1;
@@ -675,71 +686,68 @@
   backdrop-filter: blur(16px);
 }
 
-/* Light theme: clearer contrast, lighter elevation and calmer white surfaces. */
+/* SOL only changes FlyTiee's frame; the game stage and character retain their own world. */
 :global(html.light) .world {
-  --flytiee-lavender: 99 102 241;
-  --flytiee-cyan: 7 108 142;
-  --flytiee-gold: 183 111 13;
+  --flytiee-lavender: 99 111 172;
+  --flytiee-cyan: 26 112 130;
+  --flytiee-gold: 167 100 29;
   --flytiee-peach: 226 94 98;
-  border-color: rgb(99 102 241 / .2);
+  border-color: rgb(var(--sol-line) / .72);
   background:
-    radial-gradient(circle at 16% 20%, rgb(99 102 241 / .11) 0 1px, transparent 2px),
-    radial-gradient(circle at 68% 61%, rgb(8 145 178 / .1) 0 1px, transparent 2px),
-    radial-gradient(circle at 8% 8%, rgb(99 102 241 / .1), transparent 28%),
-    radial-gradient(circle at 92% 4%, rgb(8 145 178 / .07), transparent 30%),
-    linear-gradient(145deg, rgb(255 255 255) 0%, rgb(246 248 255) 72%);
-  box-shadow: 0 24px 70px rgb(23 32 74 / .22), inset 0 1px 0 rgb(255 255 255 / .9);
+    radial-gradient(circle at 91% 4%, rgb(var(--sol-daylight) / .14), transparent 30%),
+    linear-gradient(145deg, rgb(var(--color-surface-elevated)), rgb(var(--color-surface)));
+  box-shadow: var(--shadow-float), inset 0 1px 0 rgb(255 255 255 / .9);
 }
 
 :global(html.light) .header {
-  border-bottom-color: rgb(99 102 241 / .13);
-  background: radial-gradient(circle at 90% 20%, rgb(239 182 91 / .12), transparent 31%), linear-gradient(90deg, rgb(255 255 255 / .96), rgb(238 242 255 / .94));
+  border-bottom-color: rgb(var(--sol-line) / .62);
+  background: radial-gradient(circle at 90% 20%, rgb(var(--sol-daylight) / .17), transparent 31%), rgb(var(--color-surface-elevated));
 }
 
 :global(html.light) .brandMark {
-  border-color: rgb(99 102 241 / .24);
-  background: linear-gradient(145deg, rgb(238 242 255), rgb(230 249 253));
-  box-shadow: 0 9px 24px rgb(66 91 221 / .1), inset 0 1px 0 rgb(255 255 255);
+  border-color: rgb(var(--color-primary) / .24);
+  background: rgb(var(--color-primary-soft));
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgb(255 255 255);
 }
 
 :global(html.light) .headerBadge {
-  border-color: rgb(183 111 13 / .28);
-  background: rgb(255 247 229 / .92);
+  border-color: rgb(var(--sol-amber-ink) / .28);
+  background: rgb(var(--sol-amber-soft) / .92);
 }
 
-:global(html.light) .tabBar { background: rgb(246 248 255 / .96); }
+:global(html.light) .tabBar { background: rgb(var(--color-background) / .82); }
 
 :global(html.light) .tabList {
-  border-color: rgb(99 102 241 / .14);
-  background: rgb(255 255 255 / .9);
-  box-shadow: 0 8px 24px rgb(23 32 74 / .055), inset 0 1px 0 rgb(255 255 255);
+  border-color: rgb(var(--sol-line) / .58);
+  background: rgb(var(--color-surface-elevated) / .94);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgb(255 255 255);
 }
 
 :global(html.light) .softCard,
 :global(html.light) .missionCard {
-  border-color: rgb(99 102 241 / .14);
-  background: linear-gradient(145deg, rgb(255 255 255), rgb(247 248 255));
-  box-shadow: 0 12px 30px rgb(23 32 74 / .075), inset 0 1px 0 rgb(255 255 255);
+  border-color: rgb(var(--sol-line) / .56);
+  background: rgb(var(--color-surface-elevated));
+  box-shadow: var(--shadow-soft);
 }
 
-:global(html.light) .missionReady { border-color: rgb(183 111 13 / .37); background: radial-gradient(circle at 92% 10%, rgb(246 192 86 / .19), transparent 45%), linear-gradient(145deg, #fff, #fbf8f1); }
+:global(html.light) .missionReady { border-color: rgb(var(--sol-amber-ink) / .37); background: radial-gradient(circle at 92% 10%, rgb(var(--sol-daylight) / .18), transparent 45%), rgb(var(--color-surface-elevated)); }
 :global(html.light) .missionHeader,
-:global(html.light) .shopHeader { border-color: rgb(99 102 241 / .16); background: radial-gradient(circle at 90% 0, rgb(247 211 144 / .25), transparent 35%), linear-gradient(110deg, #eef0ff, #fff); }
+:global(html.light) .shopHeader { border-color: rgb(var(--sol-line) / .64); background: radial-gradient(circle at 90% 0, rgb(var(--sol-daylight) / .20), transparent 35%), rgb(var(--color-surface-elevated)); }
 
 :global(html.light) .levelCard { border-color: rgb(8 145 178 / .2); }
 :global(html.light) .careCard { border-color: rgb(16 121 90 / .2); }
 
 :global(html.light) .statusMessage {
-  border-color: rgb(8 145 178 / .24);
-  background: linear-gradient(90deg, rgb(231 248 252), rgb(237 241 255));
+  border-color: rgb(var(--color-info) / .24);
+  background: rgb(var(--sol-blue-wash));
 }
 
 :global(html.light) .itemCard {
-  box-shadow: 0 8px 22px rgb(23 32 74 / .06), inset 0 1px 0 rgb(255 255 255);
+  box-shadow: var(--shadow-soft);
 }
 
 :global(html.light) .itemCard:hover {
-  box-shadow: 0 14px 32px rgb(23 32 74 / .11);
+  box-shadow: var(--shadow-card);
 }
 
 :global(html.light) .phoenixCard { background: linear-gradient(145deg, #fffaf1, #f9edf0) !important; }
@@ -748,9 +756,9 @@
 :global(html.light) .seaCard[aria-pressed='true'] { box-shadow: 0 0 0 2px rgb(51 157 174 / .3), 0 16px 34px rgb(42 116 147 / .14); }
 
 :global(html.light) .actionDock {
-  border-color: rgb(99 102 241 / .16);
-  background: rgb(255 255 255 / .96);
-  box-shadow: 0 -10px 30px rgb(23 32 74 / .1), inset 0 1px 0 rgb(255 255 255);
+  border-color: rgb(var(--sol-line) / .66);
+  background: rgb(var(--color-surface-elevated) / .97);
+  box-shadow: 0 -10px 30px rgb(67 55 35 / .1), inset 0 1px 0 rgb(255 255 255);
 }
 
 @media (min-width: 768px) {

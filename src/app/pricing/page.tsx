@@ -240,7 +240,7 @@ function PricingCard({
   headerExtra?: React.ReactNode;
 }) {
   return (
-    <Card className={cn('relative flex h-full flex-col overflow-hidden rounded-2xl', featured && 'border-primary/45 shadow-float')}>
+    <Card className={cn('relative flex h-full flex-col overflow-hidden rounded-2xl', featured && 'sol-pricing-featured border-primary/45 shadow-float')}>
       {featured && <div className="bg-primary px-4 py-2 text-center text-xs font-bold uppercase tracking-[0.16em] text-primary-foreground">Phổ biến nhất</div>}
       <CardHeader className="space-y-4 p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">

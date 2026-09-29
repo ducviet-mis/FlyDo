@@ -1,21 +1,80 @@
-/* Sol: an editorial daylight layer. Scoped to the legacy light ID so saved choices remain valid. */
+/* SOL is the saved "light" choice. Every rule is scoped so Luna and Star Map keep their palettes. */
 html.light body { background-color: rgb(var(--color-background)); }
-html.light nav[aria-label="Điều hướng chính"] { background: rgb(255 253 248 / .93); border-bottom-color: rgb(194 173 142 / .37); box-shadow: 0 5px 22px -20px rgb(85 64 37 / .25); }
-html.light .vivux-nav-link[aria-current="page"] { background: rgb(41 95 166 / .09); }
-html.light .vivux-nav-link[aria-current="page"]::after { background: #bd8540; }
-html.light nav[aria-label="Điều hướng mobile"] { background: rgb(255 253 248 / .96); border-color: #dfd0b9; box-shadow: 0 15px 40px -19px rgb(92 68 37 / .35); }
-html.light .study-heading { border-bottom-color: #d9cbb5; }
-html.light .study-heading::before { content: ''; position: absolute; left: 0; bottom: -1px; width: 64px; height: 2px; border-radius: 3px; background: #b87b31; }
-html.light .study-eyebrow { color: #925517; text-transform: uppercase; letter-spacing: .12em; }
-html.light .study-eyebrow::before { background: #ca9857; }
-html.light .study-resume { border-color: #e1d2ba; background-image: linear-gradient(110deg, rgb(250 232 197 / .33), transparent 62%); }
-html.light .study-reading-guide, html.light .study-lesson-card, html.light .widget-card, html.light .widget-card-static { border-color: #e2d7c5; }
-html.light .study-lesson-card::before { background: #c39155; }
-html.light .study-lesson-card:hover { border-color: #bc9d75; }
-html.light .study-article-body blockquote { border-left-color: #be8338; background: #fbf0d9; }
-html.light .study-article-body .katex-display { background: #f7f1e6; }
-html.light .study-reading-progress { background: #ad782f; }
-html.light .study-chapter-button[aria-pressed="true"] { border-color: #bd9c6b; background: #f8edda; color: #294b70; }
-html.light :where(.widget-card, .widget-card-static, .study-lesson-card, .study-reading-guide) { box-shadow: 0 3px 18px -13px rgb(82 59 29 / .18); }
-html.light :where(input, textarea, select):not([type="checkbox"]):not([type="radio"]):focus-visible { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / .13); }
-@media (prefers-reduced-motion: reduce) { html.light *, html.light *::before, html.light *::after { scroll-behavior: auto !important; } }
+
+/* Navigation and the three reusable surface levels. */
+html.light nav[aria-label="Điều hướng chính"] {
+  background: rgb(var(--color-surface-elevated) / .94);
+  border-bottom-color: rgb(var(--sol-line) / .55);
+  box-shadow: 0 6px 24px -22px rgb(67 55 35 / .28);
+}
+html.light nav[aria-label="Điều hướng mobile"] {
+  background: rgb(var(--color-surface-elevated) / .97);
+  border-color: rgb(var(--sol-line) / .72);
+  box-shadow: var(--shadow-float);
+}
+html.light .vivux-nav-link[aria-current="page"] { background: rgb(var(--color-primary) / .09); }
+html.light .vivux-nav-link[aria-current="page"]::after { background: rgb(var(--sol-amber-ink)); }
+html.light [data-vivux-card="main"] { border-color: rgb(var(--sol-line) / .57); background-color: rgb(var(--color-card)); box-shadow: var(--shadow-card); }
+html.light [data-vivux-card="supporting"] { border-color: rgb(var(--sol-line) / .44); background-color: rgb(var(--color-surface-elevated)); box-shadow: var(--shadow-soft); }
+html.light [data-vivux-card="compact"] { border-color: rgb(var(--sol-line) / .55); background-color: rgb(var(--color-surface-elevated)); box-shadow: none; }
+html.light :where(.widget-card, .widget-card-static) { border-color: rgb(var(--sol-line) / .57); }
+html.light :where(input, textarea, select):not([type="checkbox"]):not([type="radio"]):focus-visible {
+  border-color: rgb(var(--color-primary));
+  box-shadow: 0 0 0 3px rgb(var(--color-primary) / .15);
+}
+
+/* Editorial chapter headings: one measured amber line, geometry behind the copy. */
+html.light .study-heading { border-bottom-color: rgb(var(--sol-line) / .76); }
+html.light .study-heading::before { content: ''; position: absolute; left: 0; bottom: -1px; width: 64px; height: 2px; border-radius: 3px; background: rgb(var(--sol-amber-ink)); }
+html.light .study-heading .study-geometry { color: rgb(var(--sol-amber-ink)); opacity: .37; }
+html.light .study-eyebrow { color: rgb(var(--sol-amber-ink)); text-transform: uppercase; letter-spacing: .11em; }
+html.light .study-eyebrow::before { background: rgb(var(--sol-amber)); }
+html.light .study-description { max-width: 66ch; }
+html.light .study-resume { border-color: rgb(var(--sol-line) / .68); background-color: rgb(var(--color-surface-elevated)); background-image: linear-gradient(110deg, rgb(var(--sol-daylight) / .17), transparent 54%); }
+html.light .study-resume .study-geometry { color: rgb(var(--sol-amber-ink)); opacity: .24; }
+
+/* Practice and theory use the same chapter/lesson hierarchy. */
+html.light .study-chapter-button { border-color: transparent; }
+html.light .study-chapter-button:hover:not([aria-pressed="true"]) { background: rgb(var(--sol-blue-wash)); color: rgb(var(--color-text-primary)); }
+html.light .study-chapter-button[aria-pressed="true"] {
+  border-color: rgb(var(--sol-line) / .7);
+  background: rgb(var(--sol-amber-soft));
+  color: rgb(var(--color-text-primary));
+  box-shadow: inset 3px 0 rgb(var(--sol-amber-ink));
+}
+html.light .study-lesson-card { border-color: rgb(var(--sol-line) / .6); background: rgb(var(--color-surface-elevated)); box-shadow: var(--shadow-soft); }
+html.light .study-lesson-card::before { background: rgb(var(--sol-amber)); }
+html.light .study-lesson-card:hover { border-color: rgb(var(--sol-line)); box-shadow: var(--shadow-card); }
+html.light .study-reading-guide { border-color: rgb(var(--sol-line) / .65); background: rgb(var(--color-surface-elevated)); box-shadow: var(--shadow-soft); }
+html.light .study-article-body blockquote { border-left-color: rgb(var(--sol-amber-ink)); background: rgb(var(--sol-amber-soft)); }
+html.light .study-article-body .katex-display { background: rgb(var(--sol-blue-wash)); }
+html.light .study-reading-progress { background: rgb(var(--sol-amber-ink)); }
+
+/* Selected answers have a warm edge; correct/error retain their semantic colors. */
+html.light .sol-answer-option, html.light .sol-exam-option { background: rgb(var(--color-surface-elevated)); border-color: rgb(var(--sol-line) / .7); }
+html.light :where(.sol-answer-option, .sol-exam-option):hover:not(:disabled) { border-color: rgb(var(--color-primary) / .55); background: rgb(var(--sol-blue-wash)); }
+html.light .sol-answer-option[data-answer-state="selected"], html.light .sol-exam-option[aria-pressed="true"] {
+  border-color: rgb(var(--color-primary) / .62);
+  background: rgb(var(--color-primary-soft));
+  box-shadow: inset 3px 0 rgb(var(--sol-amber-ink)), 0 0 0 2px rgb(var(--color-primary) / .09);
+}
+html.light .sol-answer-option[data-answer-state="correct"] { border-color: rgb(var(--color-success)); background: rgb(var(--color-success-soft)); box-shadow: inset 3px 0 rgb(var(--color-success)); }
+html.light .sol-answer-option[data-answer-state="wrong"] { border-color: rgb(var(--color-danger)); background: rgb(var(--color-danger-soft)); box-shadow: inset 3px 0 rgb(var(--color-danger)); }
+html.light main[data-star-immersive="true"] { background: rgb(var(--color-background)); }
+html.light main[data-star-immersive="true"] .study-question { background: rgb(var(--color-surface-elevated)); border-color: rgb(var(--sol-line) / .75); }
+html.light main[data-star-page="mock-exams"][data-star-immersive="true"] .animate-pulse { animation: none; }
+
+/* Exam list/result, profile, and plans share the language without decorative motion. */
+html.light main[data-star-page="mock-exams"]:not([data-star-immersive="true"]) [data-vivux-card="main"] { border-color: rgb(var(--sol-line) / .62); background: rgb(var(--color-surface-elevated)); }
+html.light main[data-star-page="mock-exams"]:not([data-star-immersive="true"]) [data-vivux-card="main"]:hover { border-color: rgb(var(--color-primary) / .52); }
+html.light .sol-result-hero { background: radial-gradient(ellipse at 92% 12%, rgb(var(--sol-daylight) / .24), transparent 43%), rgb(var(--color-surface-elevated)); border-color: rgb(var(--sol-line) / .78); }
+html.light .sol-result-question { background: rgb(var(--color-surface-elevated)); border-color: rgb(var(--sol-line) / .67); }
+html.light .sol-profile-tab[aria-pressed="true"] { background: rgb(var(--sol-amber-soft)); color: rgb(var(--color-text-primary)); box-shadow: inset 3px 0 rgb(var(--sol-amber-ink)); }
+html.light .sol-profile-tab:hover:not([aria-pressed="true"]) { background: rgb(var(--sol-blue-wash)); }
+html.light .sol-pricing-featured { border-color: rgb(var(--color-primary) / .52); background: rgb(var(--color-surface-elevated)); box-shadow: var(--shadow-float); }
+html.light .sol-pricing-featured > :first-child { background: rgb(var(--sol-amber-soft)); color: rgb(var(--sol-amber-ink)); border-bottom: 1px solid rgb(var(--sol-line) / .63); }
+html.light main[data-star-page="pricing"] details[open] { border-color: rgb(var(--sol-line)); background: rgb(var(--color-surface-elevated)); }
+
+@media (prefers-reduced-motion: reduce) {
+  html.light *, html.light *::before, html.light *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

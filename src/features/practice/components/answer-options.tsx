@@ -21,6 +21,9 @@ export function AnswerOptions({ options, selectedAnswer, correctAnswer, onSelect
       {options.map((option, idx) => {
         const isSelected = selectedAnswer === idx;
         const isCorrect = correctAnswer === idx;
+        const answerState = isAnswered
+          ? (isCorrect ? 'correct' : isSelected ? 'wrong' : 'neutral')
+          : (isSelected ? 'selected' : 'idle');
 
         let stateClass = "bg-card border-border hover:border-primary hover:bg-primary-soft shadow-soft";
         let letterClass = "bg-muted text-muted-foreground font-bold";
@@ -40,12 +43,13 @@ export function AnswerOptions({ options, selectedAnswer, correctAnswer, onSelect
         return (
           <button
             key={idx}
+            data-answer-state={answerState}
             onClick={() => onSelect(idx)}
             disabled={isAnswered}
             aria-pressed={isSelected}
             aria-label={`${letters[idx]}: ${option}${isAnswered ? (isCorrect ? '. Đáp án đúng' : isSelected ? '. Bạn đã chọn, chưa chính xác' : '') : ''}`}
             className={cn(
-              "flex min-w-0 items-center gap-3 md:gap-4 p-4 md:p-5 rounded-xl border transition-colors duration-200 text-left group disabled:cursor-default",
+              "sol-answer-option flex min-w-0 items-center gap-3 md:gap-4 p-4 md:p-5 rounded-xl border transition-colors duration-200 text-left group disabled:cursor-default",
               stateClass,
               !isAnswered && "hover:shadow-soft"
             )}

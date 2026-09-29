@@ -32,6 +32,9 @@ export function SolHero({ name, greeting }: SolHeroProps) {
           <circle cx="292" cy="150" r="116" stroke="#D5B37A" strokeOpacity=".48"/>
           <circle cx="292" cy="150" r="89" stroke="#D5B37A" strokeOpacity=".45"/>
           <circle className={styles.sunDisc} cx="292" cy="150" r="71" fill="url(#sol-sun)"/>
+          <path d="M76 191H183M93 206V104" stroke="#295FA6" strokeOpacity=".32" strokeWidth="1.5"/>
+          <path d="M97 181C112 188 121 171 131 143C143 111 158 121 177 139" stroke="#295FA6" strokeOpacity=".7" strokeWidth="2.2" strokeLinecap="round"/>
+          <circle cx="131" cy="143" r="3.5" fill="#295FA6" fillOpacity=".66"/>
           <path d="M60 278H522" stroke="#B78D55" strokeOpacity=".38"/>
           <path d="M89 259H494M120 240H463" stroke="#B78D55" strokeOpacity=".25"/>
           <path d="M0 310C137 273 202 286 291 297C380 308 458 274 580 302V440H0V310Z" fill="#E5C999" fillOpacity=".33"/>
