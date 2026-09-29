@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Moon, Orbit, Sun } from "lucide-react";
+import { Check, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -8,8 +8,7 @@ import { useEffect, useState } from "react";
 
 const options = [
   { id: "light", label: "Sol", description: "Nắng ấm, sáng rõ để học", icon: Sun },
-  { id: "dark", label: "Luna", description: "Đài quan sát dưới ánh trăng", icon: Moon },
-  { id: "starmap", label: "Bản đồ Sao", description: "Một hành trình học khác biệt", icon: Orbit },
+  { id: "dark", label: "Luna", description: "Khám phá Toán dưới ánh trăng", icon: Moon },
 ] as const;
 
 export function ThemeToggle() {
@@ -28,7 +27,7 @@ export function ThemeToggle() {
     );
   }
 
-  const active = theme === "system" ? resolvedTheme : theme;
+  const active = theme === "starmap" ? "dark" : theme === "system" ? resolvedTheme : theme;
   const ActiveIcon = options.find((option) => option.id === active)?.icon ?? Sun;
 
   return (

@@ -59,49 +59,6 @@
   }
   .dark {
     color-scheme: dark;
-    --color-background: 13 20 34;
-    --color-surface: 20 30 48;
-    --color-card: 25 37 57;
-    --color-surface-elevated: 30 44 66;
-    --color-text-primary: 234 240 250;
-    --color-text-secondary: 177 190 211;
-    --color-text-muted: 170 183 204;
-    --color-border: 51 67 92;
-    --color-control: 145 160 186;
-    --color-primary: 141 192 239;
-    --color-primary-hover: 172 213 248;
-    --color-on-primary: 13 29 52;
-    --color-primary-soft: 34 51 77;
-    --color-brand: 111 166 242;
-    --color-brand-cyan: 146 238 255;
-    --color-accent: 130 185 232;
-    --color-info: 136 203 227;
-    --color-info-soft: 24 50 67;
-    --color-special: 194 181 232;
-    --color-special-soft: 45 43 76;
-    --color-success: 117 217 177;
-    --color-success-soft: 23 56 50;
-    --color-warning: 233 199 120;
-    --color-warning-soft: 58 48 34;
-    --color-danger: 255 155 169;
-    --color-danger-soft: 65 35 49;
-    --color-on-danger: 43 17 29;
-    --color-muted: 30 44 66;
-    --color-track: 51 68 94;
-    --luna-moon: 199 215 242;
-    --luna-ice: 130 185 232;
-    --luna-gold: 233 199 120;
-    --luna-orbit: 98 128 169;
-    --luna-selected: 34 51 77;
-    --luna-reading-paper: 24 36 55;
-    --shadow-soft: 0 1px 0 rgb(225 237 255 / .035), 0 10px 22px -18px rgb(2 8 21 / .52);
-    --shadow-card: 0 1px 0 rgb(225 237 255 / .04), 0 18px 38px -25px rgb(2 8 21 / .72);
-    --shadow-float: 0 24px 58px -22px rgb(2 8 21 / .82);
-    --gradient-hero: radial-gradient(ellipse at 86% 8%, rgb(130 185 232 / .13), transparent 48%), linear-gradient(115deg, rgb(31 47 72), rgb(20 31 50));
-    --gradient-quote: radial-gradient(ellipse at 92% 7%, rgb(199 215 242 / .09), transparent 54%), linear-gradient(145deg, rgb(30 44 67), rgb(23 35 55));
-  }
-  .starmap {
-    color-scheme: dark;
     --color-background: 7 13 29;
     --color-surface: 13 24 46;
     --color-card: 17 29 53;
@@ -131,6 +88,14 @@
     --color-on-danger: 43 17 29;
     --color-muted: 24 37 65;
     --color-track: 52 70 105;
+    --luna-moon: 213 226 245;
+    --luna-ice: 185 230 255;
+    --luna-gold: 255 217 151;
+    --luna-violet: 199 182 255;
+    --luna-surface: 17 31 57;
+    --luna-edge: 91 134 185;
+    --luna-selected: 25 54 87;
+    --luna-reading-paper: 16 31 56;
     --shadow-soft: 0 1px 0 rgb(160 196 255 / .06);
     --shadow-card: 0 1px 0 rgb(188 214 255 / .05), 0 16px 38px -24px rgb(0 0 0 / .58);
     --shadow-float: 0 22px 68px -18px rgb(0 0 0 / .72);
@@ -186,8 +151,6 @@
   .vivux-stat-number { @apply font-bold tracking-tight tabular-nums text-foreground; }
 }
 @media (max-width: 1023px) { .study-heading > div { max-width: 100%; } }
-.starmap nav[aria-label="Điều hướng chính"] { background: rgb(var(--color-surface) / .9); border-bottom-color: rgb(var(--color-primary) / .2); }
-.starmap .vivux-nav-link[aria-current="page"] { background: rgb(var(--color-primary) / .13); }
 .katex-display { margin: .5em 0; overflow-x: auto; overflow-y: hidden; }
 .katex { font-size: 1.1em; }
 .vivux-prose {

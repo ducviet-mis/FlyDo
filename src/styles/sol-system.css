@@ -1,4 +1,4 @@
-/* SOL is the saved "light" choice. Every rule is scoped so Luna and Star Map keep their palettes. */
+/* Sol is the saved light choice. All rules stay scoped away from Luna. */
 html.light body { background-color: rgb(var(--color-background)); }
 
 /* Navigation and the three reusable surface levels. */

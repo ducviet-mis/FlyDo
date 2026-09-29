@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
-import "@/styles/star-map-system.css";
 import "@/styles/sol-system.css";
 import "@/styles/luna-system.css";
 import { Providers } from "./providers";
@@ -12,7 +11,7 @@ const inter = Inter({ subsets: ["latin", "vietnamese"] });
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F7F4EC" },
-    { media: "(prefers-color-scheme: dark)", color: "#0D1020" },
+    { media: "(prefers-color-scheme: dark)", color: "#070D1D" },
   ],
   width: "device-width",
   initialScale: 1,
