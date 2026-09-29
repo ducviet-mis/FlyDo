@@ -283,6 +283,7 @@ export function FlytieeWidget({ variant = 'sidebar' }: FlytieeWidgetProps) {
                 <section className={styles.petStage}>
                   <div className={styles.stageStars} aria-hidden="true" />
                   <div className={styles.stagePortal} aria-hidden="true" />
+                  <div className={styles.stageCelestial} aria-hidden="true" />
                   <span className={styles.stageLabel}><Sparkles aria-hidden="true" className="h-3.5 w-3.5" />Sân khấu FlyTiee</span>
                   <div className={styles.speechBubble}>{speech}</div>
                   <button type="button" className={styles.petInteraction} onClick={handlePet} disabled={mood === 'eat'} aria-label={`Chạm ${flytiee.profile.name} để chơi cùng`}>

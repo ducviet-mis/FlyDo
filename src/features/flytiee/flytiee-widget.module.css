@@ -353,6 +353,18 @@
   animation: portal-turn 42s linear infinite reverse;
 }
 
+.stageCelestial {
+  position: absolute;
+  z-index: 0;
+  top: 21%;
+  left: 50%;
+  width: min(46%, 220px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 @keyframes portal-turn { to { transform: rotate(360deg); } }
 @keyframes stage-twinkle { from { opacity: .46; } to { opacity: 1; } }
 
@@ -694,30 +706,67 @@
   backdrop-filter: blur(16px);
 }
 
-/* LUNA tones the lounge frame down without dimming the character or earned items. */
+/* The lounge has two distinct skies; earned items and the bird retain their own art. */
 :global(html.dark) .world {
+  --flytiee-lavender: 154 180 237;
+  --flytiee-cyan: 185 230 255;
+  --flytiee-gold: 255 217 151;
   border-color: rgb(var(--luna-ice) / .29);
   background:
-    radial-gradient(circle at 91% 6%, rgb(var(--luna-moon) / .10), transparent 31%),
+    radial-gradient(circle at 91% 6%, rgb(var(--luna-moon) / .11), transparent 31%),
+    radial-gradient(circle at 8% 86%, rgb(var(--luna-violet) / .06), transparent 35%),
     linear-gradient(145deg, rgb(var(--color-surface-elevated)), rgb(var(--color-background)));
   box-shadow: var(--shadow-float), inset 0 1px 0 rgb(var(--luna-moon) / .08);
 }
 :global(html.dark) .header {
-  border-bottom-color: rgb(var(--color-border));
-  background: radial-gradient(circle at 89% 18%, rgb(var(--luna-moon) / .11), transparent 32%), rgb(var(--color-surface));
+  border-bottom-color: rgb(var(--luna-edge) / .32);
+  background: radial-gradient(circle at 87% 0%, rgb(var(--luna-moon) / .16), transparent 35%), rgb(var(--color-surface));
 }
+:global(html.dark) .header::after { background: linear-gradient(90deg, transparent, rgb(var(--luna-ice) / .7), rgb(var(--luna-gold) / .5), transparent); }
+:global(html.dark) .headerKicker { color: rgb(var(--luna-ice)); }
+:global(html.dark) .brandMark { color: rgb(var(--luna-ice)); border-color: rgb(var(--luna-edge) / .45); background: rgb(var(--luna-ice) / .1); }
+:global(html.dark) .headerLevel { color: rgb(var(--luna-ice)); }
+:global(html.dark) .headerBadge { color: rgb(var(--luna-gold)); }
 :global(html.dark) .tabBar { background: rgb(var(--color-background) / .84); }
 :global(html.dark) .tabList { border-color: rgb(var(--color-border)); background: rgb(var(--color-surface)); box-shadow: var(--shadow-soft); }
+:global(html.dark) .tabTrigger[data-state='active'] { color: rgb(var(--color-background)); background: linear-gradient(125deg, rgb(var(--luna-ice)), rgb(var(--luna-moon))); box-shadow: 0 7px 22px rgb(var(--luna-ice) / .18); }
+:global(html.dark) .tabTrigger[data-state='active'] svg { filter: none; }
+:global(html.dark) .petStage,
+:global(html.dark) .shopPreview {
+  border-color: rgb(var(--luna-edge) / .48);
+  background:
+    radial-gradient(circle at 51% 34%, rgb(var(--luna-ice) / .15), transparent 35%),
+    radial-gradient(circle at 84% 70%, rgb(var(--luna-violet) / .12), transparent 38%),
+    linear-gradient(158deg, #11243f, #0a172d 65%, #101d35);
+  box-shadow: inset 0 1px 0 rgb(var(--luna-moon) / .15), 0 17px 40px rgb(2 8 21 / .32);
+}
+:global(html.dark) .stagePortal { border-color: rgb(var(--luna-ice) / .35); box-shadow: 0 0 0 18px rgb(var(--luna-ice) / .025), 0 0 0 43px rgb(var(--luna-ice) / .018), inset 0 0 45px rgb(var(--luna-ice) / .09); }
+:global(html.dark) .stagePortal::before { background: repeating-conic-gradient(rgb(var(--luna-ice) / .6) 0deg 2deg, transparent 2deg 31deg); }
+:global(html.dark) .stagePortal::after { border-color: rgb(var(--luna-gold) / .35); }
+:global(html.dark) .stageCelestial {
+  background: radial-gradient(circle at 36% 28%, rgb(255 255 255 / .72), transparent 4%), radial-gradient(circle at 70% 66%, rgb(80 119 167 / .16), transparent 13%), radial-gradient(circle at 31% 61%, rgb(96 130 170 / .19), transparent 10%), radial-gradient(circle at 35% 26%, #f4f7ff, #d5e2f5 57%, #93b3d8 100%);
+  box-shadow: 0 0 30px rgb(var(--luna-moon) / .33), 0 0 95px rgb(var(--luna-ice) / .24), 0 0 0 12px rgb(var(--luna-moon) / .035);
+}
+:global(html.dark) .stageLabel { color: rgb(var(--luna-ice)); background: rgb(var(--color-background) / .76); }
+:global(html.dark) .speechBubble { color: rgb(var(--color-text-primary)); border-color: rgb(var(--luna-edge) / .48); background: rgb(var(--color-surface-elevated) / .96); }
+:global(html.dark) .speechBubble::after { background: rgb(var(--color-surface-elevated)); }
+:global(html.dark) .stageFooter span { border-color: rgb(var(--luna-edge) / .43); background: rgb(var(--color-background) / .74); }
+:global(html.dark) .shopPreview > p:first-child { color: rgb(var(--luna-ice)); }
+:global(html.dark) .shopPreview::before { border-color: rgb(var(--luna-ice) / .4); }
 :global(html.dark) .softCard,
 :global(html.dark) .missionCard { border-color: rgb(var(--color-border)); background: rgb(var(--color-card)); box-shadow: var(--shadow-soft); }
+:global(html.dark) .journeyCard { border-color: rgb(var(--luna-gold) / .42); background: radial-gradient(circle at 88% 4%, rgb(var(--luna-moon) / .13), transparent 40%), linear-gradient(125deg, #182945, #0c1c35); }
+:global(html.dark) .journeyKicker { color: rgb(var(--luna-gold)); }
+:global(html.dark) .journeyPrimary { color: rgb(var(--color-background)) !important; border-color: rgb(var(--luna-gold) / .65) !important; background: linear-gradient(125deg, rgb(var(--luna-gold)), rgb(var(--luna-moon))) !important; }
+:global(html.dark) .primaryButton { color: rgb(var(--color-background)) !important; border-color: rgb(var(--luna-ice) / .7) !important; background: linear-gradient(125deg, rgb(var(--luna-ice)), rgb(var(--luna-moon))) !important; box-shadow: 0 10px 24px rgb(var(--luna-ice) / .15) !important; }
 :global(html.dark) .statusMessage { border-color: rgb(var(--luna-ice) / .28); background: rgb(var(--color-primary-soft)); }
 :global(html.dark) .actionDock { border-color: rgb(var(--color-border)); background: rgb(var(--color-surface-elevated) / .96); box-shadow: 0 -12px 34px rgb(2 8 21 / .36); }
 
-/* SOL only changes FlyTiee's frame; the game stage and character retain their own world. */
+/* SOL is a sunlit playroom, including the stage, wardrobe and calls to action. */
 :global(html.light) .world {
-  --flytiee-lavender: 99 111 172;
-  --flytiee-cyan: 26 112 130;
-  --flytiee-gold: 167 100 29;
+  --flytiee-lavender: 41 95 166;
+  --flytiee-cyan: 41 95 166;
+  --flytiee-gold: 135 74 13;
   --flytiee-peach: 226 94 98;
   border-color: rgb(var(--sol-line) / .72);
   background:
@@ -730,6 +779,8 @@
   border-bottom-color: rgb(var(--sol-line) / .62);
   background: radial-gradient(circle at 90% 20%, rgb(var(--sol-daylight) / .17), transparent 31%), rgb(var(--color-surface-elevated));
 }
+:global(html.light) .header::after { background: linear-gradient(90deg, transparent, rgb(var(--sol-amber) / .8), rgb(var(--color-primary) / .5), transparent); }
+:global(html.light) .headerKicker { color: rgb(var(--sol-amber-ink)); }
 
 :global(html.light) .brandMark {
   border-color: rgb(var(--color-primary) / .24);
@@ -739,8 +790,10 @@
 
 :global(html.light) .headerBadge {
   border-color: rgb(var(--sol-amber-ink) / .28);
+  color: rgb(var(--sol-amber-ink));
   background: rgb(var(--sol-amber-soft) / .92);
 }
+:global(html.light) .headerLevel { color: rgb(var(--color-primary)); }
 
 :global(html.light) .tabBar { background: rgb(var(--color-background) / .82); }
 
@@ -749,6 +802,33 @@
   background: rgb(var(--color-surface-elevated) / .94);
   box-shadow: var(--shadow-soft), inset 0 1px 0 rgb(255 255 255);
 }
+:global(html.light) .tabTrigger[data-state='active'] { color: #fff; background: linear-gradient(125deg, rgb(var(--color-primary)), rgb(33 76 137)); box-shadow: 0 8px 20px rgb(var(--color-primary) / .2); }
+:global(html.light) .tabTrigger[data-state='active'] svg { filter: none; }
+:global(html.light) .petStage,
+:global(html.light) .shopPreview {
+  border-color: rgb(var(--sol-line) / .82);
+  background:
+    radial-gradient(circle at 50% 32%, rgb(var(--sol-daylight) / .44), transparent 37%),
+    radial-gradient(circle at 88% 79%, rgb(var(--color-primary) / .08), transparent 38%),
+    linear-gradient(160deg, #fffaf0, #f6e9cf 65%, #e8d6b8);
+  box-shadow: inset 0 1px 0 #fff, 0 16px 35px rgb(87 65 37 / .14);
+}
+:global(html.light) .petStage::before { border-color: rgb(var(--sol-line) / .5); }
+:global(html.light) .petStage::after { background: radial-gradient(ellipse, rgb(var(--sol-amber) / .24), transparent 72%); }
+:global(html.light) .stageStars { background: radial-gradient(circle at 14% 18%, rgb(var(--sol-amber) / .55) 0 2px, transparent 3px), radial-gradient(circle at 83% 22%, rgb(var(--color-primary) / .35) 0 2px, transparent 3px), radial-gradient(circle at 27% 70%, rgb(var(--sol-amber) / .35) 0 1px, transparent 2px), radial-gradient(circle at 93% 77%, rgb(var(--color-primary) / .25) 0 1px, transparent 2px); }
+:global(html.light) .stagePortal { border-color: rgb(var(--sol-amber) / .38); box-shadow: 0 0 0 16px rgb(var(--sol-daylight) / .09), 0 0 0 43px rgb(var(--sol-amber) / .04), inset 0 0 38px rgb(var(--sol-daylight) / .15); }
+:global(html.light) .stagePortal::before { background: repeating-conic-gradient(rgb(var(--sol-amber-ink) / .54) 0deg 2deg, transparent 2deg 31deg); }
+:global(html.light) .stagePortal::after { border-color: rgb(var(--sol-amber-ink) / .3); }
+:global(html.light) .stageCelestial { background: radial-gradient(circle at 33% 30%, #fff6d4, #ffda80 52%, #f2a93c 100%); box-shadow: 0 0 30px rgb(var(--sol-amber) / .36), 0 0 90px rgb(var(--sol-daylight) / .62), 0 0 0 14px rgb(var(--sol-daylight) / .1); }
+:global(html.light) .stageLabel { border-color: rgb(var(--sol-line) / .72); color: rgb(var(--sol-amber-ink)); background: rgb(var(--color-surface-elevated) / .9); }
+:global(html.light) .speechBubble { color: rgb(var(--color-text-primary)); border-color: rgb(var(--sol-line) / .7); background: rgb(var(--color-surface-elevated) / .96); box-shadow: 0 10px 25px rgb(87 65 37 / .14); }
+:global(html.light) .speechBubble::after { background: rgb(var(--color-surface-elevated)); }
+:global(html.light) .stageFooter { color: rgb(var(--color-text-primary)); }
+:global(html.light) .stageFooter span { border-color: rgb(var(--sol-line) / .7); background: rgb(var(--color-surface-elevated) / .9); }
+:global(html.light) .stageFooter svg { color: rgb(var(--sol-amber-ink)); }
+:global(html.light) .shopPreview::before { border-color: rgb(var(--sol-amber-ink) / .34); box-shadow: 0 0 0 18px rgb(var(--sol-daylight) / .11); }
+:global(html.light) .shopPreview > p { color: rgb(var(--color-text-primary)); }
+:global(html.light) .shopPreview > p:first-child { color: rgb(var(--sol-amber-ink)); }
 
 :global(html.light) .softCard,
 :global(html.light) .missionCard {
@@ -756,6 +836,14 @@
   background: rgb(var(--color-surface-elevated));
   box-shadow: var(--shadow-soft);
 }
+:global(html.light) .journeyCard { border-color: rgb(var(--sol-line) / .85); color: rgb(var(--color-text-primary)); background: radial-gradient(circle at 95% 5%, rgb(var(--sol-daylight) / .46), transparent 38%), linear-gradient(125deg, #fff9e9, #f5e5c7); box-shadow: 0 13px 28px rgb(87 65 37 / .12); }
+:global(html.light) .journeyCard::after { border-color: rgb(var(--sol-amber) / .33); box-shadow: 0 0 0 18px rgb(var(--sol-amber) / .06), 0 0 0 43px rgb(var(--sol-amber) / .035); }
+:global(html.light) .journeyKicker { color: rgb(var(--sol-amber-ink)); }
+:global(html.light) .journeyCard p { color: rgb(var(--color-text-muted)); }
+:global(html.light) .journeyPrimary { color: #fff !important; border-color: rgb(var(--color-primary) / .75) !important; background: linear-gradient(125deg, rgb(var(--color-primary)), rgb(33 76 137)) !important; box-shadow: 0 8px 18px rgb(var(--color-primary) / .18); }
+:global(html.light) .journeySecondary { color: rgb(var(--color-text-primary)) !important; border-color: rgb(var(--sol-line) / .85) !important; background: rgb(var(--color-surface-elevated) / .86) !important; }
+:global(html.light) .journeyCount { color: #fff; background: rgb(var(--color-primary)); }
+:global(html.light) .primaryButton { color: #fff !important; border-color: rgb(var(--color-primary) / .7) !important; background: linear-gradient(125deg, rgb(var(--color-primary)), rgb(33 76 137)) !important; box-shadow: 0 10px 23px rgb(var(--color-primary) / .18) !important; }
 
 :global(html.light) .missionReady { border-color: rgb(var(--sol-amber-ink) / .37); background: radial-gradient(circle at 92% 10%, rgb(var(--sol-daylight) / .18), transparent 45%), rgb(var(--color-surface-elevated)); }
 :global(html.light) .missionHeader,

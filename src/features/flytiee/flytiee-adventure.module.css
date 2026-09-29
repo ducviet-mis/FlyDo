@@ -202,8 +202,8 @@
 .prizeReveal strong { position: relative; z-index: 1; margin-top: 5px; color: #fff; font-size: 32px; font-weight: 900; letter-spacing: -.03em; }
 .prizeReveal p { position: relative; z-index: 1; margin: 6px 0 0; color: #dbe6f6; font-size: 13px; }
 
-:global(html.light) .world { --a-ink: #1d2946; --a-muted: #586780; --a-panel: #fff; --a-panel-border: rgb(104 120 184 / .22); }
-:global(html.light) .preparation, :global(html.light) .challenge, :global(html.light) .finalPanel { background: linear-gradient(155deg, #fff, #f3f7ff); box-shadow: 0 12px 30px rgb(35 53 112 / .08); }
+:global(html.light) .world { --a-ink: rgb(var(--color-text-primary)); --a-muted: rgb(var(--color-text-muted)); --a-panel: rgb(var(--color-surface-elevated)); --a-panel-border: rgb(var(--sol-line) / .64); }
+:global(html.light) .preparation, :global(html.light) .challenge, :global(html.light) .finalPanel { background: linear-gradient(155deg, rgb(var(--color-surface-elevated)), rgb(var(--color-surface))); box-shadow: 0 12px 30px rgb(87 65 37 / .08); }
 :global(html.light) .step { color: #345cbb; }
 :global(html.light) .todayPill { color: #12604c; background: #e7f9f2; border-color: #a9dcc9; }
 :global(html.light) .selectedDoor { color: #55469b; background: #f1edff; border-color: #d9d0f7; }
@@ -233,6 +233,65 @@
 :global(html.light) .solution { color: #243656; border-top-color: #c8d8d3; }
 :global(html.light) .nextButton { color: #fff; background: #626ed5; border-color: #626ed5; }
 :global(html.light) .finalNote { color: #4b5d83; background: #f4f6fe; border-color: #dce2f3; }
+
+/* Make the game portals feel native to the two study skies. */
+:global(html.light) .hero {
+  border-color: rgb(var(--sol-line) / .8);
+  background: radial-gradient(circle at 85% 23%, rgb(var(--sol-daylight) / .65), transparent 27%), linear-gradient(115deg, #fffaf0, #f6e6c6 75%, #eed3a2);
+  box-shadow: inset 0 1px 0 #fff, 0 16px 36px rgb(87 65 37 / .13);
+}
+:global(html.light) .hero::before { border-color: rgb(var(--sol-amber) / .3); box-shadow: 0 0 0 26px rgb(var(--sol-daylight) / .16), 0 0 0 62px rgb(var(--sol-amber) / .04); }
+:global(html.light) .hero h2 { color: rgb(var(--color-text-primary)); }
+:global(html.light) .hero p { color: rgb(var(--color-text-muted)); }
+:global(html.light) .kicker { color: rgb(var(--sol-amber-ink)); }
+:global(html.light) .heroMeta span { border-color: rgb(var(--sol-line) / .78); color: rgb(var(--color-text-primary)); background: rgb(var(--color-surface-elevated) / .76); }
+:global(html.light) .heroMeta svg { color: rgb(var(--sol-amber-ink)); }
+:global(html.light) .heroStars span { background: rgb(var(--sol-amber)); box-shadow: 0 0 10px rgb(var(--sol-daylight)); }
+:global(html.light) .doorCard { --door-accent: #298b99; border-color: rgb(var(--sol-line) / .7); color: rgb(var(--color-text-primary)); background: radial-gradient(circle at 50% 42%, rgb(115 211 214 / .25), transparent 55%), linear-gradient(160deg, #fffdf7, #e8f4f1); box-shadow: inset 0 1px 0 #fff, 0 11px 26px rgb(87 65 37 / .09); }
+:global(html.light) .doorCard[data-level='2'] { --door-accent: #345fa6; background: radial-gradient(circle at 50% 42%, rgb(var(--color-primary) / .15), transparent 55%), linear-gradient(160deg, #fffdf7, #e9f0fa); }
+:global(html.light) .doorCard[data-level='3'] { --door-accent: #925217; background: radial-gradient(circle at 50% 42%, rgb(var(--sol-daylight) / .48), transparent 55%), linear-gradient(160deg, #fffaf0, #f7e5c4); }
+:global(html.light) .doorNumber { border-color: rgb(var(--sol-line) / .8); color: rgb(var(--color-text-primary)); background: rgb(var(--color-surface-elevated) / .86); }
+:global(html.light) .doorName { color: rgb(var(--color-text-primary)); }
+:global(html.light) .doorSubtitle, :global(html.light) .doorReward { color: rgb(var(--color-text-muted)); }
+:global(html.light) .doorReward { border-top-color: rgb(var(--sol-line) / .7); }
+:global(html.light) .step { color: rgb(var(--sol-amber-ink)); }
+:global(html.light) .selectedDoor { color: rgb(var(--sol-amber-ink)); background: rgb(var(--sol-amber-soft)); border-color: rgb(var(--sol-line) / .7); }
+:global(html.light) .selectWrap select { color: rgb(var(--color-text-primary)); background: rgb(var(--color-surface-elevated)); border-color: rgb(var(--sol-line) / .8); }
+:global(html.light) .previewRewards { background: rgb(var(--sol-amber-soft) / .42); border-color: rgb(var(--sol-line) / .58); }
+:global(html.light) .previewRewards > div > span { background: rgb(var(--color-surface-elevated)); border-color: rgb(var(--sol-line) / .55); }
+:global(html.light) .progressTrack span[data-state='current'] { color: rgb(var(--color-primary)); background: rgb(var(--sol-blue-wash)); border-color: rgb(var(--color-primary) / .45); }
+:global(html.light) .questionBody { border-top-color: rgb(var(--sol-line) / .5); background: rgb(var(--sol-amber-soft) / .25); }
+:global(html.light) .option { border-color: rgb(var(--sol-line) / .6); background: rgb(var(--color-surface-elevated)); }
+:global(html.light) .option:not(:disabled):hover { background: rgb(var(--sol-blue-wash)); }
+:global(html.light) .nextButton { background: rgb(var(--color-primary)); border-color: rgb(var(--color-primary)); }
+:global(html.light) .primaryButton { color: #fff; border-color: rgb(var(--color-primary) / .75); background: linear-gradient(125deg, rgb(var(--color-primary)), #214c89); box-shadow: 0 9px 22px rgb(var(--color-primary) / .18); }
+:global(html.light) .wheelScene, :global(html.light) .wheelScene[data-level='3'] { background: radial-gradient(circle at 50% 27%, rgb(var(--sol-daylight) / .47), transparent 44%), linear-gradient(160deg, #fffaf0, #f2e2c5); }
+:global(html.light) .wheelHeading p, :global(html.light) .odds, :global(html.light) .tomorrow { color: rgb(var(--color-text-muted)); }
+:global(html.light) .odds { border-top-color: rgb(var(--sol-line) / .7); }
+:global(html.light) .odds > div > span { color: rgb(var(--color-text-primary)); border-color: rgb(var(--sol-line) / .7); background: rgb(var(--color-surface-elevated) / .85); }
+:global(html.light) .odds b { color: rgb(var(--sol-amber-ink)); }
+:global(html.light) .wheelOuter { box-shadow: 0 0 0 5px rgb(var(--sol-amber)), 0 0 0 9px rgb(var(--sol-daylight) / .38), 0 18px 35px rgb(87 65 37 / .2); }
+:global(html.light) .wheelHub { color: #fff; background: linear-gradient(135deg, rgb(var(--color-primary)), #214c89); }
+:global(html.light) .spinButton { color: #fff; border-color: rgb(var(--sol-amber-ink) / .7); background: linear-gradient(125deg, rgb(var(--sol-amber-ink)), #ad6520); }
+:global(html.light) .revealEyebrow { color: rgb(var(--sol-amber-ink)); }
+:global(html.light) .prizeReveal strong { color: rgb(var(--color-text-primary)); }
+:global(html.light) .prizeReveal p { color: rgb(var(--color-text-muted)); }
+:global(html.light) .finalPanel { background: radial-gradient(circle at 50% 8%, rgb(var(--sol-daylight) / .28), transparent 53%), rgb(var(--color-surface-elevated)); }
+:global(html.light) .finalSymbol { color: rgb(var(--sol-amber-ink)); border-color: rgb(var(--sol-line)); background: rgb(var(--sol-amber-soft)); }
+
+:global(html.dark) .hero { border-color: rgb(var(--luna-edge) / .48); background: radial-gradient(circle at 82% 12%, rgb(var(--luna-moon) / .2), transparent 32%), linear-gradient(116deg, #11243f, #183457 58%, #101d37); }
+:global(html.dark) .hero::before { border-color: rgb(var(--luna-ice) / .23); box-shadow: 0 0 0 26px rgb(var(--luna-ice) / .035), 0 0 0 62px rgb(var(--luna-ice) / .02); }
+:global(html.dark) .kicker { color: rgb(var(--luna-ice)); }
+:global(html.dark) .heroMeta svg { color: rgb(var(--luna-gold)); }
+:global(html.dark) .doorCard { --door-accent: #9adfe7; background: radial-gradient(circle at 50% 42%, rgb(var(--luna-ice) / .15), transparent 56%), linear-gradient(160deg, #1b3552, #11263f); }
+:global(html.dark) .doorCard[data-level='2'] { --door-accent: #b8c9f5; background: radial-gradient(circle at 50% 42%, rgb(var(--luna-violet) / .18), transparent 56%), linear-gradient(160deg, #25375a, #172643); }
+:global(html.dark) .doorCard[data-level='3'] { --door-accent: #f7d49a; background: radial-gradient(circle at 50% 42%, rgb(var(--luna-gold) / .19), transparent 56%), linear-gradient(160deg, #2e3954, #1b2942); }
+:global(html.dark) .primaryButton { color: rgb(var(--color-background)); border-color: rgb(var(--luna-ice) / .7); background: linear-gradient(120deg, rgb(var(--luna-ice)), rgb(var(--luna-moon))); box-shadow: 0 9px 22px rgb(var(--luna-ice) / .16); }
+:global(html.dark) .wheelScene { background: radial-gradient(circle at 50% 26%, rgb(var(--luna-moon) / .18), transparent 42%), linear-gradient(165deg, #1b3454, #102139 68%); }
+:global(html.dark) .wheelScene[data-level='3'] { background: radial-gradient(circle at 50% 27%, rgb(var(--luna-gold) / .19), transparent 42%), linear-gradient(165deg, #28364e, #102139 68%); }
+:global(html.dark) .wheelOuter { box-shadow: 0 0 0 5px rgb(var(--luna-edge)), 0 0 0 9px rgb(var(--luna-ice) / .2), 0 18px 44px rgb(2 8 21 / .42); }
+:global(html.dark) .wheelHub { color: rgb(var(--color-background)); background: linear-gradient(135deg, rgb(var(--luna-ice)), rgb(var(--luna-moon))); }
+:global(html.dark) .spinButton { color: rgb(var(--color-background)); border-color: rgb(var(--luna-gold) / .6); background: linear-gradient(120deg, rgb(var(--luna-gold)), #f7e6ba); }
 
 @media (max-width: 900px) {
   .heroBird { right: 8px; width: 180px; height: 180px; }
