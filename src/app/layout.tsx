@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/star-map-system.css";
+import "@/styles/sol-system.css";
 import { Providers } from "./providers";
 import { ClientLayout } from "@/components/layout/client-layout";
 
@@ -9,7 +10,7 @@ const inter = Inter({ subsets: ["latin", "vietnamese"] });
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F9FC" },
+    { media: "(prefers-color-scheme: light)", color: "#F7F4EC" },
     { media: "(prefers-color-scheme: dark)", color: "#0D1020" },
   ],
   width: "device-width",

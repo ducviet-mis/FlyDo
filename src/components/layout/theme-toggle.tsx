@@ -7,8 +7,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { useEffect, useState } from "react";
 
 const options = [
-  { id: "light", label: "Sáng", description: "Dịu và rõ ràng", icon: Sun },
-  { id: "dark", label: "Tối", description: "Tập trung và dễ đọc", icon: Moon },
+  { id: "light", label: "Sol", description: "Nắng ấm, sáng rõ để học", icon: Sun },
+  { id: "dark", label: "Luna", description: "Không gian tối để tập trung", icon: Moon },
   { id: "starmap", label: "Bản đồ Sao", description: "Một hành trình học khác biệt", icon: Orbit },
 ] as const;
 
@@ -34,7 +34,7 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-11 w-11 rounded-md border border-border bg-surface hover:bg-muted" aria-label={`Giao diện hiện tại: ${options.find((option) => option.id === active)?.label ?? 'Sáng'}. Chọn giao diện`} title="Chọn giao diện">
+        <Button variant="ghost" size="icon" className="h-11 w-11 rounded-md border border-border bg-surface hover:bg-muted" aria-label={`Giao diện hiện tại: ${options.find((option) => option.id === active)?.label ?? 'Sol'}. Chọn giao diện`} title="Chọn giao diện">
           <ActiveIcon className="h-[18px] w-[18px] text-primary" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>

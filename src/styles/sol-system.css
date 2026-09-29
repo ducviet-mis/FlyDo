@@ -1,0 +1,21 @@
+/* Sol: an editorial daylight layer. Scoped to the legacy light ID so saved choices remain valid. */
+html.light body { background-color: rgb(var(--color-background)); }
+html.light nav[aria-label="Điều hướng chính"] { background: rgb(255 253 248 / .93); border-bottom-color: rgb(194 173 142 / .37); box-shadow: 0 5px 22px -20px rgb(85 64 37 / .25); }
+html.light .vivux-nav-link[aria-current="page"] { background: rgb(41 95 166 / .09); }
+html.light .vivux-nav-link[aria-current="page"]::after { background: #bd8540; }
+html.light nav[aria-label="Điều hướng mobile"] { background: rgb(255 253 248 / .96); border-color: #dfd0b9; box-shadow: 0 15px 40px -19px rgb(92 68 37 / .35); }
+html.light .study-heading { border-bottom-color: #d9cbb5; }
+html.light .study-heading::before { content: ''; position: absolute; left: 0; bottom: -1px; width: 64px; height: 2px; border-radius: 3px; background: #b87b31; }
+html.light .study-eyebrow { color: #925517; text-transform: uppercase; letter-spacing: .12em; }
+html.light .study-eyebrow::before { background: #ca9857; }
+html.light .study-resume { border-color: #e1d2ba; background-image: linear-gradient(110deg, rgb(250 232 197 / .33), transparent 62%); }
+html.light .study-reading-guide, html.light .study-lesson-card, html.light .widget-card, html.light .widget-card-static { border-color: #e2d7c5; }
+html.light .study-lesson-card::before { background: #c39155; }
+html.light .study-lesson-card:hover { border-color: #bc9d75; }
+html.light .study-article-body blockquote { border-left-color: #be8338; background: #fbf0d9; }
+html.light .study-article-body .katex-display { background: #f7f1e6; }
+html.light .study-reading-progress { background: #ad782f; }
+html.light .study-chapter-button[aria-pressed="true"] { border-color: #bd9c6b; background: #f8edda; color: #294b70; }
+html.light :where(.widget-card, .widget-card-static, .study-lesson-card, .study-reading-guide) { box-shadow: 0 3px 18px -13px rgb(82 59 29 / .18); }
+html.light :where(input, textarea, select):not([type="checkbox"]):not([type="radio"]):focus-visible { border-color: rgb(var(--color-primary)); box-shadow: 0 0 0 3px rgb(var(--color-primary) / .13); }
+@media (prefers-reduced-motion: reduce) { html.light *, html.light *::before, html.light *::after { scroll-behavior: auto !important; } }
