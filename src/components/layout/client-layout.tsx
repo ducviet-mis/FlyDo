@@ -13,7 +13,7 @@ import { StreakCheckIn } from '@/features/streak/components/streak-check-in';
 import { OnlineStudyTracker } from '@/features/daily-goal/components/online-study-tracker';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import { LunaRibbon } from '@/components/layout/luna-ribbon';
+import { ThemeRibbon } from '@/components/layout/theme-ribbon';
 
 const LOGIN_REQUIRED_SECTIONS: Record<string, string> = {
   '/theory': 'Lý thuyết',
@@ -56,7 +56,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
           isMockExamRoom ? "w-full" : isImmersiveMode ? "w-full md:vivux-page" : "vivux-page",
           showMobileNav && "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8"
         )} data-star-page={pageContext} data-star-immersive={isImmersiveMode ? 'true' : undefined}>
-          {!isImmersiveMode && <LunaRibbon pageContext={pageContext} />}
+          {!isImmersiveMode && <ThemeRibbon pageContext={pageContext} />}
           {loginRequiredSection && !initialized ? (
             <div role="status" className="container flex min-h-[440px] items-center justify-center gap-3 text-muted-foreground">
               <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />

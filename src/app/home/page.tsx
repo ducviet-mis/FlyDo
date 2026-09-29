@@ -48,13 +48,13 @@ export default function HomePage() {
         {sol && <SolHero name={user?.name} greeting={getGreeting()} />}
         {!sol && <LunaHero name={user?.name} />}
         {user && <div className={`grid min-w-0 grid-cols-1 items-stretch gap-3 sm:gap-4 ${sol ? solStyles.companionRow : lunaStyles.companionRow}`}><FlytieeWidget variant="hero" /><StreakCard /></div>}
-        <div className={`grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] ${!sol ? lunaStyles.contentGrid : ''}`}>
+        <div className={`grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] ${sol ? solStyles.contentGrid : lunaStyles.contentGrid}`}>
           <div className="min-w-0 space-y-6">
             <div id="continue-learning" className={sol ? solStyles.resumeWrap : lunaStyles.resumeWrap}><ContinueLearning /></div>
-            <div className={!sol ? lunaStyles.goalWrap : undefined}><GoalRing /></div>
+            <div className={sol ? solStyles.goalWrap : lunaStyles.goalWrap}><GoalRing /></div>
             <section aria-labelledby="practice-heading" className={sol ? solStyles.practiceSection : lunaStyles.practiceSection}>
-              <div className={`mb-4 ${!sol ? lunaStyles.sectionHeading : ''}`}>
-                {!sol && <p className={lunaStyles.sectionIndex}>02 / CHỌN ĐIỂM ĐẾN</p>}
+              <div className={`mb-4 ${sol ? solStyles.sectionHeading : lunaStyles.sectionHeading}`}>
+                <p className={sol ? solStyles.sectionIndex : lunaStyles.sectionIndex}>02 / CHỌN ĐIỂM ĐẾN</p>
                 <h2 id="practice-heading" className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">Tự luyện theo chuyên đề</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Chọn lớp để tiếp tục hành trình học Toán.</p>
               </div>
@@ -75,9 +75,9 @@ export default function HomePage() {
                 ))}
               </div>
             </section>
-            <div className={!sol ? lunaStyles.statsWrap : undefined}><StatsOverviewCard /></div>
+            <div className={sol ? solStyles.statsWrap : lunaStyles.statsWrap}><StatsOverviewCard /></div>
           </div>
-          <aside aria-label="Thông tin học tập bổ trợ" className={`grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-1 ${!sol ? lunaStyles.aside : ''}`}>
+          <aside aria-label="Thông tin học tập bổ trợ" className={`grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-1 ${sol ? solStyles.aside : lunaStyles.aside}`}>
             <CountdownCard />
             <QuoteCarousel />
             <WrongNotebookCard />

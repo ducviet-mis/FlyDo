@@ -1,4 +1,4 @@
-import { Moon } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 
 const labels: Record<string, string> = {
   theory: 'Kho tri thức',
@@ -12,16 +12,22 @@ const labels: Record<string, string> = {
   admin: 'Trạm điều hành',
 };
 
-export function LunaRibbon({ pageContext }: { pageContext: string }) {
+export function ThemeRibbon({ pageContext }: { pageContext: string }) {
   const label = labels[pageContext];
   if (!label) return null;
 
-  return (
+  return <>
     <div className="luna-ribbon" aria-label={`Luna: ${label}`}>
       <span className="luna-ribbon-mark"><Moon aria-hidden="true" size={15} /></span>
       <span className="luna-ribbon-path">LUNA <span aria-hidden="true">/</span> <strong>{label}</strong></span>
       <span className="luna-ribbon-rule" aria-hidden="true" />
       <span className="luna-ribbon-signature" aria-hidden="true">FLYDO · ĐÀI QUAN SÁT</span>
     </div>
-  );
+    <div className="sol-ribbon" aria-label={`Sol: ${label}`}>
+      <span className="sol-ribbon-mark"><Sun aria-hidden="true" size={15} /></span>
+      <span className="sol-ribbon-path">SOL <span aria-hidden="true">/</span> <strong>{label}</strong></span>
+      <span className="sol-ribbon-rule" aria-hidden="true" />
+      <span className="sol-ribbon-signature" aria-hidden="true">FLYDO · HỆ MẶT TRỜI HỌC TẬP</span>
+    </div>
+  </>;
 }

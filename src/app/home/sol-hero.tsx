@@ -1,56 +1,90 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDownRight, ArrowUpRight, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowDownRight, BookMarked, BookOpen, FileText, Pause, PenLine, Play, Sparkles, Sun } from 'lucide-react';
 import styles from './sol-home.module.css';
 
 type SolHeroProps = { name?: string | null; greeting: string };
 
+const destinations = [
+  { label: 'LÝ THUYẾT', href: '/theory', className: styles.planetTheory, Icon: BookOpen },
+  { label: 'TỰ LUYỆN', href: '/practice', className: styles.planetPractice, Icon: PenLine },
+  { label: 'THI THỬ', href: '/mock-exams', className: styles.planetExams, Icon: FileText },
+  { label: 'CẨM NANG', href: '/handbook', className: styles.planetHandbook, Icon: BookMarked },
+] as const;
+
 export function SolHero({ name, greeting }: SolHeroProps) {
+  const [motionPaused, setMotionPaused] = useState(false);
+
+  useEffect(() => {
+    try { setMotionPaused(localStorage.getItem('flydo-sol-motion') === 'paused'); }
+    catch { /* The page remains usable when storage is unavailable. */ }
+  }, []);
+
+  function toggleMotion() {
+    const next = !motionPaused;
+    setMotionPaused(next);
+    try { localStorage.setItem('flydo-sol-motion', next ? 'paused' : 'playing'); }
+    catch { /* Keep the preference for this visit. */ }
+  }
+
   return (
-    <header className={styles.hero}>
+    <section className={styles.hero} aria-labelledby="sol-heading" data-motion={motionPaused ? 'paused' : 'playing'}>
+      <div className={styles.heroAtmosphere} aria-hidden="true" />
       <div className={styles.heroCopy}>
-        <p className={styles.kicker}><span className={styles.kickerLine} /> SOL / KHÔNG GIAN HỌC TẬP</p>
-        <p className={styles.greeting}>{greeting}, {name || 'Bạn'}.</p>
-        <h1>Mỗi ngày học, <em>một điều rực rỡ.</em></h1>
-        <p className={styles.description}>Một khoảng trời sáng để tập trung, tìm hiểu và đi xa hơn từng chút một. Bắt đầu từ điều bạn tò mò hôm nay.</p>
-        <div className={styles.actions}>
-          <a href="#continue-learning" className={styles.primaryAction}>Tiếp tục học <ArrowDownRight aria-hidden="true" size={17} /></a>
-          <Link href="/theory" className={styles.secondaryAction}><BookOpen aria-hidden="true" size={17} /> Khám phá lý thuyết <ArrowUpRight aria-hidden="true" size={15} /></Link>
+        <p className={styles.heroIndex}><Sun className="h-4 w-4" aria-hidden="true" /> ĐÀI QUAN SÁT SOL <span aria-hidden="true">/</span> 01</p>
+        <p className={styles.greeting}>{greeting}, {name || 'bạn'}.</p>
+        <h1 id="sol-heading">Theo ánh mặt trời,<br /><span>mở lối tri thức.</span></h1>
+        <p className={styles.heroDescription}>Một hệ học tập rực sáng đang chờ bạn khám phá. Tiếp tục bài học gần nhất hoặc chọn hành tinh mình muốn ghé thăm.</p>
+        <div className={styles.heroActions}>
+          <a href="#continue-learning" className={styles.primaryAction}>Tiếp tục hành trình <ArrowDownRight className="h-4 w-4" aria-hidden="true" /></a>
+          <a href="#sol-orbits" className={styles.secondaryAction}>Khám phá hệ Sol</a>
         </div>
-        <p className={styles.footnote}><Sparkles aria-hidden="true" size={14} /> Học theo nhịp của bạn — tiến bộ sẽ đến.</p>
+        <p className={styles.heroFootnote}><Sparkles className="h-4 w-4" aria-hidden="true" /> Mỗi điểm đến là một cách học mới của bạn.</p>
       </div>
-      <div className={styles.art} aria-hidden="true">
-        <span className={styles.artLabelTop}>GÓC NHÌN MỚI / 01</span>
-        <svg className={styles.artwork} viewBox="0 0 580 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+      <div id="sol-orbits" className={styles.chart} aria-label="Bốn điểm đến học tập trong hệ Sol">
+        <svg className={styles.chartArt} viewBox="0 0 600 420" role="presentation" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <linearGradient id="sol-sky" x1="150" y1="0" x2="420" y2="440" gradientUnits="userSpaceOnUse"><stop stopColor="#fff9e9"/><stop offset=".56" stopColor="#f9e6bd"/><stop offset="1" stopColor="#e7d5b0"/></linearGradient>
-            <linearGradient id="sol-sun" x1="225" y1="88" x2="380" y2="293" gradientUnits="userSpaceOnUse"><stop stopColor="#fff7d1"/><stop offset=".53" stopColor="#f8c96c"/><stop offset="1" stopColor="#df9f45"/></linearGradient>
-            <linearGradient id="sol-paper" x1="65" y1="324" x2="521" y2="414" gradientUnits="userSpaceOnUse"><stop stopColor="#fdfbf3"/><stop offset="1" stopColor="#eee3cf"/></linearGradient>
-            <filter id="sol-glow" x="78" y="-71" width="427" height="427" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="43"/></filter>
+            <radialGradient id="sol-halo"><stop stopColor="#fff0bd" stopOpacity=".96" /><stop offset=".34" stopColor="#f8c66b" stopOpacity=".36" /><stop offset="1" stopColor="#ed9f41" stopOpacity="0" /></radialGradient>
+            <radialGradient id="sol-disc" cx=".35" cy=".25" r=".82"><stop stopColor="#fffbe0" /><stop offset=".44" stopColor="#ffdd83" /><stop offset=".82" stopColor="#f5a944" /><stop offset="1" stopColor="#d87c2b" /></radialGradient>
+            <linearGradient id="sol-route" x1="70" y1="290" x2="530" y2="80" gradientUnits="userSpaceOnUse"><stop stopColor="#5298bf" /><stop offset=".52" stopColor="#d6a05c" /><stop offset="1" stopColor="#e09c58" /></linearGradient>
+            <filter id="sol-soft-glow"><feGaussianBlur stdDeviation="8" /></filter>
           </defs>
-          <rect x="1" y="1" width="578" height="438" rx="24" fill="url(#sol-sky)"/>
-          <g filter="url(#sol-glow)"><circle cx="292" cy="143" r="128" fill="#F7D087" fillOpacity=".63"/></g>
-          <circle cx="292" cy="150" r="116" stroke="#D5B37A" strokeOpacity=".48"/>
-          <circle cx="292" cy="150" r="89" stroke="#D5B37A" strokeOpacity=".45"/>
-          <circle className={styles.sunDisc} cx="292" cy="150" r="71" fill="url(#sol-sun)"/>
-          <path d="M76 191H183M93 206V104" stroke="#295FA6" strokeOpacity=".32" strokeWidth="1.5"/>
-          <path d="M97 181C112 188 121 171 131 143C143 111 158 121 177 139" stroke="#295FA6" strokeOpacity=".7" strokeWidth="2.2" strokeLinecap="round"/>
-          <circle cx="131" cy="143" r="3.5" fill="#295FA6" fillOpacity=".66"/>
-          <path d="M60 278H522" stroke="#B78D55" strokeOpacity=".38"/>
-          <path d="M89 259H494M120 240H463" stroke="#B78D55" strokeOpacity=".25"/>
-          <path d="M0 310C137 273 202 286 291 297C380 308 458 274 580 302V440H0V310Z" fill="#E5C999" fillOpacity=".33"/>
-          <path d="M0 334C153 305 217 316 292 322C384 330 478 315 580 329V440H0V334Z" fill="#F6E9D1" fillOpacity=".7"/>
-          <path d="M59 314L289 280L521 314V403L289 437L59 403V314Z" fill="url(#sol-paper)" stroke="#A97F4F" strokeOpacity=".42" strokeWidth="2"/>
-          <path d="M289 280V437M59 314L289 348L521 314" stroke="#AB875C" strokeOpacity=".5" strokeWidth="2"/>
-          <path d="M85 347L260 371M85 359L260 383M318 371L493 347M318 383L493 359" stroke="#B8A083" strokeOpacity=".34"/>
-          <path d="M116 274L134 226L150 273M122 259H144M406 257L439 223M408 225L439 257" stroke="#5D795E" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M378 94L391 75L404 94M391 75V108" stroke="#AC8045" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <circle cx="162" cy="113" r="3" fill="#C58E4A"/><circle cx="445" cy="145" r="3" fill="#C58E4A"/><circle cx="452" cy="73" r="2" fill="#C58E4A"/>
-          <path d="M171 113H212M445 145H482" stroke="#B9925D" strokeOpacity=".5" strokeDasharray="4 5"/>
-          <text x="34" y="42" fill="#8A6C48" fontSize="10" fontWeight="700" letterSpacing="3">FLYDO / SOL</text>
-          <text x="438" y="42" fill="#8A6C48" fontSize="10" fontWeight="700" letterSpacing="2">01—04</text>
+          <circle className={styles.sunHalo} cx="300" cy="216" r="178" fill="url(#sol-halo)" />
+          <circle className={styles.orbitOuter} cx="300" cy="210" r="176" fill="none" stroke="#9b7041" strokeOpacity=".32" strokeWidth="1" strokeDasharray="3 10" />
+          <circle cx="300" cy="210" r="128" fill="none" stroke="#ae8550" strokeOpacity=".31" strokeWidth="1" />
+          <ellipse cx="300" cy="211" rx="238" ry="91" fill="none" stroke="#af814d" strokeOpacity=".29" strokeWidth="1.3" transform="rotate(-26 300 211)" />
+          <ellipse cx="300" cy="211" rx="224" ry="93" fill="none" stroke="#b58e61" strokeOpacity=".18" strokeWidth="1" transform="rotate(26 300 211)" />
+          <path d="M75 271 202 97 452 103 492 307" fill="none" stroke="url(#sol-route)" strokeOpacity=".47" strokeWidth="1.4" strokeDasharray="5 9" strokeLinecap="round" />
+          <path d="M300 37v26M300 358v25M58 210h24M518 210h24" stroke="#a47a49" strokeOpacity=".39" strokeWidth="1" />
+          <g className={styles.solarRays} stroke="#e59b42" strokeOpacity=".7" strokeWidth="2" strokeLinecap="round">
+            <path d="M300 122v-18M300 309v18M206 216h-18M394 216h18M234 150l-13-13M366 282l13 13M366 150l13-13M234 282l-13 13" />
+          </g>
+          <g className={styles.sunBody}>
+            <circle cx="300" cy="216" r="78" fill="#f3b655" fillOpacity=".34" filter="url(#sol-soft-glow)" />
+            <circle cx="300" cy="216" r="70" fill="none" stroke="#e7b96f" strokeOpacity=".55" />
+            <circle cx="300" cy="216" r="62" fill="url(#sol-disc)" stroke="#fff2c8" strokeWidth="2" />
+            <path d="M269 180c20-15 49-11 67 3" fill="none" stroke="#fff9df" strokeOpacity=".5" strokeWidth="4" strokeLinecap="round" />
+            <path d="M267 245c19 11 44 11 63-2" fill="none" stroke="#bb6b2c" strokeOpacity=".17" strokeWidth="5" strokeLinecap="round" />
+          </g>
+          <circle className={styles.satelliteNear} cx="428" cy="216" r="4" fill="#e7a755" stroke="#fff4d1" strokeWidth="1.5" />
+          <circle className={styles.satelliteFar} cx="300" cy="34" r="3" fill="#79b6cd" stroke="#f4ffff" strokeWidth="1" />
+          <g fill="#b4824a" fillOpacity=".7"><circle cx="89" cy="63" r="1.5" /><circle cx="155" cy="330" r="1.7" /><circle cx="352" cy="62" r="1.6" /><circle cx="533" cy="241" r="1.5" /><circle cx="524" cy="351" r="1.2" /><circle cx="449" cy="46" r="1.4" /></g>
         </svg>
-        <span className={styles.artLabelBottom}>TỪ TÒ MÒ ĐẾN HIỂU BIẾT <span>↗</span></span>
+        <span className={styles.chartCoordinate} aria-hidden="true">FLYDO / SOL 01</span>
+        <span className={styles.chartLabel} aria-hidden="true">HỆ HỌC TẬP <span>•</span> 04 ĐIỂM ĐẾN</span>
+        {destinations.map(({ label, href, className, Icon }) => (
+          <Link key={href} href={href} className={`${styles.planet} ${className}`} aria-label={`Đến ${label.toLowerCase()}`}>
+            <span className={styles.planetDisc}><Icon className="h-5 w-5" aria-hidden="true" /></span>
+            <span className={styles.planetLabel}>{label}</span>
+          </Link>
+        ))}
+        <button type="button" onClick={toggleMotion} className={styles.motionButton} aria-label={motionPaused ? 'Bật hiệu ứng Sol' : 'Tạm dừng hiệu ứng Sol'} aria-pressed={motionPaused} title={motionPaused ? 'Bật hiệu ứng' : 'Tạm dừng hiệu ứng'}>
+          {motionPaused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
+        </button>
       </div>
-    </header>
+    </section>
   );
 }

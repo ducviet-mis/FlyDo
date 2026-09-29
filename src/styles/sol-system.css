@@ -1,17 +1,72 @@
 /* Sol is the saved light choice. All rules stay scoped away from Luna. */
 html.light body { background-color: rgb(var(--color-background)); }
 
+html.light #main-content:not([data-star-immersive="true"]) {
+  background-image:
+    radial-gradient(ellipse 64% 510px at 89% -80px, rgb(var(--sol-daylight) / .21), transparent 80%),
+    radial-gradient(ellipse 48% 440px at -8% 40%, rgb(var(--color-primary) / .045), transparent 80%),
+    radial-gradient(circle at 18% 30%, rgb(var(--sol-amber) / .10) 0 1px, transparent 1.6px);
+  background-size: auto, auto, 217px 199px;
+}
+
+html.light .site-footer { background: linear-gradient(90deg, rgb(255 252 245), rgb(250 242 224)); border-top-color: rgb(var(--sol-line) / .52); }
+
+.sol-ribbon { display: none; width: 100%; max-width: 1240px; min-height: 35px; align-items: center; gap: 10px; margin: 0 auto 20px; color: rgb(var(--color-text-secondary)); font-size: 10px; font-weight: 750; letter-spacing: .15em; text-transform: uppercase; }
+html.light .sol-ribbon { display: flex; }
+.sol-ribbon-mark { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border: 1px solid rgb(var(--sol-line) / .7); border-radius: 10px; background: rgb(var(--sol-amber-soft)); color: rgb(var(--sol-amber-ink)); }
+.sol-ribbon-path { min-width: 0; white-space: nowrap; }
+.sol-ribbon-path span { margin: 0 5px; color: rgb(var(--sol-line)); }
+.sol-ribbon-path strong { color: rgb(var(--color-text-primary)); font-weight: 800; }
+.sol-ribbon-rule { height: 1px; min-width: 12px; flex: 1; background: linear-gradient(90deg, rgb(var(--sol-line) / .72), transparent); }
+.sol-ribbon-signature { color: rgb(var(--color-text-secondary)); white-space: nowrap; }
+
+html.light #main-content .study-heading,
+html.light #main-content .star-page-header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgb(var(--sol-line) / .7);
+  border-radius: 24px;
+  background: radial-gradient(ellipse at 88% 10%, rgb(var(--sol-daylight) / .31), transparent 46%), linear-gradient(115deg, rgb(255 254 251), rgb(255 248 231));
+  box-shadow: inset 0 1px rgb(255 255 255 / .92), 0 20px 45px -36px rgb(131 92 43 / .24);
+}
+html.light #main-content .study-heading { min-height: 220px; padding: 28px 34px 30px; }
+html.light #main-content .star-page-header { min-height: 116px; padding: 23px 27px; }
+html.light #main-content .study-heading::before,
+html.light #main-content .star-page-header::before { content: ''; position: absolute; top: 0; bottom: auto; left: auto; right: 12%; width: 140px; height: 2px; background: linear-gradient(90deg, transparent, rgb(var(--sol-amber) / .85), transparent); box-shadow: 0 0 14px rgb(var(--sol-daylight) / .45); pointer-events: none; }
+html.light #main-content .study-heading::after,
+html.light #main-content .star-page-header::after { content: ''; position: absolute; right: -80px; bottom: -155px; width: 345px; height: 345px; border: 1px solid rgb(var(--sol-amber) / .19); border-radius: 50%; background: radial-gradient(circle, rgb(var(--sol-daylight) / .23), transparent 61%); box-shadow: 0 0 0 37px rgb(var(--sol-amber) / .045), 0 0 0 82px rgb(var(--sol-amber) / .02); pointer-events: none; z-index: -1; }
+html.light #main-content .study-heading > div,
+html.light #main-content .star-page-header > div { position: relative; z-index: 1; }
+html.light #main-content .study-heading h1 { font-weight: 760; letter-spacing: -.045em; }
+html.light #main-content .study-geometry { top: 8px; right: 6px; width: 290px; height: 200px; color: rgb(var(--sol-amber-ink)); opacity: .35; }
+
+html.light #main-content:not([data-star-page="home"]) [data-vivux-card],
+html.light #main-content:not([data-star-page="home"]) .widget-card,
+html.light #main-content:not([data-star-page="home"]) .widget-card-static { border-color: rgb(var(--sol-line) / .55); background: linear-gradient(155deg, rgb(255 255 255), rgb(255 252 245)); box-shadow: inset 0 1px rgb(255 255 255 / .9), 0 14px 34px -28px rgb(110 75 35 / .24); }
+html.light #main-content .study-lesson-card { border-color: rgb(var(--sol-line) / .68); border-radius: 18px; }
+html.light #main-content .study-lesson-card::before { background: linear-gradient(180deg, rgb(var(--sol-amber)), rgb(var(--color-primary))); }
+html.light #main-content .study-lesson-card:hover,
+html.light #main-content a:hover > [data-vivux-card] { border-color: rgb(var(--sol-amber) / .77); box-shadow: 0 18px 36px -24px rgb(148 94 36 / .28); }
+html.light #main-content .study-reading-guide { border-color: rgb(var(--sol-line) / .65); border-radius: 16px; background: linear-gradient(160deg, rgb(255 254 250), rgb(255 248 233)); }
+html.light #main-content .study-article-body h2 { border-bottom-color: rgb(var(--sol-line) / .57); color: rgb(var(--color-primary)); }
+html.light #main-content .vivux-prose { --tw-prose-links: rgb(var(--color-primary)); }
+html.light #main-content :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) { border-color: rgb(var(--sol-line) / .78); background-color: rgb(var(--color-surface-elevated)); color: rgb(var(--color-text-primary)); }
+html.light #main-content :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select):focus-visible { border-color: rgb(var(--color-primary) / .8); box-shadow: 0 0 0 3px rgb(var(--color-primary) / .13); }
+html.light #main-content button:disabled { filter: saturate(.7); }
+
 /* Navigation and the three reusable surface levels. */
 html.light nav[aria-label="Điều hướng chính"] {
-  background: rgb(var(--color-surface-elevated) / .94);
-  border-bottom-color: rgb(var(--sol-line) / .55);
-  box-shadow: 0 6px 24px -22px rgb(67 55 35 / .28);
+  background: linear-gradient(90deg, rgb(255 254 250 / .97), rgb(255 249 236 / .95) 60%, rgb(255 254 250 / .97));
+  border-bottom-color: rgb(var(--sol-line) / .65);
+  box-shadow: inset 0 -1px rgb(var(--sol-daylight) / .18), 0 10px 35px -28px rgb(131 91 45 / .33);
 }
 html.light nav[aria-label="Điều hướng mobile"] {
-  background: rgb(var(--color-surface-elevated) / .97);
-  border-color: rgb(var(--sol-line) / .72);
-  box-shadow: var(--shadow-float);
+  background: linear-gradient(140deg, rgb(255 255 253 / .98), rgb(255 248 231 / .98));
+  border-color: rgb(var(--sol-line) / .8);
+  box-shadow: inset 0 1px rgb(255 255 255 / .98), 0 12px 35px rgb(117 88 51 / .17);
 }
+html.light nav[aria-label="Điều hướng mobile"] a[aria-current="page"] { background: rgb(var(--sol-amber-soft)); box-shadow: inset 0 0 0 1px rgb(var(--sol-amber) / .3), 0 4px 18px rgb(var(--sol-amber) / .12); }
 html.light .vivux-nav-link[aria-current="page"] { background: rgb(var(--color-primary) / .09); }
 html.light .vivux-nav-link[aria-current="page"]::after { background: rgb(var(--sol-amber-ink)); }
 html.light [data-vivux-card="main"] { border-color: rgb(var(--sol-line) / .57); background-color: rgb(var(--color-card)); box-shadow: var(--shadow-card); }
@@ -74,6 +129,28 @@ html.light .sol-profile-tab:hover:not([aria-pressed="true"]) { background: rgb(v
 html.light .sol-pricing-featured { border-color: rgb(var(--color-primary) / .52); background: rgb(var(--color-surface-elevated)); box-shadow: var(--shadow-float); }
 html.light .sol-pricing-featured > :first-child { background: rgb(var(--sol-amber-soft)); color: rgb(var(--sol-amber-ink)); border-bottom: 1px solid rgb(var(--sol-line) / .63); }
 html.light main[data-star-page="pricing"] details[open] { border-color: rgb(var(--sol-line)); background: rgb(var(--color-surface-elevated)); }
+
+html.light #main-content[data-star-page="pricing"] > div > section:first-child { border-color: rgb(var(--sol-line) / .75); border-radius: 25px; background: radial-gradient(circle at 70% 15%, rgb(var(--sol-amber) / .18) 0 1px, transparent 2px), radial-gradient(ellipse at 76% 22%, rgb(var(--sol-daylight) / .4), transparent 48%), linear-gradient(115deg, rgb(255 254 250), rgb(255 246 222)); background-size: 137px 127px, auto, auto; box-shadow: inset 0 1px rgb(255 255 255 / .96), 0 20px 44px -33px rgb(151 97 40 / .27); }
+html.light #main-content[data-star-page="pricing"] > div > section:first-child h1 { color: rgb(var(--color-text-primary)); }
+html.light #main-content[data-star-page="profile"] [data-vivux-card] > div:first-child.bg-hero { background: linear-gradient(95deg, rgb(255 243 216), rgb(238 245 252)); }
+html.light #main-content[data-star-page="admin"] nav a[aria-current="page"] > div { border: 1px solid rgb(var(--sol-amber) / .45); box-shadow: inset 2px 0 rgb(var(--sol-amber-ink) / .8); }
+html.light #main-content[data-star-page="login"] [data-vivux-card],
+html.light #main-content[data-star-page="register"] [data-vivux-card] { border-color: rgb(var(--sol-line) / .72); background: radial-gradient(circle at 50% -10%, rgb(var(--sol-daylight) / .24), transparent 45%), linear-gradient(145deg, rgb(255 255 255), rgb(255 250 239)); box-shadow: 0 24px 60px -36px rgb(153 99 42 / .25); }
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  html.light #main-content .study-lesson-card { transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+  html.light #main-content .study-lesson-card:hover { transform: translateY(-2px); }
+}
+
+@media (max-width: 767px) {
+  .sol-ribbon { margin-bottom: 12px; gap: 8px; }
+  .sol-ribbon-signature { display: none; }
+  html.light #main-content .study-heading { min-height: 0; padding: 23px 20px; border-radius: 19px; }
+  html.light #main-content .star-page-header { min-height: 0; padding: 21px; border-radius: 19px; }
+  html.light #main-content .study-heading::after,
+  html.light #main-content .star-page-header::after { width: 225px; height: 225px; right: -100px; bottom: -130px; }
+  html.light #main-content .study-heading h1 { font-size: clamp(26px, 8vw, 35px); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html.light *, html.light *::before, html.light *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
