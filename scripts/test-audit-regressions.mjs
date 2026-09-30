@@ -54,7 +54,7 @@ class Query {
 }
 const db = {
   from: (table) => new Query(table),
-  rpc: (...args) => Promise.resolve().then(() => rpcHandler(...args)),
+  rpc: (...args) => { const request = Promise.resolve().then(() => rpcHandler(...args)); request.abortSignal = () => request; return request; },
   channel: (name) => {
     channelNames.push(name);
     let subscribed = false;
@@ -245,6 +245,7 @@ assert.equal(new Set(channelNames).size, channelNames.length);
 await clear();
 
 const Room = load(resolve(repo, 'src/app/mock-exams/[examId]/page.tsx')).default;
+rpcHandler = () => ({ data: null, error: { message: 'FLYDO: Không tìm thấy đề thi.' } });
 queryHandler = () => ({ data: null, error: { message: 'not found' } });
 routeParams = { examId: 'missing' };
 await React.act(async () => root.render(React.createElement(Room)));
@@ -254,6 +255,7 @@ await clear();
 queryHandler = (query) => query.table === 'mock_exams'
   ? { data: { id: 'empty', duration: 45 }, error: null } : { data: [], error: null };
 routeParams = { examId: 'empty' };
+rpcHandler = () => ({ data: null, error: { message: 'FLYDO: Đề thi chưa có câu hỏi.' } });
 await React.act(async () => root.render(React.createElement(Room)));
 assert.match(document.querySelector('[role="alert"]').textContent, /chưa có câu hỏi/);
 await clear();
@@ -264,10 +266,12 @@ assert.match(document.querySelector('[role="alert"]').textContent, /thiếu mã/
 await clear();
 window.history.replaceState({}, '', '/?attemptId=foreign');
 queryHandler = () => ({ data: null, error: null });
+const resultCalls = [];
+rpcHandler = (name, args) => { resultCalls.push({ name, args }); return { data: null, error: { message: 'FLYDO: Không tìm thấy bài làm của bạn trong đề thi này.' } }; };
 await React.act(async () => root.render(React.createElement(Result)));
-const attemptQuery = requests.find((query) => query.table === 'mock_exam_attempts');
-assert.ok(attemptQuery.filters.some(([key, id]) => key === 'exam_id' && id === 'exam'));
-assert.ok(attemptQuery.filters.some(([key, id]) => key === 'user_id' && id === user.id));
+assert.equal(resultCalls[0].name, 'get_my_mock_exam_result');
+assert.deepEqual(resultCalls[0].args, { p_exam_id: 'exam', p_attempt_id: 'foreign' });
+assert.equal(requests.some((query) => query.table === 'mock_exam_questions'), false);
 assert.match(document.querySelector('[role="alert"]').textContent, /Không tìm thấy/);
 await clear();
 

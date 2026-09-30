@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { useServerExam } from '@/features/mock-exams/use-server-exam';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
@@ -13,43 +13,24 @@ import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { LayoutGrid } from 'lucide-react';
-import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
-
-type MockExamDraft = {
-  version: 1;
-  answers: Record<string, number>;
-  currentIndex: number;
-  deadlineAt: number;
-  updatedAt: number;
-};
-
-const MOCK_EXAM_DRAFT_VERSION = 1;
 
 export default function MockExamRoomPage() {
   const params = useParams<{ examId: string }>();
   const router = useRouter();
   const { user, initialized } = useAuthStore();
-  const [loadError, setLoadError] = useState('');
+  const {
+    exam, questions, answers, currentIndex, setCurrentIndex, deadlineAt, loadError,
+    saveError, saving, blocked, isSubmitting, attemptId, chooseAnswer, submit,
+    remainingSeconds, retrySave, retryLoad, ready: draftReady,
+  } = useServerExam(params.examId, user?.id);
   const [submitError, setSubmitError] = useState('');
-  const [reload, setReload] = useState(0);
-  const [exam, setExam] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const [expired, setExpired] = useState(false);
-  const [deadlineAt, setDeadlineAt] = useState<number | null>(null);
-  const [draftReady, setDraftReady] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expiredDeadline, setExpiredDeadline] = useState<number | null>(null);
+  const expired = deadlineAt !== null && expiredDeadline === deadlineAt;
   const [showConfirm, setShowConfirm] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
   const submitLockRef = useRef(false);
-  const autoSubmitAttemptedRef = useRef(false);
-  const draftKey = user?.id
-    ? `flydo:mock-exam-draft:v${MOCK_EXAM_DRAFT_VERSION}:${user.id}:${params.examId}`
-    : null;
+  const autoSubmitAttemptedRef = useRef<number | null>(null);
 
   const toggleFullscreen = async () => {
     if (!window.matchMedia('(min-width: 1024px)').matches) return;
@@ -82,182 +63,36 @@ export default function MockExamRoomPage() {
   }, [exam]);
 
   useEffect(() => {
-    if (!user?.id) return;
-
-    let cancelled = false;
-
-    async function loadExam() {
-      setDraftReady(false);
-      setExam(null); setQuestions([]); setDeadlineAt(null);
-      setLoadError(''); setSubmitError('');
-      try {
-      setAnswers({});
-      setCurrentIndex(0);
-      autoSubmitAttemptedRef.current = false;
-      setExpired(false);
-
-      const supabase = getSupabaseClient();
-
-      const { data: examData, error: examError } = await supabase
-        .from('mock_exams')
-        .select('*')
-        .eq('id', params.examId)
-        .single();
-
-      if (cancelled) return;
-      if (examError || !examData) throw new Error('Không tìm thấy đề thi hoặc bạn không có quyền truy cập.');
-      if (!Number.isFinite(Number(examData.duration)) || Number(examData.duration) <= 0) throw new Error('Thời gian của đề thi chưa hợp lệ.');
-
-      const qData = await fetchAllPages<any>(async (from, to) => supabase
-        .from('mock_exam_questions').select('*').eq('exam_id', params.examId)
-        .order('order_index').order('id').range(from, to));
-      if (cancelled) return;
-      if (!qData.length) throw new Error('Đề thi chưa có câu hỏi. Vui lòng chọn đề khác.');
-      if (qData.some((q) => !Array.isArray(q.options) || q.options.length < 2
-        || !Number.isInteger(q.correct_answer) || q.correct_answer < 0 || q.correct_answer >= q.options.length)) {
-        throw new Error('Đề thi có câu hỏi chưa hợp lệ. Vui lòng báo ADMIN kiểm tra.');
-      }
-      const sanitized = qData.map((q) => ({ ...q, options: q.options.map(formatOptionMath) }));
-
-      let restoredAnswers: Record<string, number> = {};
-      let restoredIndex = 0;
-      let restoredDeadline = Date.now() + examData.duration * 60 * 1000;
-
-      if (draftKey) {
-        try {
-          const rawDraft = window.localStorage.getItem(draftKey);
-          const draft = rawDraft ? JSON.parse(rawDraft) as Partial<MockExamDraft> : null;
-
-          if (
-            draft?.version === MOCK_EXAM_DRAFT_VERSION &&
-            draft.answers &&
-            typeof draft.answers === 'object' &&
-            Number.isFinite(draft.deadlineAt)
-          ) {
-            const questionById = new Map<string, any>(
-              sanitized.map((question: any) => [question.id, question] as [string, any])
-            );
-            restoredAnswers = Object.fromEntries(
-              Object.entries(draft.answers).filter(([questionId, answer]) => {
-                const question = questionById.get(questionId);
-                return Boolean(
-                  question &&
-                  Number.isInteger(answer) &&
-                  answer >= 0 &&
-                  Array.isArray(question.options) &&
-                  answer < question.options.length
-                );
-              })
-            );
-            restoredIndex = Math.min(
-              Math.max(0, Number.isInteger(draft.currentIndex) ? draft.currentIndex! : 0),
-              Math.max(0, sanitized.length - 1)
-            );
-            restoredDeadline = draft.deadlineAt!;
-          }
-        } catch {
-          // Bản nháp hỏng sẽ được thay bằng một bản mới hợp lệ ở lần lưu kế tiếp.
-        }
-      }
-
-      setExam(examData);
-      setQuestions(sanitized);
-      setAnswers(restoredAnswers);
-      setCurrentIndex(restoredIndex);
-      setDeadlineAt(restoredDeadline);
-      setDraftReady(true);
-      } catch (error) {
-        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'Chưa thể tải đề thi. Hãy kiểm tra kết nối và thử lại.');
-      }
-    }
-
-    void loadExam();
-    return () => { cancelled = true; };
-  }, [draftKey, params.examId, user?.id, reload]);
-
-  useEffect(() => {
-    if (!draftReady || !draftKey || !exam || !deadlineAt || isSubmitting) return;
-
-    const draft: MockExamDraft = {
-      version: MOCK_EXAM_DRAFT_VERSION,
-      answers,
-      currentIndex,
-      deadlineAt,
-      updatedAt: Date.now(),
-    };
-
-    try {
-      window.localStorage.setItem(draftKey, JSON.stringify(draft));
-    } catch {
-      // Nếu trình duyệt chặn bộ nhớ cục bộ, phòng thi vẫn tiếp tục hoạt động bình thường.
-    }
-  }, [answers, currentIndex, deadlineAt, draftKey, draftReady, exam, isSubmitting]);
+    if (attemptId && exam) router.replace(`/mock-exams/${exam.id}/result?attemptId=${attemptId}`);
+  }, [attemptId, exam, router]);
 
   const handleSubmit = useCallback(async () => {
-    if (!user || !exam || !questions.length || submitLockRef.current) return;
+    if (!user || !exam || submitLockRef.current) return;
+    const submittingUserId = user.id;
     submitLockRef.current = true;
-    setIsSubmitting(true);
     setSubmitError('');
     try {
-
-    const remainingSeconds = deadlineAt
-      ? Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000))
-      : 0;
-    const durationUsed = Math.max(
-      0,
-      Math.min(exam.duration * 60, exam.duration * 60 - remainingSeconds)
-    );
-    let correctCount = 0;
-
-    questions.forEach(q => {
-      if (answers[q.id] === q.correct_answer) {
-        correctCount++;
-      }
-    });
-
-    const score = questions.length > 0 ? (10 / questions.length) * correctCount : 0;
-
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase.from('mock_exam_attempts').insert({
-      user_id: user.id,
-      exam_id: exam.id,
-      score: score,
-      correct_count: correctCount,
-      total_questions: questions.length,
-      answers: answers,
-      duration_used: durationUsed
-    }).select().single();
-
-    if (useAuthStore.getState().user?.id !== user.id) return;
-    if (!error && data) {
-      if (draftKey) {
-        try {
-          window.localStorage.removeItem(draftKey);
-        } catch {
-          // Không cản trở việc xem kết quả nếu trình duyệt không cho xóa bộ nhớ cục bộ.
-        }
-      }
+      const id = await submit();
+      if (!id || useAuthStore.getState().user?.id !== submittingUserId) return;
       if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-      router.push(`/mock-exams/${exam.id}/result?attemptId=${data.id}`);
-    } else {
-      console.error(error);
-      throw new Error('Chưa nộp được bài. Bản nháp vẫn được giữ; hãy kiểm tra mạng và nộp lại.');
-    }
-    } catch {
-      if (useAuthStore.getState().user?.id === user.id) setSubmitError('Chưa nộp được bài. Bản nháp vẫn được giữ; hãy kiểm tra mạng và nộp lại.');
-    } finally { submitLockRef.current = false; setIsSubmitting(false); }
-  }, [answers, deadlineAt, draftKey, exam, questions, router, user]);
+    } catch (error) {
+      if (useAuthStore.getState().user?.id === submittingUserId) {
+        setSubmitError(error instanceof Error ? error.message : 'Chưa nộp được bài. Hãy kiểm tra mạng và nộp lại.');
+      }
+    } finally { submitLockRef.current = false; }
+  }, [exam, submit, user]);
 
   const handleExpire = useCallback(() => {
-    setExpired(true);
-    if (!autoSubmitAttemptedRef.current) {
-      autoSubmitAttemptedRef.current = true;
+    if (deadlineAt === null) return;
+    setExpiredDeadline(deadlineAt);
+    if (autoSubmitAttemptedRef.current !== deadlineAt) {
+      autoSubmitAttemptedRef.current = deadlineAt;
       void handleSubmit();
     }
-  }, [handleSubmit]);
+  }, [deadlineAt, handleSubmit]);
 
-  const goToPreviousQuestion = useCallback(() => setCurrentIndex((index) => Math.max(0, index - 1)), []);
-  const goToNextQuestion = useCallback(() => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)), [questions.length]);
+  const goToPreviousQuestion = useCallback(() => setCurrentIndex((index) => Math.max(0, index - 1)), [setCurrentIndex]);
+  const goToNextQuestion = useCallback(() => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)), [questions.length, setCurrentIndex]);
 
   useEffect(() => {
     if (!questions.length || showConfirm || isSubmitting) return;
@@ -284,11 +119,11 @@ export default function MockExamRoomPage() {
   if (initialized && (!user || loadError)) return (
     <div className="container max-w-xl py-20 text-center space-y-4">
       <p role="alert" className="text-destructive">{!user ? 'Vui lòng đăng nhập để làm bài thi.' : loadError}</p>
-      {user && <Button onClick={() => setReload((value) => value + 1)}>Thử lại</Button>}
+      {user && <Button onClick={retryLoad}>Thử lại</Button>}
       <Button variant="outline" onClick={() => router.push(user ? '/mock-exams' : '/login')}>{user ? 'Về danh sách đề' : 'Đăng nhập'}</Button>
     </div>
   );
-  if (!initialized || !exam || !draftReady) {
+  if (!initialized || !exam || !draftReady || attemptId) {
     return <div className="py-32 flex flex-col items-center justify-center animate-pulse text-muted-foreground font-medium">Đang tải đề thi...</div>;
   }
 
@@ -297,7 +132,7 @@ export default function MockExamRoomPage() {
 
   return (
     <div className="w-full flex flex-col">
-      {submitError && <p role="alert" className="p-4 text-destructive text-center">{submitError}</p>}
+      {submitError && <div className="flex flex-wrap items-center justify-center gap-3 p-4"><p role="alert" className="text-destructive">{submitError}</p><Button variant="outline" disabled={isSubmitting} onClick={handleSubmit}>Nộp lại</Button>{blocked && <Button variant="outline" onClick={retryLoad}>Đồng bộ lại</Button>}</div>}
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 px-3 py-3 shadow-soft backdrop-blur-md sm:px-5">
         <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_minmax(180px,auto)_minmax(0,1fr)]">
@@ -378,7 +213,7 @@ export default function MockExamRoomPage() {
           >
             {isFullscreen ? <Minimize2 aria-hidden="true" className="h-4 w-4" /> : <Maximize2 aria-hidden="true" className="h-4 w-4" />}
           </Button>
-          <ExamClock deadlineAt={deadlineAt!} onExpire={handleExpire} />
+          <ExamClock deadlineAt={deadlineAt!} onExpire={handleExpire} getRemaining={remainingSeconds} />
 
           <Button
             disabled={isSubmitting}
@@ -394,6 +229,10 @@ export default function MockExamRoomPage() {
         </div>
       </header>
 
+      <div className="mx-auto w-full max-w-[1440px] px-4 pt-3 text-xs text-muted-foreground">
+        {saveError ? <div className="flex flex-wrap items-center gap-3"><p role="alert" className="text-warning">{saveError}</p><Button variant="outline" size="sm" disabled={saving || isSubmitting} onClick={blocked ? retryLoad : retrySave}>{blocked ? 'Đồng bộ lại' : 'Thử lưu lại'}</Button></div>
+          : <p role="status">{saving ? 'Đang lưu đáp án lên máy chủ…' : 'Bài làm được lưu trên máy chủ. Thời gian do máy chủ quản lý.'}</p>}
+      </div>
       <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 md:flex-row md:px-6 md:py-6">
         {/* Main Content (Question) */}
         <main className="min-w-0 flex-1 pb-20 md:pb-0">
@@ -416,8 +255,8 @@ export default function MockExamRoomPage() {
                     return (
                       <button
                         key={idx}
-                        disabled={isSubmitting || expired}
-                        onClick={() => { if (deadlineAt && Date.now() < deadlineAt && !submitLockRef.current) setAnswers(prev => ({ ...prev, [currentQuestion.id]: idx })); }}
+                        disabled={isSubmitting || expired || blocked}
+                        onClick={() => chooseAnswer(currentQuestion.id, idx)}
                         aria-pressed={isSelected}
                         className={cn(
                           "sol-exam-option w-full min-w-0 flex items-center gap-3 sm:gap-4 p-4 rounded-xl border transition-colors duration-200 text-left group",

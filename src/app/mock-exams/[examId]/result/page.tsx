@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { examRpc } from '@/features/mock-exams/exam-rpc';
 import { Button } from '@/components/ui/button';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
 import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
@@ -10,7 +10,6 @@ import { ArrowLeft, CheckCircle2, XCircle, Clock, RotateCcw, Target, FileText } 
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
-import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
 
 export default function MockExamResultPage() {
@@ -35,17 +34,18 @@ export default function MockExamResultPage() {
       try {
         if (!user?.id) throw new Error('Vui lòng đăng nhập để xem kết quả.');
         if (!attemptId) throw new Error('Đường dẫn thiếu mã bài làm.');
-        const supabase = getSupabaseClient();
-        const { data: attemptData, error: attemptError } = await supabase
-          .from('mock_exam_attempts').select('*').eq('id', attemptId)
-          .eq('exam_id', params.examId).eq('user_id', user.id).maybeSingle();
-        if (attemptError || !attemptData) throw new Error('Không tìm thấy bài làm của bạn trong đề thi này.');
-        const { data: examData, error: examError } = await supabase
-          .from('mock_exams').select('*').eq('id', params.examId).maybeSingle();
-        if (examError || !examData) throw new Error('Đề thi này không còn tồn tại.');
-        const qData = await fetchAllPages<any>(async (from, to) => supabase
-          .from('mock_exam_questions').select('*').eq('exam_id', params.examId)
-          .order('order_index').order('id').range(from, to));
+        const { data, error: resultError } = await examRpc('get_my_mock_exam_result', {
+          p_exam_id: params.examId, p_attempt_id: attemptId,
+        });
+        if (resultError) throw new Error(resultError.message?.startsWith('FLYDO:')
+          ? resultError.message.slice(6).trim() : 'Chưa thể tải kết quả. Hãy kiểm tra kết nối và thử lại.');
+        const attemptData = data?.attempt;
+        const examData = data?.exam;
+        const qData = data?.questions;
+        if (!attemptData || attemptData.user_id !== user.id || attemptData.exam_id !== params.examId
+          || attemptData.id !== attemptId || !examData || !Array.isArray(qData)) {
+          throw new Error('Không tìm thấy bài làm của bạn trong đề thi này.');
+        }
         if (cancelled) return;
         setAttempt({ ...attemptData, score: Number(attemptData.score) || 0, answers: attemptData.answers || {} });
         setExam(examData);
