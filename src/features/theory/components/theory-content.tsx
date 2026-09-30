@@ -4,20 +4,11 @@ import { useEffect, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { normalizeLatexInput } from '@/lib/math/normalize-latex';
+import { sanitizeRichHtml } from '@/lib/security/safe-content';
 
 function renderMathInHtml(source: string) {
   const container = document.createElement('div');
-  container.innerHTML = source;
-
-  container.querySelectorAll('script, iframe, object, embed').forEach((node) => node.remove());
-  container.querySelectorAll<HTMLElement>('*').forEach((node) => {
-    Array.from(node.attributes).forEach((attribute) => {
-      if (attribute.name.toLowerCase().startsWith('on')) node.removeAttribute(attribute.name);
-      if ((attribute.name === 'href' || attribute.name === 'src') && /^\s*javascript:/i.test(attribute.value)) {
-        node.removeAttribute(attribute.name);
-      }
-    });
-  });
+  container.innerHTML = sanitizeRichHtml(source);
 
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];

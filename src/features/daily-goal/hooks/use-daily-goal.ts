@@ -5,6 +5,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { useGoalStore } from '../stores/goal-store';
 import { localStudyDate, studyDayBounds, useOnlineStudyStore } from '../stores/online-study-store';
+import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 
 export function useDailyGoal() {
   const [questions, setQuestions] = useState({ questionsCount: 0, correctCount: 0 });
@@ -25,16 +26,17 @@ export function useDailyGoal() {
     }
 
     let cancelled = false;
+    setQuestions({ questionsCount: 0, correctCount: 0 });
     const fetchTodayProgress = async () => {
       const supabase = getSupabaseClient();
       const { start, end } = studyDayBounds(studyDate);
 
-      const { data } = await supabase
-        .from('practice_progress')
-        .select('is_correct')
-        .eq('user_id', userId)
-        .gte('answered_at', start)
-        .lt('answered_at', end);
+      let data: { is_correct: boolean }[];
+      try {
+        data = await fetchAllPages(async (from, to) => supabase.from('practice_progress')
+          .select('question_id, is_correct').eq('user_id', userId).gte('answered_at', start).lt('answered_at', end)
+          .order('question_id').range(from, to));
+      } catch { return; }
 
       if (data && !cancelled) {
         const questionsCount = data.length;
@@ -46,7 +48,8 @@ export function useDailyGoal() {
     void fetchTodayProgress();
     const onFocus = () => { void fetchTodayProgress(); };
     window.addEventListener('focus', onFocus);
-    return () => { cancelled = true; window.removeEventListener('focus', onFocus); };
+    window.addEventListener('flydo:practice-progress-updated', onFocus);
+    return () => { cancelled = true; window.removeEventListener('focus', onFocus); window.removeEventListener('flydo:practice-progress-updated', onFocus); };
   }, [studyDate, userId]);
 
   const currentAccuracy = progress.questionsCount > 0 

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { HandbookCategory } from '@/features/handbook/types';
 import { RichTextEditor } from '@/features/handbook/components/rich-text-editor';
 import { uploadHandbookImage } from '@/features/handbook/utils/upload';
+import { readLocalCache, writeLocalCache } from '@/lib/security/safe-storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -101,7 +102,7 @@ export default function NewHandbookPostPage() {
     }
 
     if (inserted?.id && typeof window !== 'undefined') {
-      localStorage.setItem(`handbook_author_bio_${inserted.id}`, authorBio);
+      writeLocalCache(`handbook_author_bio_${inserted.id}`, authorBio);
     }
 
     setLoading(false);

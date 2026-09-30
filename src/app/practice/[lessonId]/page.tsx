@@ -33,7 +33,7 @@ export default function LessonPracticePage() {
 
   const supabase = getSupabaseClient();
   const { user } = useAuthStore();
-  const { savedIds, toggleSave } = useSavedQuestions(lessonId);
+  const { savedIds, toggleSave, error: savedError } = useSavedQuestions(lessonId);
 
   const lessonInfo = useMemo(() => {
     const meta = dbLessonMeta || LESSON_META[lessonId];
@@ -177,7 +177,9 @@ export default function LessonPracticePage() {
     selectAnswer,
     nextQuestion,
     prevQuestion,
-    progress
+    progress,
+    saveError,
+    retrySaves
   } = usePractice(questions, lessonId, mode === 'mix' ? [] : answeredIds, mode !== 'mix');
 
   const handleNext = () => {
@@ -223,12 +225,13 @@ export default function LessonPracticePage() {
         )}
       </header>
 
+      {(savedError || saveError) && <div className="mb-4 space-y-2"><p role="alert" className="text-destructive">{savedError || saveError}</p>{saveError && <Button variant="outline" onClick={() => void retrySaves()}>Thử lưu lại tiến độ</Button>}</div>}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-32">
           <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
           <p className="text-muted-foreground font-medium">Đang tải bài tập...</p>
         </div>
-      ) : questions.length === 0 ? (
+      ) : questions.length === 0 || !currentQuestion ? (
         <div className="bg-card rounded-xl p-12 text-center text-muted-foreground border border-border shadow-soft">
           Chưa có câu hỏi nào cho bài học này.
         </div>

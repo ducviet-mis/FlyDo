@@ -18,5 +18,6 @@ export function markPostAsRead(postId: string, scope?: string) {
   if (typeof window === 'undefined' || !postId) return;
   const ids = new Set(getReadPostIds(scope));
   ids.add(postId);
-  localStorage.setItem(storageKey(scope), JSON.stringify(Array.from(ids)));
+  try { localStorage.setItem(storageKey(scope), JSON.stringify(Array.from(ids))); }
+  catch { /* Reading stays available when storage is blocked or full. */ }
 }

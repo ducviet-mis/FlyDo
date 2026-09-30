@@ -22,6 +22,7 @@ export function StatsOverviewCard() {
         <CardTitle as="h2">Tổng quan học tập</CardTitle>
         <TimeFilterTabs value={filter} onChange={setFilter} />
       </CardHeader>
+      {stats.error && <p role="alert" className="px-6 pb-4 text-sm text-destructive">{stats.error}</p>}
       <CardContent className="grid grid-cols-1 items-center gap-6 sm:grid-cols-[1fr_200px]">
         <div className="divide-y divide-border">
           {metrics.map(({ label, value, unit, icon: Icon, tone }) => (

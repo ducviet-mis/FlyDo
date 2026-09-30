@@ -15,8 +15,10 @@ export function usePracticeData() {
   const { user } = useAuthStore();
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchData() {
       setLoading(true);
+      setProgress({}); setWrongCounts({}); setSavedCounts({});
       const supabase = getSupabaseClient();
       
       let questions: Array<{ lesson_id: string; id: string; difficulty_level?: number }>;
@@ -29,10 +31,11 @@ export function usePracticeData() {
           .range(from, to));
       } catch (error) {
         console.error('Could not load all practice questions:', error);
-        setLoading(false);
+        if (!cancelled) setLoading(false);
         return;
       }
 
+      const questionById = new Map(questions.map((question) => [question.id, question]));
       const lessonMap = new Map<string, number>();
       const levelMap = new Map<string, number>(); // key: `${lesson_id}_${level}`
 
@@ -61,6 +64,10 @@ export function usePracticeData() {
           console.warn('Could not load all practice progress:', error);
         }
           
+        progressData = progressData.filter((row) => questionById.has(row.question_id)).map((row) => {
+          const question = questionById.get(row.question_id)!;
+          return { ...row, lesson_id: question.lesson_id, difficulty_level: question.difficulty_level || 1 };
+        });
         const progressCount = new Map<string, Set<string>>();
         const wrongCountMap = new Map<string, number>();
 
@@ -96,6 +103,10 @@ export function usePracticeData() {
           console.warn('Could not load saved practice questions:', error);
         }
 
+        savedData = savedData.filter((row) => questionById.has(row.question_id)).map((row) => {
+          const question = questionById.get(row.question_id)!;
+          return { ...row, lesson_id: question.lesson_id, difficulty_level: question.difficulty_level || 1 };
+        });
         const savedCountMap = new Map<string, number>();
         (savedData || []).forEach((s: { lesson_id: string; question_id: string; difficulty_level?: number }) => {
            const level = s.difficulty_level || 1;
@@ -204,6 +215,7 @@ export function usePracticeData() {
           })),
         }));
 
+      if (cancelled) return;
       setGrades(gradeArray);
       setProgress(lessonProgress);
       setWrongCounts(newWrongCounts);
@@ -211,7 +223,8 @@ export function usePracticeData() {
       setLoading(false);
     }
 
-    fetchData();
+    void fetchData();
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   return { grades, loading, progress, wrongCounts, savedCounts };

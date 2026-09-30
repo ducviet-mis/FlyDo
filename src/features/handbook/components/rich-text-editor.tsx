@@ -20,6 +20,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [isUploading, setIsUploading] = useState(false);
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         bulletList: false,

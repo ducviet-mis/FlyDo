@@ -50,12 +50,14 @@ function MockExamsContent() {
   };
 
   const startExamInFullscreen = (examId: string) => {
+    try {
     if (window.matchMedia('(min-width: 1024px)').matches) {
       window.sessionStorage.setItem('flydo-open-exam-fullscreen', 'true');
       void document.documentElement.requestFullscreen?.().catch(() => undefined);
     } else {
       window.sessionStorage.removeItem('flydo-open-exam-fullscreen');
     }
+    } catch { /* Storage/fullscreen is optional; always open the exam. */ }
     router.push(`/mock-exams/${examId}`);
   };
 

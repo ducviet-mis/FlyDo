@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bell, CheckCheck, ChevronRight, Loader2 } from 'lucide-react';
 import {
@@ -19,6 +19,8 @@ export function NotificationBell() {
   const [selected, setSelected] = useState<AppNotification | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
   const openingDetail = useRef(false);
+
+  useEffect(() => { setOpen(false); setSelected(null); setMarkingAll(false); openingDetail.current = false; }, [userId]);
 
   if (!userId) return null;
   if (available === false) return null;

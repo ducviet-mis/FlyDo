@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { safeInternalPath } from '@/lib/security/safe-navigation';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  let next = requestUrl.searchParams.get('next') ?? '/home';
-
-  // Chỉ cho phép đường dẫn nội bộ để tránh chuyển hướng ra website lạ.
-  if (!next.startsWith('/') || next.startsWith('//')) next = '/home';
+  const next = safeInternalPath(requestUrl.searchParams.get('next'));
 
   if (code) {
     const supabase = createServerSupabaseClient();

@@ -200,7 +200,7 @@ export function FlytieeEvents({ flytiee }: { flytiee: FlytieeController }) {
       </section>
 
       <div className={styles.sectionHeading}>
-        <div><p className={styles.eyebrow}>Today's journey</p><h3 className="mt-1 text-xl font-extrabold">Hành trình hôm nay</h3><p className="mt-1 text-sm text-muted-foreground">Tiến độ được làm mới lúc 00:00 mỗi ngày.</p></div>
+        <div><p className={styles.eyebrow}>Today&apos;s journey</p><h3 className="mt-1 text-xl font-extrabold">Hành trình hôm nay</h3><p className="mt-1 text-sm text-muted-foreground">Tiến độ được làm mới lúc 00:00 mỗi ngày.</p></div>
         <Button type="button" variant="outline" size="sm" className={styles.eventSecondary} onClick={() => void flytiee.refreshMissions()}><RefreshCw aria-hidden="true" className="h-4 w-4" />Cập nhật tiến độ</Button>
       </div>
 

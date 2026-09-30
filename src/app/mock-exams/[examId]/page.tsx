@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { LayoutGrid } from 'lucide-react';
+import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
 
 type MockExamDraft = {
@@ -27,6 +28,9 @@ const MOCK_EXAM_DRAFT_VERSION = 1;
 export default function MockExamRoomPage({ params }: { params: { examId: string } }) {
   const router = useRouter();
   const { user, initialized } = useAuthStore();
+  const [loadError, setLoadError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [reload, setReload] = useState(0);
   const [exam, setExam] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -66,10 +70,13 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
   }, []);
 
   useEffect(() => {
-    if (!exam || window.sessionStorage.getItem('flydo-open-exam-fullscreen') !== 'true') return;
+    if (!exam) return;
+    try {
+    if (window.sessionStorage.getItem('flydo-open-exam-fullscreen') !== 'true') return;
     window.sessionStorage.removeItem('flydo-open-exam-fullscreen');
     if (!window.matchMedia('(min-width: 1024px)').matches) return;
     void document.documentElement.requestFullscreen?.().catch(() => undefined);
+    } catch { /* Fullscreen is optional when browser storage is blocked. */ }
   }, [exam]);
 
   useEffect(() => {
@@ -79,32 +86,35 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
 
     async function loadExam() {
       setDraftReady(false);
+      setExam(null); setQuestions([]); setDeadlineAt(null);
+      setLoadError(''); setSubmitError('');
+      try {
       setAnswers({});
       setCurrentIndex(0);
       autoSubmitAttemptedRef.current = false;
 
       const supabase = getSupabaseClient();
 
-      const { data: examData } = await supabase
+      const { data: examData, error: examError } = await supabase
         .from('mock_exams')
         .select('*')
         .eq('id', params.examId)
         .single();
 
-      if (!examData || cancelled) return;
-
-      const { data: qData } = await supabase
-        .from('mock_exam_questions')
-        .select('*')
-        .eq('exam_id', params.examId)
-        .order('order_index');
-
       if (cancelled) return;
+      if (examError || !examData) throw new Error('Không tìm thấy đề thi hoặc bạn không có quyền truy cập.');
+      if (!Number.isFinite(Number(examData.duration)) || Number(examData.duration) <= 0) throw new Error('Thời gian của đề thi chưa hợp lệ.');
 
-      const sanitized = (qData ?? []).map((q: any) => ({
-        ...q,
-        options: Array.isArray(q.options) ? q.options.map(formatOptionMath) : q.options
-      }));
+      const qData = await fetchAllPages<any>(async (from, to) => supabase
+        .from('mock_exam_questions').select('*').eq('exam_id', params.examId)
+        .order('order_index').order('id').range(from, to));
+      if (cancelled) return;
+      if (!qData.length) throw new Error('Đề thi chưa có câu hỏi. Vui lòng chọn đề khác.');
+      if (qData.some((q) => !Array.isArray(q.options) || q.options.length < 2
+        || !Number.isInteger(q.correct_answer) || q.correct_answer < 0 || q.correct_answer >= q.options.length)) {
+        throw new Error('Đề thi có câu hỏi chưa hợp lệ. Vui lòng báo ADMIN kiểm tra.');
+      }
+      const sanitized = qData.map((q) => ({ ...q, options: q.options.map(formatOptionMath) }));
 
       let restoredAnswers: Record<string, number> = {};
       let restoredIndex = 0;
@@ -154,11 +164,14 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
       setDeadlineAt(restoredDeadline);
       setTimeLeft(Math.max(0, Math.ceil((restoredDeadline - Date.now()) / 1000)));
       setDraftReady(true);
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'Chưa thể tải đề thi. Hãy kiểm tra kết nối và thử lại.');
+      }
     }
 
     void loadExam();
     return () => { cancelled = true; };
-  }, [draftKey, params.examId, user?.id]);
+  }, [draftKey, params.examId, user?.id, reload]);
 
   useEffect(() => {
     if (!draftReady || !draftKey || !exam || !deadlineAt || isSubmitting) return;
@@ -179,9 +192,11 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
   }, [answers, currentIndex, deadlineAt, draftKey, draftReady, exam, isSubmitting]);
 
   const handleSubmit = useCallback(async () => {
-    if (!user || !exam || submitLockRef.current) return;
+    if (!user || !exam || !questions.length || submitLockRef.current) return;
     submitLockRef.current = true;
     setIsSubmitting(true);
+    setSubmitError('');
+    try {
 
     const remainingSeconds = deadlineAt
       ? Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000))
@@ -211,6 +226,7 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
       duration_used: durationUsed
     }).select().single();
 
+    if (useAuthStore.getState().user?.id !== user.id) return;
     if (!error && data) {
       if (draftKey) {
         try {
@@ -219,14 +235,15 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
           // Không cản trở việc xem kết quả nếu trình duyệt không cho xóa bộ nhớ cục bộ.
         }
       }
-      if (document.fullscreenElement) void document.exitFullscreen();
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
       router.push(`/mock-exams/${exam.id}/result?attemptId=${data.id}`);
     } else {
       console.error(error);
-      alert('Có lỗi xảy ra khi nộp bài!');
-      submitLockRef.current = false;
-      setIsSubmitting(false);
+      throw new Error('Chưa nộp được bài. Bản nháp vẫn được giữ; hãy kiểm tra mạng và nộp lại.');
     }
+    } catch {
+      if (useAuthStore.getState().user?.id === user.id) setSubmitError('Chưa nộp được bài. Bản nháp vẫn được giữ; hãy kiểm tra mạng và nộp lại.');
+    } finally { submitLockRef.current = false; setIsSubmitting(false); }
   }, [answers, deadlineAt, draftKey, exam, questions, router, user]);
 
   useEffect(() => {
@@ -253,8 +270,8 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const goToPreviousQuestion = () => setCurrentIndex((index) => Math.max(0, index - 1));
-  const goToNextQuestion = () => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1));
+  const goToPreviousQuestion = useCallback(() => setCurrentIndex((index) => Math.max(0, index - 1)), []);
+  const goToNextQuestion = useCallback(() => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)), [questions.length]);
 
   useEffect(() => {
     if (!questions.length || showConfirm || isSubmitting) return;
@@ -276,8 +293,15 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
 
     window.addEventListener('keydown', handleQuestionNavigation);
     return () => window.removeEventListener('keydown', handleQuestionNavigation);
-  }, [currentIndex, isSubmitting, questions.length, showConfirm]);
+  }, [currentIndex, isSubmitting, questions.length, showConfirm, goToPreviousQuestion, goToNextQuestion]);
 
+  if (initialized && (!user || loadError)) return (
+    <div className="container max-w-xl py-20 text-center space-y-4">
+      <p role="alert" className="text-destructive">{!user ? 'Vui lòng đăng nhập để làm bài thi.' : loadError}</p>
+      {user && <Button onClick={() => setReload((value) => value + 1)}>Thử lại</Button>}
+      <Button variant="outline" onClick={() => router.push(user ? '/mock-exams' : '/login')}>{user ? 'Về danh sách đề' : 'Đăng nhập'}</Button>
+    </div>
+  );
   if (!initialized || !exam || !draftReady) {
     return <div className="py-32 flex flex-col items-center justify-center animate-pulse text-muted-foreground font-medium">Đang tải đề thi...</div>;
   }
@@ -287,6 +311,7 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
 
   return (
     <div className="w-full flex flex-col">
+      {submitError && <p role="alert" className="p-4 text-destructive text-center">{submitError}</p>}
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 px-3 py-3 shadow-soft backdrop-blur-md sm:px-5">
         <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_minmax(180px,auto)_minmax(0,1fr)]">
@@ -376,6 +401,7 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
           </div>
 
           <Button
+            disabled={isSubmitting}
             onClick={() => setShowConfirm(true)}
             size="sm"
             className="h-11 rounded-md bg-primary px-4 font-bold text-primary-foreground shadow-card hover:bg-primary-hover"
@@ -410,7 +436,8 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
                     return (
                       <button
                         key={idx}
-                        onClick={() => setAnswers(prev => ({ ...prev, [currentQuestion.id]: idx }))}
+                        disabled={isSubmitting || timeLeft <= 0}
+                        onClick={() => { if (deadlineAt && Date.now() < deadlineAt && !submitLockRef.current) setAnswers(prev => ({ ...prev, [currentQuestion.id]: idx })); }}
                         aria-pressed={isSelected}
                         className={cn(
                           "sol-exam-option w-full min-w-0 flex items-center gap-3 sm:gap-4 p-4 rounded-xl border transition-colors duration-200 text-left group",

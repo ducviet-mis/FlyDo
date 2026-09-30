@@ -36,6 +36,7 @@ export function useNotifications(limit = 40) {
       return;
     }
     const currentRequest = ++requestId.current;
+    try {
     const { data, error: requestError } = await getSupabaseClient().rpc('get_my_notification_inbox', {
       p_limit: limit,
     });
@@ -53,9 +54,17 @@ export function useNotifications(limit = 40) {
       setUnreadCount(Math.max(0, Number(data?.unread_count || 0)));
     }
     setLoading(false);
+    } catch {
+      if (currentRequest === requestId.current && useAuthStore.getState().user?.id === userId) {
+        setInboxUserId(userId); setAvailable(true); setLoading(false);
+        setError('Chưa thể tải thông báo. Hãy kiểm tra kết nối và thử lại.');
+      }
+    }
   }, [limit, userId]);
 
   useEffect(() => {
+    setLoading(true); setError('');
+    setItems([]); setUnreadCount(0); setInboxUserId(null);
     void refresh();
     if (!userId) return;
     const supabase = getSupabaseClient();
@@ -79,6 +88,7 @@ export function useNotifications(limit = 40) {
     window.addEventListener(CHANGE_EVENT, onFocus);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      requestId.current += 1;
       if (channel) void supabase.removeChannel(channel);
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
@@ -88,9 +98,12 @@ export function useNotifications(limit = 40) {
   }, [refresh, userId]);
 
   const markRead = useCallback(async (id: string) => {
+    if (!userId) return false;
+    try {
     const { data, error: requestError } = await getSupabaseClient().rpc('mark_my_notification_read', {
       p_notification_id: id,
     });
+    if (useAuthStore.getState().user?.id !== userId) return false;
     if (requestError || data !== true) {
       setError('Không thể đánh dấu đã đọc. Vui lòng thử lại.');
       return false;
@@ -98,10 +111,17 @@ export function useNotifications(limit = 40) {
     await refresh();
     window.dispatchEvent(new Event(CHANGE_EVENT));
     return true;
-  }, [refresh]);
+    } catch {
+      if (useAuthStore.getState().user?.id === userId) setError('Không thể đánh dấu đã đọc. Hãy kiểm tra kết nối và thử lại.');
+      return false;
+    }
+  }, [refresh, userId]);
 
   const markAllRead = useCallback(async () => {
+    if (!userId) return false;
+    try {
     const { error: requestError } = await getSupabaseClient().rpc('mark_all_my_notifications_read');
+    if (useAuthStore.getState().user?.id !== userId) return false;
     if (requestError) {
       setError('Không thể đánh dấu tất cả đã đọc. Vui lòng thử lại.');
       return false;
@@ -109,9 +129,13 @@ export function useNotifications(limit = 40) {
     await refresh();
     window.dispatchEvent(new Event(CHANGE_EVENT));
     return true;
-  }, [refresh]);
+    } catch {
+      if (useAuthStore.getState().user?.id === userId) setError('Không thể đánh dấu đã đọc. Hãy kiểm tra kết nối và thử lại.');
+      return false;
+    }
+  }, [refresh, userId]);
 
-  const belongsToCurrentUser = userId === inboxUserId;
+  const belongsToCurrentUser = (userId ?? null) === inboxUserId;
   return {
     items: belongsToCurrentUser ? items : [],
     unreadCount: belongsToCurrentUser ? unreadCount : 0,

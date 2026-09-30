@@ -13,14 +13,14 @@ function fixture(isAnswered) {
   let handler;
   let modal = false;
   const calls = [];
-  const module = { exports: {} };
+  const moduleStub = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports,
+    module: moduleStub, exports: moduleStub.exports,
     require: () => ({ useEffect: (effect) => effect() }),
     window: { addEventListener: (_, callback) => { handler = callback; } },
     document: { querySelector: () => modal },
   });
-  module.exports.useQuestionNav({ onNext: () => calls.push('next'), onPrev: () => calls.push('prev'), onSelect: (index) => calls.push(index), isAnswered });
+  moduleStub.exports.useQuestionNav({ onNext: () => calls.push('next'), onPrev: () => calls.push('prev'), onSelect: (index) => calls.push(index), isAnswered });
   return { calls, key: (key, interactive = false, extra = {}) => handler({ key, target: { closest: () => interactive }, ...extra }), openDialog: () => { modal = true; } };
 }
 test('typing a report or activating its button never answers/navigates a question', () => {

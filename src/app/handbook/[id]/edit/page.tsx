@@ -7,6 +7,7 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { HandbookCategory } from '@/features/handbook/types';
 import { RichTextEditor } from '@/features/handbook/components/rich-text-editor';
 import { uploadHandbookImage } from '@/features/handbook/utils/upload';
+import { readLocalCache, writeLocalCache } from '@/lib/security/safe-storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -62,7 +63,7 @@ export default function EditHandbookPostPage({ params }: { params: { id: string 
         setReadTime(data.read_time_minutes?.toString() || '3');
         setIsFeatured(data.is_featured);
 
-        const cachedBio = typeof window !== 'undefined' ? localStorage.getItem(`handbook_author_bio_${params.id}`) : null;
+        const cachedBio = typeof window !== 'undefined' ? readLocalCache(`handbook_author_bio_${params.id}`) : null;
         setAuthorBio((data as any).author_bio || cachedBio || '');
       }
       setLoading(false);
@@ -110,7 +111,7 @@ export default function EditHandbookPostPage({ params }: { params: { id: string 
     }
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`handbook_author_bio_${params.id}`, authorBio);
+      writeLocalCache(`handbook_author_bio_${params.id}`, authorBio);
     }
 
     const updatePayload: any = {

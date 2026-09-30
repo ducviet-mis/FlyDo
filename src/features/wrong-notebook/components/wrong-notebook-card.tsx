@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { MathRenderer } from '@/features/practice/components/math-renderer';
 
 export function WrongNotebookCard() {
-  const { wrongQuestions, totalCount, loading } = useWrongNotebook();
+  const { wrongQuestions, totalCount, loading, error } = useWrongNotebook();
 
   return (
     <Card level="compact">
@@ -29,7 +29,8 @@ export function WrongNotebookCard() {
           </div>
         </div>
 
-        {!loading && totalCount === 0 && (
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {!loading && !error && totalCount === 0 && (
           <div className="px-4 py-3 bg-success-soft rounded-md">
             <p className="text-sm font-medium text-success">Tuyệt vời! Bạn không có câu hỏi nào bị sai.</p>
           </div>

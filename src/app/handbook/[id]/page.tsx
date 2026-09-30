@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { HandbookPost } from '@/features/handbook/types';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
+import { readLocalCache, writeLocalCache } from '@/lib/security/safe-storage';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { SafeRichContent } from '@/components/shared/safe-rich-content';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ChevronLeft, Clock, Facebook, Link as LinkIcon, Loader2, Edit, Edit3, Save, Check, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -29,7 +31,10 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
   const isAdmin = user?.email === "vietdang293.vn@gmail.com" || user?.email === "vietdang293@gmail.com";
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true); setPost(null); setRelatedPosts([]); setAuthorAvatar(null);
     async function fetchPost() {
+      try {
       if (!params.id) return;
       const supabase = getSupabaseClient();
 
@@ -39,12 +44,13 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
         .eq('id', params.id)
         .single();
 
+      if (cancelled) return;
       if (postData) {
         setPost(postData as HandbookPost);
         markPostAsRead(params.id, user?.id);
 
         // Check local storage fallback for bio
-        const cachedBio = typeof window !== 'undefined' ? localStorage.getItem(`handbook_author_bio_${params.id}`) : null;
+        const cachedBio = typeof window !== 'undefined' ? readLocalCache(`handbook_author_bio_${params.id}`) : null;
         const initialBio = (postData as any).author_bio || cachedBio || '';
         setBioText(initialBio);
 
@@ -56,7 +62,7 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
             .eq('name', postData.author_name)
             .maybeSingle();
 
-          if (profile?.avatar_url) {
+          if (!cancelled && profile?.avatar_url) {
             setAuthorAvatar(profile.avatar_url);
           }
         }
@@ -70,13 +76,15 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
           .order('created_at', { ascending: false })
           .limit(3);
 
-        if (relatedData) {
+        if (!cancelled && relatedData) {
           setRelatedPosts(relatedData as HandbookPost[]);
         }
       }
-      setLoading(false);
+      } catch { /* Keep the existing missing-post recovery screen usable. */ }
+      finally { if (!cancelled) setLoading(false); }
     }
-    fetchPost();
+    void fetchPost();
+    return () => { cancelled = true; };
   }, [params.id, user?.id]);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -119,7 +127,7 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
 
     // Save to localStorage immediately
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`handbook_author_bio_${post.id}`, bioText);
+      writeLocalCache(`handbook_author_bio_${post.id}`, bioText);
     }
 
     // Attempt save to Supabase
@@ -253,9 +261,9 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
       </div>
 
       {/* Main Content (Rich Text) */}
-      <div
+      <SafeRichContent
         className="study-article-body prose prose-base md:prose-lg vivux-prose max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl prose-img:shadow-soft tracking-normal"
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        html={post.content}
       />
 
       {/* Share Actions */}
@@ -314,7 +322,7 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
                     variant="ghost"
                     onClick={() => {
                       setIsEditingBio(false);
-                      setBioText((post as any).author_bio || localStorage.getItem(`handbook_author_bio_${post.id}`) || '');
+                      setBioText((post as any).author_bio || readLocalCache(`handbook_author_bio_${post.id}`) || '');
                     }}
                     className="h-11 rounded-lg text-xs"
                   >

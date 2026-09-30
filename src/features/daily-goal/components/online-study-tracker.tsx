@@ -36,11 +36,17 @@ export function OnlineStudyTracker() {
       inFlight = true;
       const elapsed = pendingSeconds;
       pendingSeconds = 0;
-      const { data, error } = await getSupabaseClient().rpc('record_online_study_time', {
+      let result;
+      try {
+        result = await getSupabaseClient().rpc('record_online_study_time', {
         p_elapsed_seconds: elapsed,
-      });
-      inFlight = false;
+        });
+      } catch {
+        if (!disposed) pendingSeconds = Math.min(MAX_HEARTBEAT_SECONDS, pendingSeconds + elapsed);
+        return;
+      } finally { inFlight = false; }
       if (disposed) return;
+      const { data, error } = result;
       if (error) {
         pendingSeconds = Math.min(MAX_HEARTBEAT_SECONDS, pendingSeconds + elapsed);
         console.warn('Online study time could not be saved:', error.message);

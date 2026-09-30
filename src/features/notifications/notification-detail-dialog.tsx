@@ -8,6 +8,7 @@ import {
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import type { AppNotification } from './use-notifications';
+import { safeInternalPath } from '@/lib/security/safe-navigation';
 
 type Props = {
   notification: AppNotification | null;
@@ -40,7 +41,7 @@ export function NotificationDetailDialog({ notification, onClose, error }: Props
           <DialogFooter className="gap-2 border-t border-border px-5 py-4 sm:px-6">
             <DialogClose asChild><Button type="button" variant="outline">Đóng</Button></DialogClose>
             {notification.action_url && <Button asChild>
-              <Link href={notification.action_url} onClick={onClose}>
+              <Link href={safeInternalPath(notification.action_url)} onClick={onClose}>
                 Đi tới nội dung <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
               </Link>
             </Button>}

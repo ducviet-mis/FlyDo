@@ -9,6 +9,8 @@ import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram
 import { ArrowLeft, CheckCircle2, XCircle, Clock, RotateCcw, Target, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useAuthStore } from '@/features/auth/stores/auth-store';
+import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
 
 export default function MockExamResultPage({ params }: { params: { examId: string } }) {
@@ -16,51 +18,44 @@ export default function MockExamResultPage({ params }: { params: { examId: strin
   const searchParams = useSearchParams();
   const attemptId = searchParams.get('attemptId');
 
+  const { user, initialized } = useAuthStore();
+  const [error, setError] = useState('');
+  const [reload, setReload] = useState(0);
   const [exam, setExam] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [attempt, setAttempt] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!initialized) return;
+    let cancelled = false;
+    setLoading(true); setError(''); setExam(null); setAttempt(null); setQuestions([]);
     async function loadResult() {
-      if (!attemptId) return;
-      const supabase = getSupabaseClient();
-
-      const { data: attemptData } = await supabase
-        .from('mock_exam_attempts')
-        .select('*')
-        .eq('id', attemptId)
-        .single();
-
-      if (!attemptData) return;
-      setAttempt(attemptData);
-
-      const { data: examData } = await supabase
-        .from('mock_exams')
-        .select('*')
-        .eq('id', params.examId)
-        .single();
-
-      if (examData) setExam(examData);
-
-      const { data: qData } = await supabase
-        .from('mock_exam_questions')
-        .select('*')
-        .eq('exam_id', params.examId)
-        .order('order_index');
-
-      if (qData) {
-        const sanitized = qData.map((q: any) => ({
-          ...q,
-          options: Array.isArray(q.options) ? q.options.map(formatOptionMath) : q.options
-        }));
-        setQuestions(sanitized);
-      }
-
-      setLoading(false);
+      try {
+        if (!user?.id) throw new Error('Vui lòng đăng nhập để xem kết quả.');
+        if (!attemptId) throw new Error('Đường dẫn thiếu mã bài làm.');
+        const supabase = getSupabaseClient();
+        const { data: attemptData, error: attemptError } = await supabase
+          .from('mock_exam_attempts').select('*').eq('id', attemptId)
+          .eq('exam_id', params.examId).eq('user_id', user.id).maybeSingle();
+        if (attemptError || !attemptData) throw new Error('Không tìm thấy bài làm của bạn trong đề thi này.');
+        const { data: examData, error: examError } = await supabase
+          .from('mock_exams').select('*').eq('id', params.examId).maybeSingle();
+        if (examError || !examData) throw new Error('Đề thi này không còn tồn tại.');
+        const qData = await fetchAllPages<any>(async (from, to) => supabase
+          .from('mock_exam_questions').select('*').eq('exam_id', params.examId)
+          .order('order_index').order('id').range(from, to));
+        if (cancelled) return;
+        setAttempt({ ...attemptData, score: Number(attemptData.score) || 0, answers: attemptData.answers || {} });
+        setExam(examData);
+        setQuestions(qData.map((q) => ({ ...q, options: Array.isArray(q.options) ? q.options.map(formatOptionMath) : [] })));
+      } catch (failure) {
+        if (!cancelled) setError(failure instanceof Error ? failure.message : 'Chưa thể tải kết quả. Vui lòng thử lại.');
+      } finally { if (!cancelled) setLoading(false); }
     }
-    loadResult();
-  }, [params.examId, attemptId]);
+    void loadResult();
+    return () => { cancelled = true; };
+  }, [params.examId, attemptId, initialized, user?.id, reload]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -68,6 +63,11 @@ export default function MockExamResultPage({ params }: { params: { examId: strin
     return `${m} phút ${s} giây`;
   };
 
+  if (error) return <div className="container max-w-xl py-20 text-center space-y-4">
+    <p role="alert" className="text-destructive">{error}</p>
+    <Button onClick={() => setReload((value) => value + 1)}>Thử lại</Button>
+    <Button variant="outline" onClick={() => router.push('/mock-exams')}>Về danh sách đề</Button>
+  </div>;
   if (loading || !exam || !attempt) {
     return <div className="py-32 flex flex-col items-center justify-center animate-pulse text-muted-foreground font-medium">Đang tải kết quả...</div>;
   }

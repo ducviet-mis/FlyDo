@@ -176,7 +176,7 @@ function PersonalExamBuilder() {
   const chapters = useMemo(() => Array.from(new Set(lessons.map((lesson) => lesson.chapter))), [lessons]);
   const lessonChapterById = useMemo(() => new Map(lessons.map((lesson) => [lesson.id, lesson.chapter])), [lessons]);
   const selectedChapterWeights = chapterWeights.filter((item) => item.weight > 0);
-  const selectedChapters = new Set(selectedChapterWeights.map((item) => item.chapter));
+  const selectedChapters = useMemo(() => new Set(chapterWeights.filter((item) => item.weight > 0).map((item) => item.chapter)), [chapterWeights]);
   const chapterPercent = sumWeights(chapterWeights);
   const levelPercent = sumWeights(levelWeights);
   const levelNeeds = useMemo(() => getLevelQuestionNeeds(questionCount, levelWeights), [questionCount, levelWeights]);

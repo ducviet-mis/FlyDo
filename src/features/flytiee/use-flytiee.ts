@@ -5,6 +5,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { useStreak } from '@/features/streak/hooks/use-streak';
 import { localStudyDate, studyDayBounds, useOnlineStudyStore } from '@/features/daily-goal/stores/online-study-store';
+import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 import { DEFAULT_FLYTIEE_PROFILE, normalizeFlytieeProfile, xpNeededForLevel } from './config';
 import type {
   FlytieeChestTier, FlytieeDailyEventState, FlytieeEventStats, FlytieeMission,
@@ -30,9 +31,10 @@ function createDefaultProfile(): FlytieeProfile {
   };
 }
 
-function dailyEventForToday(profile: FlytieeProfile): FlytieeDailyEventState {
-  if (profile.dailyEvent.date === todayKey()) return profile.dailyEvent;
-  return { date: todayKey(), streakClaimed: false, studyClaimedMilestones: [],
+function dailyEventForToday(profile: FlytieeProfile, now: number): FlytieeDailyEventState {
+  const date = localStudyDate(new Date(now));
+  if (profile.dailyEvent.date === date) return profile.dailyEvent;
+  return { date, streakClaimed: false, studyClaimedMilestones: [],
     practiceCoinsClaimed: 0, completionChestClaimed: false };
 }
 
@@ -62,6 +64,8 @@ export function useFlytiee() {
   const [message, setMessage] = useState('');
   const [clock, setClock] = useState(Date.now());
   const inFlight = useRef(false);
+  const missionRequest = useRef(0);
+  const profileRequest = useRef(0);
   const online = useOnlineStudyStore();
   const studyDay = online.userId === userId && online.date ? online.date : localStudyDate(new Date(clock));
   const studyMinutes = online.userId === userId && online.date === todayKey()
@@ -81,8 +85,10 @@ export function useFlytiee() {
 
   const reloadProfile = useCallback(async () => {
     if (!userId) return false;
+    const request = ++profileRequest.current;
     try {
       const { data, error } = await getSupabaseClient().rpc('flytiee_get_state');
+      if (request !== profileRequest.current || useAuthStore.getState().user?.id !== userId) return false;
       if (error) {
         setMessage(connectionMessage(error));
         return false;
@@ -91,21 +97,25 @@ export function useFlytiee() {
       if (loaded) setAvailable(true);
       return loaded;
     } catch {
-      setMessage('Không thể kết nối FlyTiee. Vui lòng thử lại.');
+      if (useAuthStore.getState().user?.id === userId) setMessage('Không thể kết nối FlyTiee. Vui lòng thử lại.');
       return false;
     }
   }, [applyState, userId]);
 
   useEffect(() => {
+    profileRequest.current += 1; missionRequest.current += 1;
+    setProfile(createDefaultProfile()); setMissions([]); setMessage(''); setAvailable(false);
+    setEventStats({ streak: 0, studyMinutes: 0, correctByLevel: { 1: 0, 2: 0, 3: 0, 4: 0 }, practiceCoinsEarned: 0 });
     if (!userId) { setLoading(false); return; }
     let alive = true;
+    const request = profileRequest.current;
     setLoading(true);
     setAvailable(false);
     getSupabaseClient().rpc('flytiee_get_state')
       .then(({ data, error }: {
         data: RemoteState | null; error: { code?: string; message?: string } | null;
       }) => {
-        if (!alive) return;
+        if (!alive || request !== profileRequest.current || useAuthStore.getState().user?.id !== userId) return;
         if (error) setMessage(connectionMessage(error));
         else setAvailable(applyState(data as RemoteState));
       })
@@ -135,6 +145,8 @@ export function useFlytiee() {
       const { data, error } = await getSupabaseClient().rpc('flytiee_action', {
         p_action: action, p_payload: payload,
       });
+      if (useAuthStore.getState().user?.id !== userId) return null;
+      profileRequest.current += 1;
       if (error || !data?.ok) {
         setMessage(connectionMessage(error));
         return null;
@@ -144,7 +156,7 @@ export function useFlytiee() {
       if (result.reward?.description) setMessage(result.reward.description);
       return result;
     } catch {
-      setMessage('Mất kết nối với FlyTiee. Phần thưởng chưa được nhận; hãy thử lại.');
+      if (useAuthStore.getState().user?.id === userId) setMessage('Mất kết nối với FlyTiee. Phần thưởng chưa được nhận; hãy thử lại.');
       return null;
     } finally {
       inFlight.current = false;
@@ -154,19 +166,23 @@ export function useFlytiee() {
 
   const refreshMissions = useCallback(async () => {
     if (!userId) return;
+    const request = ++missionRequest.current;
+    try {
     const supabase = getSupabaseClient();
     const { start, end } = studyDayBounds(studyDay);
-    const [practiceResult, mockResult] = await Promise.all([
-      supabase.from('practice_progress').select('is_correct, difficulty_level')
-        .eq('user_id', userId).gte('answered_at', start).lt('answered_at', end),
-      supabase.from('mock_exam_attempts').select('id')
+    const [practiceRows, mockResult] = await Promise.all([
+      fetchAllPages<{ is_correct: boolean; difficulty_level?: number }>(async (from, to) =>
+        supabase.from('practice_progress').select('question_id, is_correct, difficulty_level')
+          .eq('user_id', userId).gte('answered_at', start).lt('answered_at', end).order('question_id').range(from, to)),
+      supabase.from('mock_exam_attempts').select('id', { count: 'exact', head: true })
         .eq('user_id', userId).gte('created_at', start).lt('created_at', end),
     ]);
-    const practiceRows = practiceResult.data ?? [];
+    if (mockResult.error) throw mockResult.error;
+    if (request !== missionRequest.current || useAuthStore.getState().user?.id !== userId) return;
     const answered = practiceRows.length;
     const correct = practiceRows.filter((row: { is_correct: boolean }) => row.is_correct).length;
     const accuracy = answered > 0 ? Math.floor(correct / answered * 100) : 0;
-    const mockAttempts = mockResult.data?.length ?? 0;
+    const mockAttempts = mockResult.count ?? 0;
     const correctByLevel: FlytieeEventStats['correctByLevel'] = { 1: 0, 2: 0, 3: 0, 4: 0 };
     practiceRows.forEach((row: { is_correct: boolean; difficulty_level?: number }) => {
       if (!row.is_correct) return;
@@ -182,12 +198,18 @@ export function useFlytiee() {
       { id: 'accuracy-80', title: 'Đôi cánh chính xác', description: 'Đạt ít nhất 80% sau 10 câu hôm nay', current: answered >= 10 ? Math.min(accuracy, 80) : 0, target: 80, xp: 30, coins: 30 },
       { id: 'mock-exam-1', title: 'Dũng cảm thử sức', description: 'Hoàn thành 1 bài thi thử hôm nay', current: Math.min(mockAttempts, 1), target: 1, xp: 45, coins: 45 },
     ]);
+    } catch { if (request === missionRequest.current && useAuthStore.getState().user?.id === userId) setMessage('Chưa thể cập nhật nhiệm vụ. Hãy kiểm tra kết nối và thử lại.'); }
   }, [currentStreak, studyDay, userId]);
 
-  useEffect(() => { void refreshMissions(); }, [refreshMissions]);
+  useEffect(() => {
+    void refreshMissions();
+    const refresh = () => { void refreshMissions(); };
+    window.addEventListener('flydo:practice-progress-updated', refresh);
+    return () => { missionRequest.current += 1; window.removeEventListener('flydo:practice-progress-updated', refresh); };
+  }, [refreshMissions]);
 
   const satiety = useMemo(() => calculateSatiety(profile, clock), [clock, profile]);
-  const dailyEvent = useMemo(() => dailyEventForToday(profile), [profile, clock]);
+  const dailyEvent = useMemo(() => dailyEventForToday(profile, clock), [profile, clock]);
 
   const rename = useCallback(async (name: string) => {
     const cleaned = name.trim().replace(/\s+/g, ' ').slice(0, 20);
@@ -222,6 +244,7 @@ export function useFlytiee() {
     if (!code) return null;
     try {
       const { data, error } = await getSupabaseClient().rpc('redeem_flytiee_gift_code', { p_code: code });
+      if (useAuthStore.getState().user?.id !== userId) return null;
       if (error || !data?.ok) {
         setMessage(connectionMessage(error ?? { message: 'Mã quà không hợp lệ hoặc đã hết hạn.' }));
         return null;

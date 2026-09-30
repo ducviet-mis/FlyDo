@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { HandbookPost, HandbookCategory } from '@/features/handbook/types';
@@ -30,7 +30,10 @@ export default function HandbookHubPage() {
 
   const isAdmin = user?.email === "vietdang293.vn@gmail.com" || user?.email === "vietdang293@gmail.com";
 
-  const fetchPosts = async () => {
+  const requestId = useRef(0);
+  const fetchPosts = useCallback(async () => {
+    const request = ++requestId.current;
+    try {
     setLoading(true);
     setLoadError(null);
     const supabase = getSupabaseClient();
@@ -57,19 +60,24 @@ export default function HandbookHubPage() {
         if (user?.name && user?.avatarUrl) {
           avatarMap[user.name] = user.avatarUrl;
         }
+        if (request !== requestId.current) return;
         setAuthorAvatars(avatarMap);
       }
+      if (request !== requestId.current) return;
       setPosts(data as HandbookPost[]);
     } else if (error) {
-      setLoadError('Không thể tải danh sách bài viết lúc này.');
+      if (request === requestId.current) setLoadError('Không thể tải danh sách bài viết lúc này.');
     }
-    setLoading(false);
-  };
+    } catch {
+      if (request === requestId.current) setLoadError('Không thể tải danh sách bài viết. Hãy kiểm tra kết nối và thử lại.');
+    } finally { if (request === requestId.current) setLoading(false); }
+  }, [user?.name, user?.avatarUrl]);
 
   useEffect(() => {
-    fetchPosts();
+    void fetchPosts();
     setReadPostIds(getReadPostIds(user?.id));
-  }, [user]);
+    return () => { requestId.current += 1; };
+  }, [fetchPosts, user?.id]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();

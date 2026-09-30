@@ -12,6 +12,7 @@ import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { getEffectiveAccountTier } from '@/features/subscription/utils';
 import { personalExamStorageKey } from '@/features/personal-exams/utils';
+import { parsePersonalExamSession } from '@/features/personal-exams/validate-session';
 import type { PersonalExamSession } from '@/features/personal-exams/types';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ function PersonalExamRoom() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [storageError, setStorageError] = useState('');
   const [missingSession, setMissingSession] = useState(false);
   const submittedRef = useRef(false);
   const answersRef = useRef<Record<string, number>>({});
@@ -38,10 +40,13 @@ function PersonalExamRoom() {
   useEffect(() => { answersRef.current = answers; }, [answers]);
 
   useEffect(() => {
-    if (!sessionId || !hasAccess) return;
+    setSession(null); setAnswers({}); setCurrentIndex(0); setTimeLeft(null); setMissingSession(false); setStorageError('');
+    submittedRef.current = false; answersRef.current = {};
+    if (!sessionId) { setMissingSession(true); return; }
+    if (!hasAccess) return;
     try {
       const raw = window.sessionStorage.getItem(personalExamStorageKey(sessionId));
-      const parsed = raw ? JSON.parse(raw) as PersonalExamSession : null;
+      const parsed = parsePersonalExamSession(raw, sessionId);
       if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
         setMissingSession(true);
         return;
@@ -54,12 +59,13 @@ function PersonalExamRoom() {
       const restored = { ...parsed, startedAt, deadlineAt };
       setSession(restored);
       setAnswers(parsed.answers || {});
+      answersRef.current = parsed.answers || {};
       setTimeLeft(deadlineAt ? Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000)) : null);
       window.sessionStorage.setItem(personalExamStorageKey(sessionId), JSON.stringify(restored));
     } catch {
       setMissingSession(true);
     }
-  }, [hasAccess, sessionId]);
+  }, [hasAccess, sessionId, user?.id]);
 
   const submit = useCallback((automatic = false) => {
     if (!session || !sessionId || submittedRef.current) return;
@@ -71,7 +77,9 @@ function PersonalExamRoom() {
       submittedAt: new Date().toISOString(),
       durationUsedSeconds: Math.max(0, Math.round((Date.now() - startedAt) / 1000)),
     };
-    window.sessionStorage.setItem(personalExamStorageKey(sessionId), JSON.stringify(completed));
+    try { window.sessionStorage.setItem(personalExamStorageKey(sessionId), JSON.stringify(completed)); }
+    catch { submittedRef.current = false; setStorageError('Chưa lưu được kết quả. Đừng đóng trang; hãy bật bộ nhớ trình duyệt và nộp lại.'); return; }
+    setStorageError('');
     router.push(`/personal-exams/result?session=${encodeURIComponent(sessionId)}${automatic ? '&auto=1' : ''}`);
   }, [router, session, sessionId]);
 
@@ -89,7 +97,8 @@ function PersonalExamRoom() {
 
   useEffect(() => {
     if (!session || !sessionId || submittedRef.current) return;
-    window.sessionStorage.setItem(personalExamStorageKey(sessionId), JSON.stringify({ ...session, answers }));
+    try { window.sessionStorage.setItem(personalExamStorageKey(sessionId), JSON.stringify({ ...session, answers })); }
+    catch { setStorageError('Trình duyệt chưa lưu được bản nháp. Đừng đóng trang trước khi nộp bài.'); }
   }, [answers, session, sessionId]);
 
   if (!initialized) return <div className="container py-24 text-center text-muted-foreground">Đang mở đề...</div>;
@@ -103,13 +112,13 @@ function PersonalExamRoom() {
   const showPracticeFeedback = !isExam && selectedAnswer !== undefined;
 
   const selectAnswer = (optionIndex: number) => {
-    if (submittedRef.current || (!isExam && answersRef.current[currentQuestion.id] !== undefined)) return;
+    if ((isExam && session.deadlineAt && Date.now() >= session.deadlineAt) || submittedRef.current || (!isExam && answersRef.current[currentQuestion.id] !== undefined)) return;
     const nextAnswers = { ...answersRef.current, [currentQuestion.id]: optionIndex };
     answersRef.current = nextAnswers;
     setAnswers(nextAnswers);
   };
 
-  return <main className="container max-w-6xl py-4 md:py-7"><div className="mb-5 flex flex-wrap items-center justify-between gap-3"><Button asChild variant="ghost" className="h-11"><Link href={`/personal-exams?grade=${session.config.grade}&source=${isExam ? 'mock-exams' : 'practice'}`}><ArrowLeft className="mr-2 h-4 w-4" />Thoát đề</Link></Button><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className="border-primary/30 bg-primary-soft px-3 py-1.5 text-primary">Lớp {session.config.grade} · {isExam ? 'Thi thử' : 'Tự luyện'}</Badge>{isExam ? <Badge className="bg-warning-soft px-3 py-1.5 text-warning"><Clock3 className="mr-1.5 h-4 w-4" />{formatClock(timeLeft ?? 0)}</Badge> : <Badge className="bg-success-soft px-3 py-1.5 text-success"><CheckCircle2 className="mr-1.5 h-4 w-4" />Không giới hạn thời gian</Badge>}</div></div>
+  return <main className="container max-w-6xl py-4 md:py-7">{storageError && <p role="alert" className="mb-4 text-destructive">{storageError}</p>}<div className="mb-5 flex flex-wrap items-center justify-between gap-3"><Button asChild variant="ghost" className="h-11"><Link href={`/personal-exams?grade=${session.config.grade}&source=${isExam ? 'mock-exams' : 'practice'}`}><ArrowLeft className="mr-2 h-4 w-4" />Thoát đề</Link></Button><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className="border-primary/30 bg-primary-soft px-3 py-1.5 text-primary">Lớp {session.config.grade} · {isExam ? 'Thi thử' : 'Tự luyện'}</Badge>{isExam ? <Badge className="bg-warning-soft px-3 py-1.5 text-warning"><Clock3 className="mr-1.5 h-4 w-4" />{formatClock(timeLeft ?? 0)}</Badge> : <Badge className="bg-success-soft px-3 py-1.5 text-success"><CheckCircle2 className="mr-1.5 h-4 w-4" />Không giới hạn thời gian</Badge>}</div></div>
     <div className="mb-6 rounded-2xl border border-primary/25 bg-gradient-to-r from-primary-soft via-card to-card p-5"><p className="text-xs font-bold uppercase tracking-wider text-primary">Đề cá nhân</p><h1 className="mt-1 text-xl font-bold text-foreground sm:text-2xl">{session.config.title}</h1><p className="mt-2 text-sm text-muted-foreground">Đã trả lời {answeredCount}/{session.questions.length} câu {isExam && `· Thời gian ${session.config.durationMinutes} phút`}</p></div>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]"><Card className="min-w-0"><CardContent className="p-5 sm:p-7"><div className="mb-5 flex items-center justify-between gap-3"><span className="text-sm font-bold text-primary">Câu {currentIndex + 1}/{session.questions.length}</span><Badge variant="outline" className="border-border bg-muted text-muted-foreground">Level {currentQuestion.difficultyLevel}</Badge></div><div className="prose vivux-prose mb-6 max-w-none text-base leading-7 text-foreground sm:text-lg"><MathRenderer content={currentQuestion.content} /></div><GeometryDiagram data={currentQuestion.diagram} /><div className="grid gap-3 sm:grid-cols-2">{currentQuestion.options.map((option, index) => {
       const isCorrect = index === currentQuestion.correctAnswer;
@@ -118,7 +127,7 @@ function PersonalExamRoom() {
         key={index}
         type="button"
         onClick={() => selectAnswer(index)}
-        disabled={showPracticeFeedback}
+        disabled={showPracticeFeedback || (isExam && timeLeft === 0)}
         aria-pressed={isSelected}
         aria-label={`${['A', 'B', 'C', 'D'][index]}: ${option}${showPracticeFeedback ? isCorrect ? '. Đáp án đúng' : isSelected ? '. Bạn chọn, chưa chính xác' : '' : ''}`}
         className={cn(

@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
 import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
 import { personalExamStorageKey, createPersonalExamSession } from '@/features/personal-exams/utils';
+import { parsePersonalExamSession } from '@/features/personal-exams/validate-session';
 import type { PersonalExamSession } from '@/features/personal-exams/types';
 import { cn } from '@/lib/utils';
 
@@ -25,13 +26,15 @@ function PersonalExamResult() {
   const automatic = searchParams.get('auto') === '1';
   const [session, setSession] = useState<PersonalExamSession | null>(null);
   const [missingSession, setMissingSession] = useState(false);
+  const [storageError, setStorageError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
 
   useEffect(() => {
+    setSession(null); setMissingSession(false); setWarnings([]); setStorageError('');
     if (!sessionId) { setMissingSession(true); return; }
     try {
       const raw = window.sessionStorage.getItem(personalExamStorageKey(sessionId));
-      const parsed = raw ? JSON.parse(raw) as PersonalExamSession : null;
+      const parsed = parsePersonalExamSession(raw, sessionId);
       if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.questions) || !parsed.answers) { setMissingSession(true); return; }
       setSession(parsed);
       const rawWarnings = window.sessionStorage.getItem(`${personalExamStorageKey(sessionId)}:warnings`);
@@ -52,7 +55,8 @@ function PersonalExamResult() {
   const restart = () => {
     if (!session) return;
     const next = createPersonalExamSession(session.config, session.questions);
-    window.sessionStorage.setItem(personalExamStorageKey(next.id), JSON.stringify(next));
+    try { window.sessionStorage.setItem(personalExamStorageKey(next.id), JSON.stringify(next)); }
+    catch { setStorageError('Chưa tạo được lượt làm lại. Hãy bật bộ nhớ trình duyệt và thử lại.'); return; }
     router.push(`/personal-exams/take?session=${encodeURIComponent(next.id)}`);
   };
 
@@ -62,7 +66,7 @@ function PersonalExamResult() {
   const unansweredCount = session.questions.length - Object.keys(session.answers || {}).length;
   const isExam = session.config.mode === 'exam';
 
-  return <main className="container max-w-4xl py-5 md:py-8"><div className="mb-6 flex flex-wrap items-center justify-between gap-3"><Button asChild variant="ghost" className="h-11"><Link href={`/personal-exams?grade=${session.config.grade}&source=${isExam ? 'mock-exams' : 'practice'}`}><ArrowLeft className="mr-2 h-4 w-4" />Tạo đề mới</Link></Button><Button type="button" variant="outline" className="h-11" onClick={restart}><RotateCcw className="mr-2 h-4 w-4" />Làm lại đề này</Button></div>
+  return <main className="container max-w-4xl py-5 md:py-8">{storageError && <p role="alert" className="mb-4 text-destructive">{storageError}</p>}<div className="mb-6 flex flex-wrap items-center justify-between gap-3"><Button asChild variant="ghost" className="h-11"><Link href={`/personal-exams?grade=${session.config.grade}&source=${isExam ? 'mock-exams' : 'practice'}`}><ArrowLeft className="mr-2 h-4 w-4" />Tạo đề mới</Link></Button><Button type="button" variant="outline" className="h-11" onClick={restart}><RotateCcw className="mr-2 h-4 w-4" />Làm lại đề này</Button></div>
     {automatic && <div className="mb-5 rounded-xl border border-warning/30 bg-warning-soft p-4 text-sm font-medium text-warning">Đã hết thời gian, FlyDo đã tự nộp bài cho bạn.</div>}
     {warnings.length > 0 && <div className="mb-5 rounded-xl border border-primary/30 bg-primary-soft p-4 text-sm leading-6 text-primary">{warnings.join(' ')}</div>}
     <Card className="mb-8 overflow-hidden border-primary/30 bg-gradient-to-br from-primary-soft via-card to-card shadow-card"><CardContent className="p-6 text-center sm:p-8"><Badge className="bg-primary-soft text-primary">Đề cá nhân · Lớp {session.config.grade}</Badge><h1 className="mt-3 text-2xl font-bold text-foreground">{session.config.title}</h1><div className="mt-7 grid gap-5 sm:grid-cols-3"><div><p className="text-xs font-bold uppercase tracking-wider text-primary">Điểm số</p><p className="mt-1 text-5xl font-bold tracking-tight text-foreground">{score.toFixed(2)}<span className="text-xl text-muted-foreground">/10</span></p></div><div className="rounded-xl bg-card/80 p-4"><Target className="mx-auto h-5 w-5 text-success" /><p className="mt-2 text-xl font-bold text-foreground">{correctCount}/{session.questions.length}</p><p className="text-xs text-muted-foreground">Câu đúng</p></div><div className="rounded-xl bg-card/80 p-4"><Clock3 className="mx-auto h-5 w-5 text-primary" /><p className="mt-2 text-xl font-bold text-foreground">{formatDuration(session.durationUsedSeconds)}</p><p className="text-xs text-muted-foreground">Thời gian làm bài</p></div></div>{unansweredCount > 0 && <p className="mt-5 text-sm text-muted-foreground">Bạn còn bỏ trống {unansweredCount} câu.</p>}</CardContent></Card>
@@ -73,4 +77,3 @@ function PersonalExamResult() {
 export default function PersonalExamResultPage() {
   return <Suspense fallback={<div className="container py-24 text-center text-muted-foreground">Đang tải kết quả...</div>}><PersonalExamResult /></Suspense>;
 }
-

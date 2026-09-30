@@ -12,6 +12,7 @@ import { Question } from '@/features/practice/types';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { LESSON_META, GRADE_LABELS } from '@/features/practice/data/practice-data';
 import { useSavedQuestions } from '@/features/practice/hooks/use-saved-questions';
+import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 import { PracticeCompletionDialog } from '@/features/practice/components/practice-completion-dialog';
 
 export default function SavedLessonPracticePage() {
@@ -24,12 +25,14 @@ export default function SavedLessonPracticePage() {
   const level = levelStr ? parseInt(levelStr) : null;
 
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [loadError, setLoadError] = useState('');
+  const [reload, setReload] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [showCompletion, setShowCompletion] = useState(false);
 
   const supabase = getSupabaseClient();
   const { user } = useAuthStore();
-  const { savedIds, toggleSave } = useSavedQuestions(lessonId);
+  const { savedIds, toggleSave, error: savedError } = useSavedQuestions(lessonId);
 
   const lessonInfo = useMemo(() => {
     const meta = LESSON_META[lessonId];
@@ -49,60 +52,37 @@ export default function SavedLessonPracticePage() {
   }, [lessonId]);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadData() {
-      setIsLoading(true);
-      if (!user?.id) {
-        setIsLoading(false);
-        return;
-      }
-
-      let savedQuery = supabase
-        .from('saved_questions')
-        .select('question_id')
-        .eq('lesson_id', lessonId)
-        .eq('user_id', user.id);
-
-      if (level) {
-        savedQuery = savedQuery.eq('difficulty_level', level);
-      }
-
-      const { data: savedData } = await savedQuery;
-
-      if (!savedData || savedData.length === 0) {
-        setQuestions([]);
-        setIsLoading(false);
-        return;
-      }
-
-      const questionIds = savedData.map((s: { question_id: string }) => s.question_id);
-
-      const { data, error } = await supabase
-        .from('practice_questions')
-        .select('*')
-        .in('id', questionIds)
-        .order('order_index');
-
-      if (data && !error) {
-        const mappedQuestions: Question[] = data.map((q: any) => ({
-          id: q.id,
-          content: q.content,
-          options: q.options as string[],
-          correctAnswer: q.correct_answer,
-          solution: q.solution || '',
-          hasMath: q.has_math,
-          difficultyLevel: q.difficulty_level || 1,
-          diagram: q.diagram
-        }));
-        setQuestions(mappedQuestions);
-      }
-
-      setIsLoading(false);
+      setIsLoading(true); setLoadError(''); setQuestions([]); setShowCompletion(false);
+      try {
+        if (!user?.id || !lessonId) return;
+        const rows = await fetchAllPages<{ question_id: string }>(async (from, to) => {
+          let query = supabase.from('saved_questions').select('question_id')
+            .eq('lesson_id', lessonId).eq('user_id', user.id);
+          if (level !== null) query = query.eq('difficulty_level', level);
+          return query.order('question_id').range(from, to);
+        });
+        const ids = Array.from(new Set(rows.map((row) => row.question_id)));
+        const data: any[] = [];
+        for (let offset = 0; offset < ids.length; offset += 100) {
+          const result = await supabase.from('practice_questions').select('*')
+            .eq('lesson_id', lessonId).in('id', ids.slice(offset, offset + 100));
+          if (result.error) throw result.error;
+          data.push(...(result.data || []));
+        }
+        if (!cancelled) setQuestions(data.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+          .filter((q) => Array.isArray(q.options) && q.options.length > 0)
+          .map((q) => ({ id: q.id, content: q.content, options: q.options,
+            correctAnswer: q.correct_answer, solution: q.solution || '', hasMath: q.has_math,
+            difficultyLevel: q.difficulty_level || 1, diagram: q.diagram })));
+      } catch {
+        if (!cancelled) setLoadError('Chưa thể tải câu hỏi. Hãy kiểm tra kết nối và thử lại.');
+      } finally { if (!cancelled) setIsLoading(false); }
     }
-
-    if (lessonId) {
-      loadData();
-    }
-  }, [lessonId, supabase, user?.id]);
+    void loadData();
+    return () => { cancelled = true; };
+  }, [lessonId, level, supabase, user?.id, reload]);
 
   const {
     currentQuestionIndex,
@@ -114,7 +94,9 @@ export default function SavedLessonPracticePage() {
     selectAnswer,
     nextQuestion,
     prevQuestion,
-    progress
+    progress,
+    saveError,
+    retrySaves
   } = usePractice(questions, lessonId, []); // empty array so user can redo them
 
   const handleNext = () => {
@@ -154,12 +136,13 @@ export default function SavedLessonPracticePage() {
           </div>
         </div>
 
-        {isLoading ? (
+        {(savedError || saveError) && <div className="mb-4 space-y-2"><p role="alert" className="text-destructive">{savedError || saveError}</p>{saveError && <Button variant="outline" onClick={() => void retrySaves()}>Thử lưu lại tiến độ</Button>}</div>}
+        {loadError ? <div className="space-y-4 text-center py-12"><p role="alert" className="text-destructive">{loadError}</p><Button onClick={() => setReload((value) => value + 1)}>Thử lại</Button></div> : isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
             <p className="text-muted-foreground">Đang tải câu hỏi...</p>
           </div>
-        ) : questions.length === 0 ? (
+        ) : questions.length === 0 || !currentQuestion ? (
           <div className="bg-card rounded-2xl p-8 border border-border text-center text-muted-foreground">
             Bạn chưa lưu câu hỏi nào trong bài học này.
           </div>

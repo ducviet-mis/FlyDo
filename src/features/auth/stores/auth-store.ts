@@ -84,6 +84,9 @@ type DeviceRegistrationStatus = "active" | "legacy" | "limit" | "removed" | "una
 type SetAuthState = (state: Partial<AuthState>) => void;
 
 let forcedLogoutInProgress = false;
+let authInitialization: Promise<void> | null = null;
+let authListenerInstalled = false;
+let authGeneration = 0;
 
 async function registerCurrentDevice(accessToken: string | null | undefined, replaceLegacy = false): Promise<DeviceRegistrationStatus> {
   const sessionId = getSessionIdFromAccessToken(accessToken);
@@ -152,15 +155,47 @@ export const useAuthStore = create<AuthState>()(
 
       clearError: () => set({ error: null }),
 
-      initAuth: async () => {
-        if (get().initialized) return;
+      initAuth: () => {
+        if (get().initialized) return Promise.resolve();
+        if (authInitialization) return authInitialization;
+        authInitialization = (async () => {
+        const generation = authGeneration;
         try {
           const supabase = getSupabaseClient();
+          // Listen for auth state changes
+          if (!authListenerInstalled) {
+          authListenerInstalled = true;
+          supabase.auth.onAuthStateChange((event: string, session: any) => {
+            if (event === 'SIGNED_OUT') {
+              authGeneration += 1;
+              set({ user: null });
+            } else if (event === 'SIGNED_IN' && session?.user) {
+              // Supabase auth callbacks must not await another Supabase request.
+              window.setTimeout(async () => {
+                const eventGeneration = authGeneration;
+                try {
+                const current = await supabase.auth.getSession();
+                if (current.data.session?.user.id !== session.user.id) return;
+                if (get().isLoading) return; // password login/register handles its own registration
+                const status = await registerCurrentDevice(session.access_token, true);
+                if (eventGeneration !== authGeneration) return;
+                if (status === 'legacy') await supabase.auth.signOut({ scope: 'others' });
+                if (status !== "active" && status !== 'legacy') {
+                  await endInactiveSession(set, status);
+                  return;
+                }
+                await get().refreshUser();
+                } catch { if (eventGeneration === authGeneration) set({ error: 'Chưa thể xác nhận phiên đăng nhập. Vui lòng thử lại.' }); }
+              }, 0);
+            }
+          });
+          }
           const { data: { session } } = await supabase.auth.getSession();
 
           if (session?.user) {
             const oauthReturn = new URLSearchParams(window.location.search).has('device_oauth');
             const sessionStatus = await registerCurrentDevice(session.access_token, oauthReturn);
+            if (generation !== authGeneration) return;
             if (oauthReturn) {
               const url = new URL(window.location.href);
               url.searchParams.delete('device_oauth');
@@ -183,40 +218,25 @@ export const useAuthStore = create<AuthState>()(
 
             if (profile) {
               const mappedUser = mapProfile(profile);
-              rememberAccount(mappedUser);
-              set({ user: mappedUser, initialized: true });
+              if (generation === authGeneration) { rememberAccount(mappedUser); set({ user: mappedUser, initialized: true }); }
             } else {
-              set({ initialized: true });
+              if (generation === authGeneration) set({ user: null, initialized: true, error: 'Chưa thể tải thông tin tài khoản. Vui lòng đăng nhập lại.' });
             }
           } else {
             // No active session — clear persisted user
-            set({ user: null, initialized: true });
+            if (generation === authGeneration) set({ user: null, initialized: true });
           }
 
-          // Listen for auth state changes
-          supabase.auth.onAuthStateChange((event: string, session: any) => {
-            if (event === 'SIGNED_OUT') {
-              set({ user: null });
-            } else if (event === 'SIGNED_IN' && session?.user) {
-              // Supabase auth callbacks must not await another Supabase request.
-              window.setTimeout(async () => {
-                if (get().isLoading) return; // password login/register handles its own registration
-                const status = await registerCurrentDevice(session.access_token, true);
-                if (status === 'legacy') await supabase.auth.signOut({ scope: 'others' });
-                if (status !== "active" && status !== 'legacy') {
-                  await endInactiveSession(set, status);
-                  return;
-                }
-                await get().refreshUser();
-              }, 0);
-            }
-          });
+
         } catch {
-          set({ initialized: true });
+          if (generation === authGeneration) set({ user: null, initialized: true, error: 'Chưa thể xác thực phiên đăng nhập. Vui lòng thử lại.' });
         }
+        })().finally(() => { authInitialization = null; });
+        return authInitialization;
       },
 
       login: async (email: string, password: string) => {
+        const generation = ++authGeneration;
         set({ isLoading: true, error: null });
         try {
           const supabase = getSupabaseClient();
@@ -251,12 +271,13 @@ export const useAuthStore = create<AuthState>()(
             if (profile) {
               const mappedUser = mapProfile(profile);
               rememberAccount(mappedUser);
+              if (generation !== authGeneration) return false;
               set({ user: mappedUser, isLoading: false, initialized: true });
               return true;
             }
           }
 
-          set({ isLoading: false });
+          set({ user: null, isLoading: false, error: 'Chưa thể tải thông tin tài khoản. Vui lòng thử lại.' });
           return false;
         } catch {
           set({ error: "Đã xảy ra lỗi khi đăng nhập", isLoading: false });
@@ -374,6 +395,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
+        authGeneration += 1;
         try {
           const supabase = getSupabaseClient();
           const { data: { session } } = await supabase.auth.getSession();
@@ -389,6 +411,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logoutAllDevices: async () => {
+        authGeneration += 1;
         try {
           const supabase = getSupabaseClient();
           const { error } = await supabase.rpc("clear_my_device_sessions");
@@ -439,9 +462,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       refreshUser: async () => {
+        const generation = authGeneration;
         try {
           const supabase = getSupabaseClient();
-          const { data: { user: authUser } } = await supabase.auth.getUser();
+          const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+          if (authError || generation !== authGeneration) return;
 
           if (authUser) {
             await supabase.rpc('sync_my_membership_status');
@@ -453,7 +478,7 @@ export const useAuthStore = create<AuthState>()(
             if (profile) {
               const mappedUser = mapProfile(profile);
               rememberAccount(mappedUser);
-              set({ user: mappedUser });
+              if (generation === authGeneration) set({ user: mappedUser });
             }
           } else {
             set({ user: null });
