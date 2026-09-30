@@ -11,7 +11,7 @@ const require = createRequire(resolve(repo, 'package.json'));
 const dom = new jsdom.JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
   url: 'http://localhost:3500', pretendToBeVisual: true,
 });
-for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'NodeFilter', 'MutationObserver', 'Event', 'CustomEvent', 'DocumentFragment']) {
+for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'NodeFilter', 'MutationObserver', 'Event', 'CustomEvent', 'DocumentFragment', 'FileReader']) {
   Object.defineProperty(globalThis, key, { value: dom.window[key], configurable: true });
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -20,7 +20,9 @@ const { createRoot } = require('react-dom/client');
 const ts = require('typescript');
 let user = { id: 'student-a', name: 'A' };
 let online = { userId: 'student-a', date: '2026-09-30', seconds: 1200 };
-const auth = Object.assign((selector) => selector ? selector({ user, initialized: true }) : { user, initialized: true }, {
+let profileLogout = async () => {};
+const profileState = () => ({ user, initialized: true, refreshUser: async () => {}, logoutAllDevices: () => profileLogout() });
+const auth = Object.assign((selector) => selector ? selector(profileState()) : profileState(), {
   getState: () => ({ user, initialized: true }),
 });
 let queryHandler = () => ({ data: [], error: null });
@@ -31,6 +33,7 @@ class Query {
   constructor(table) { this.table = table; this.filters = []; this.operation = 'read'; }
   select() { return this; }
   eq(key, value) { this.filters.push([key, value]); return this; }
+  is(key, value) { this.filters.push([key, value]); return this; }
   lte() { return this; }
   gte() { return this; }
   lt() { return this; }
@@ -41,6 +44,7 @@ class Query {
   maybeSingle() { return this; }
   insert(value) { this.operation = 'insert'; this.value = value; return this; }
   upsert(value) { this.operation = 'upsert'; this.value = value; return this; }
+  update(value) { this.operation = 'update'; this.value = value; return this; }
   delete() { this.operation = 'delete'; return this; }
   match(value) { Object.entries(value).forEach(([key, item]) => this.eq(key, item)); return this; }
   then(fulfilled, rejected) {
@@ -58,7 +62,8 @@ const db = {
   },
   removeChannel: async () => {},
 };
-const router = { push() {}, back() {} };
+const router = { push() {}, back() {}, replace() {} };
+let routeParams = {};
 const cache = new Map();
 function load(filename) {
   if (cache.has(filename)) return cache.get(filename).exports;
@@ -77,7 +82,9 @@ function load(filename) {
       return { ...real, useOnlineStudyStore: Object.assign(() => online, { getState: real.useOnlineStudyStore.getState }) };
     }
     if (name === 'next/navigation') return {
-      useRouter: () => router, useSearchParams: () => new URLSearchParams(window.location.search),
+      useRouter: () => router, useParams: () => routeParams,
+      usePathname: () => window.location.pathname,
+      useSearchParams: () => new URLSearchParams(window.location.search),
     };
     if (name === 'next/link') return { __esModule: true, default: ({ children, ...props }) => React.createElement('a', props, children) };
     if (name.startsWith('@/') || name.startsWith('.')) {
@@ -239,22 +246,25 @@ await clear();
 
 const Room = load(resolve(repo, 'src/app/mock-exams/[examId]/page.tsx')).default;
 queryHandler = () => ({ data: null, error: { message: 'not found' } });
-await React.act(async () => root.render(React.createElement(Room, { params: { examId: 'missing' } })));
+routeParams = { examId: 'missing' };
+await React.act(async () => root.render(React.createElement(Room)));
 assert.match(document.querySelector('[role="alert"]').textContent, /Không tìm thấy/);
 assert.ok([...document.querySelectorAll('button')].some((button) => button.textContent === 'Thử lại'));
 await clear();
 queryHandler = (query) => query.table === 'mock_exams'
   ? { data: { id: 'empty', duration: 45 }, error: null } : { data: [], error: null };
-await React.act(async () => root.render(React.createElement(Room, { params: { examId: 'empty' } })));
+routeParams = { examId: 'empty' };
+await React.act(async () => root.render(React.createElement(Room)));
 assert.match(document.querySelector('[role="alert"]').textContent, /chưa có câu hỏi/);
 await clear();
 const Result = load(resolve(repo, 'src/app/mock-exams/[examId]/result/page.tsx')).default;
-await React.act(async () => root.render(React.createElement(Result, { params: { examId: 'exam' } })));
+routeParams = { examId: 'exam' };
+await React.act(async () => root.render(React.createElement(Result)));
 assert.match(document.querySelector('[role="alert"]').textContent, /thiếu mã/);
 await clear();
 window.history.replaceState({}, '', '/?attemptId=foreign');
 queryHandler = () => ({ data: null, error: null });
-await React.act(async () => root.render(React.createElement(Result, { params: { examId: 'exam' } })));
+await React.act(async () => root.render(React.createElement(Result)));
 const attemptQuery = requests.find((query) => query.table === 'mock_exam_attempts');
 assert.ok(attemptQuery.filters.some(([key, id]) => key === 'exam_id' && id === 'exam'));
 assert.ok(attemptQuery.filters.some(([key, id]) => key === 'user_id' && id === user.id));
@@ -285,9 +295,82 @@ await Promise.all([firstInit, secondInit]);
 assert.equal(listeners, 1);
 assert.equal(sessionReads, 1);
 assert.equal(realAuth.getState().user, null);
+
+// Global logout must surface RPC/auth failures, not report false success.
+realAuth.setState({ user: { id: 'student-a' } });
+let signOutCalls = 0;
+db.auth.signOut = async () => { signOutCalls++; return { error: null }; };
+rpcHandler = () => ({ data: null, error: { code: 'NETWORK' } });
+await assert.rejects(realAuth.getState().logoutAllDevices(), /Chưa thể/);
+assert.equal(signOutCalls, 0);
+assert.equal(realAuth.getState().user.id, 'student-a');
+rpcHandler = (name) => name === 'clear_my_device_sessions'
+  ? { error: { code: 'PGRST202' } } : { error: { code: 'NETWORK' } };
+await assert.rejects(realAuth.getState().logoutAllDevices(), /Chưa thể/);
+rpcHandler = () => ({ error: null });
+db.auth.signOut = async () => ({ error: new Error('offline') });
+await assert.rejects(realAuth.getState().logoutAllDevices(), /Chưa thể/);
+db.auth.signOut = async () => ({ error: null });
+await realAuth.getState().logoutAllDevices();
+assert.equal(realAuth.getState().user, null);
+
+// Real profile UI keeps edits after failure and releases loading state.
+const Profile = load(resolve(repo, 'src/app/profile/page.tsx')).default;
+user = { id: 'student-a', name: 'Student A', email: 'student@example.test', avatarUrl: 'original.png' };
+queryHandler = () => { throw new Error('offline'); };
+await React.act(async () => root.render(React.createElement(Profile)));
+const profileSave = () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent.includes('Lưu thay đổi'));
+await React.act(async () => profileSave().click());
+assert.match(document.querySelector('[role="alert"]').textContent, /Chưa thể lưu thông tin/);
+assert.equal(profileSave().disabled, false);
+queryHandler = () => ({ data: null, error: null });
+await React.act(async () => profileSave().click());
+assert.match(document.querySelector('[role="status"]').textContent, /Đã lưu/);
+const imageInput = document.querySelector('input[type=file]');
+Object.defineProperty(imageInput, 'files', { configurable: true, value: [new window.File(['<svg/>'], 'image.svg', { type: 'image/svg+xml' })] });
+await React.act(async () => imageInput.dispatchEvent(new window.Event('change', { bubbles: true })));
+assert.match(document.querySelector('[role="alert"]').textContent, /PNG/);
+queryHandler = () => ({ data: null, error: { code: 'NETWORK' } });
+class TestFileReader {
+  result = 'data:image/png;base64,TEST';
+  readAsDataURL() { queueMicrotask(() => this.onload()); }
+}
+Object.defineProperty(globalThis, 'FileReader', { configurable: true, value: TestFileReader });
+Object.defineProperty(imageInput, 'files', { configurable: true, value: [new window.File(['png'], 'image.png', { type: 'image/png' })] });
+await React.act(async () => imageInput.dispatchEvent(new window.Event('change', { bubbles: true })));
+assert.match(document.querySelector('[role="alert"]').textContent, /Chưa thể lưu ảnh/);
+assert.equal(imageInput.disabled, false);
+// Switching accounts remounts the form: no stale private fields.
+user = { id: 'student-b', name: 'Student B', email: 'b@example.test' };
+await React.act(async () => root.render(React.createElement(Profile)));
+assert.equal(document.querySelector('#profile-name').value, 'Student B');
+db.auth.getSession = async () => ({ data: { session: null }, error: null });
+await React.act(async () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Bảo mật').click());
+assert.match(document.body.textContent, /Không thể tải danh sách thiết bị/);
+queryHandler = () => { throw new Error('offline'); };
+await React.act(async () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent.includes('Làm mới')).click());
+assert.match(document.body.textContent, /Chưa thể tải thiết bị/);
+assert.doesNotMatch(document.body.textContent, /Đang tải thiết bị/);
+profileLogout = async () => { throw new Error('offline'); };
+await React.act(async () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Đăng xuất tất cả thiết bị').click());
+assert.match(document.querySelector('[role="alert"]').textContent, /Chưa thể đăng xuất/);
+assert.equal(Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Đăng xuất tất cả thiết bị').disabled, false);
+await clear();
+user = null;
+window.history.replaceState({}, '', '/offline');
+const AuthGuard = load(resolve(repo, 'src/components/layout/auth-guard.tsx')).AuthGuard;
+let redirects = 0;
+router.replace = () => { redirects++; };
+await React.act(async () => root.render(React.createElement(AuthGuard, {}, React.createElement('h1', {}, 'Offline recovery'))));
+assert.match(document.body.textContent, /Offline recovery/);
+assert.equal(redirects, 0);
 realAuth.setState({ user: { id: 'student-a' } });
 await realAuth.getState().refreshUser();
 assert.equal(realAuth.getState().user.id, 'student-a'); // network error isn't a logout
+db.auth.getUser = async () => ({ data: { user: { id: 'student-a', email: 'student@example.test' } }, error: null });
+queryHandler = () => ({ data: { id: 'student-a', name: 'A', email: 'vietdang293.vn@gmail.com', account_tier: 'flygo' }, error: null });
+await realAuth.getState().refreshUser();
+assert.equal(realAuth.getState().user.email, 'student@example.test'); // editable profile cannot impersonate admin
 const oldProfile = deferred();
 db.auth.getUser = async () => ({ data: { user: { id: 'student-a' } }, error: null });
 queryHandler = () => oldProfile.promise;

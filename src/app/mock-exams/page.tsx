@@ -29,6 +29,11 @@ function MockExamsContent() {
   const category: MockExamCategory = isMockExamCategory(requestedCategory) ? requestedCategory : 'midterm_1';
   const selectedTopicId = category === 'topic' ? searchParams.get('topic') : null;
   const { user } = useAuthStore();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [exams, setExams] = useState<any[]>([]);
   const [topics, setTopics] = useState<MockExamTopic[]>([]);
   const [attemptsByExam, setAttemptsByExam] = useState<Record<string, MockExamAttempt[]>>({});
@@ -95,7 +100,7 @@ function MockExamsContent() {
 
   const formatTimeAgo = (dateStr: string) => {
     try {
-      const diffMin = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+      const diffMin = Math.floor((now - new Date(dateStr).getTime()) / 60000);
       if (diffMin < 1) return 'Vừa xong';
       if (diffMin < 60) return `${diffMin} phút trước`;
       if (diffMin < 1440) return `${Math.floor(diffMin / 60)} giờ trước`;

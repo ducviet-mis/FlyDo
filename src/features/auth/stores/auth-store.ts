@@ -56,15 +56,16 @@ interface AuthState {
   clearError: () => void;
 }
 
-function mapProfile(profile: any): User {
+function mapProfile(profile: any, authUser: { id: string; email?: string }): User {
   const accountTier = ['flygo', 'flymax', 'flyinfinity'].includes(profile.account_tier)
     ? profile.account_tier
     : 'flygo';
 
   return {
-    id: profile.id,
+    id: authUser.id,
     name: profile.name,
-    email: profile.email,
+    // Identity/admin gating must not use editable profile data.
+    email: authUser.email || '',
     phone: profile.phone || '',
     birthDate: profile.birth_date || '',
     avatarUrl: profile.avatar_url || '',
@@ -217,7 +218,7 @@ export const useAuthStore = create<AuthState>()(
               .single();
 
             if (profile) {
-              const mappedUser = mapProfile(profile);
+              const mappedUser = mapProfile(profile, session.user);
               if (generation === authGeneration) { rememberAccount(mappedUser); set({ user: mappedUser, initialized: true }); }
             } else {
               if (generation === authGeneration) set({ user: null, initialized: true, error: 'Chưa thể tải thông tin tài khoản. Vui lòng đăng nhập lại.' });
@@ -269,7 +270,7 @@ export const useAuthStore = create<AuthState>()(
               .single();
 
             if (profile) {
-              const mappedUser = mapProfile(profile);
+              const mappedUser = mapProfile(profile, data.user);
               rememberAccount(mappedUser);
               if (generation !== authGeneration) return false;
               set({ user: mappedUser, isLoading: false, initialized: true });
@@ -354,7 +355,7 @@ export const useAuthStore = create<AuthState>()(
               .eq("id", data.user.id)
               .maybeSingle();
 
-            const signedInUser: User = profile ? mapProfile(profile) : {
+            const signedInUser: User = profile ? mapProfile(profile, data.user) : {
                 id: data.user.id,
                 name, email,
                 accountTier: 'flygo',
@@ -414,11 +415,16 @@ export const useAuthStore = create<AuthState>()(
         authGeneration += 1;
         try {
           const supabase = getSupabaseClient();
-          const { error } = await supabase.rpc("clear_my_device_sessions");
-          if (error?.code === 'PGRST202') await supabase.rpc('clear_my_active_session');
-          await supabase.auth.signOut({ scope: 'global' });
-        } catch { /* ignore */ }
-        set({ user: null, error: null });
+          let { error } = await supabase.rpc("clear_my_device_sessions");
+          if (error?.code === 'PGRST202') ({ error } = await supabase.rpc('clear_my_active_session'));
+          if (error) throw error;
+          const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' });
+          if (signOutError) throw signOutError;
+          set({ user: null, error: null });
+        } catch {
+          // Never claim that other sessions were revoked when the server failed.
+          throw new Error('Chưa thể đăng xuất tất cả thiết bị. Kiểm tra kết nối rồi thử lại.');
+        }
       },
 
       checkActiveSession: async () => {
@@ -476,7 +482,7 @@ export const useAuthStore = create<AuthState>()(
               .eq("id", authUser.id)
               .single();
             if (profile) {
-              const mappedUser = mapProfile(profile);
+              const mappedUser = mapProfile(profile, authUser);
               rememberAccount(mappedUser);
               if (generation === authGeneration) set({ user: mappedUser });
             }

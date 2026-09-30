@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
@@ -13,7 +13,8 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { fetchAllPages } from '@/features/practice/data/fetch-all-pages';
 import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
 
-export default function MockExamResultPage({ params }: { params: { examId: string } }) {
+export default function MockExamResultPage() {
+  const params = useParams<{ examId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const attemptId = searchParams.get('attemptId');

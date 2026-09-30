@@ -112,6 +112,9 @@ function PersonalExamRoom() {
   const showPracticeFeedback = !isExam && selectedAnswer !== undefined;
 
   const selectAnswer = (optionIndex: number) => {
+    // This is a click handler, not render: check the real wall clock to stop
+    // answers between the deadline and the next one-second timer tick.
+    // eslint-disable-next-line react-hooks/purity
     if ((isExam && session.deadlineAt && Date.now() >= session.deadlineAt) || submittedRef.current || (!isExam && answersRef.current[currentQuestion.id] !== undefined)) return;
     const nextAnswers = { ...answersRef.current, [currentQuestion.id]: optionIndex };
     answersRef.current = nextAnswers;

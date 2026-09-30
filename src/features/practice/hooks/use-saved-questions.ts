@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { fetchAllPages } from '../data/fetch-all-pages';
@@ -8,7 +8,7 @@ export function useSavedQuestions(lessonId?: string) {
   const userId = useAuthStore((state) => state.user?.id);
   const scope = (userId || '') + ':' + (lessonId || '');
   const currentScope = useRef(scope);
-  currentScope.current = scope;
+  useLayoutEffect(() => { currentScope.current = scope; }, [scope]);
   const [state, setState] = useState<{ scope: string; ids: string[] }>({ scope: '', ids: [] });
   const savedRef = useRef<{ scope: string; ids: string[] }>({ scope: '', ids: [] });
   const pending = useRef(new Set<string>());

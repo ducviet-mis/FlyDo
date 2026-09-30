@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { HandbookPost } from '@/features/handbook/types';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
@@ -14,8 +14,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ChevronLeft, Clock, Facebook, Link as LinkIcon, Loader2, Edit, Edit3, Save, Check, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { markPostAsRead } from '@/features/handbook/utils/reading-status';
+import { loadAuthorProfiles } from '@/features/handbook/utils/author-profiles';
 
-export default function HandbookReadingPage({ params }: { params: { id: string } }) {
+export default function HandbookReadingPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
   const [post, setPost] = useState<HandbookPost | null>(null);
@@ -56,11 +58,7 @@ export default function HandbookReadingPage({ params }: { params: { id: string }
 
         // Fetch author avatar from profiles by name
         if (postData.author_name) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('name', postData.author_name)
-            .maybeSingle();
+          const [profile] = await loadAuthorProfiles([postData.author_name]);
 
           if (!cancelled && profile?.avatar_url) {
             setAuthorAvatar(profile.avatar_url);

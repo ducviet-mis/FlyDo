@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useRef, useState } from 'react';
 import { translateAuthError, useAuthStore } from '@/features/auth/stores/auth-store';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,9 +74,9 @@ export default function ProfilePage() {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {activeTab === 'personal' && <PersonalInfoTab user={user} refreshUser={refreshUser} />}
+          {activeTab === 'personal' && <PersonalInfoTab key={user.id} user={user} refreshUser={refreshUser} />}
           {activeTab === 'membership' && <MembershipTab user={user} />}
-          {activeTab === 'security' && <SecurityTab userId={user.id} logoutAllDevices={logoutAllDevices} />}
+          {activeTab === 'security' && <SecurityTab key={user.id} userId={user.id} logoutAllDevices={logoutAllDevices} />}
         </div>
       </div>
     </div>
@@ -90,43 +91,67 @@ function PersonalInfoTab({ user, refreshUser }: { user: any; refreshUser: () => 
   const [avatarPreview, setAvatarPreview] = useState(user.avatarUrl || '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const saveLock = useRef(false);
+  const avatarLock = useRef(false);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB.');
+    if (!file || avatarLock.current) return;
+    e.target.value = '';
+    setProfileError('');
+    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
+      setProfileError('Vui lòng chọn ảnh PNG, JPEG, WebP hoặc GIF.');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      setAvatarPreview(base64);
+    if (file.size > 2 * 1024 * 1024) {
+      setProfileError('Ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB.');
+      return;
+    }
+    avatarLock.current = true;
+    setAvatarSaving(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => typeof reader.result === 'string'
+          ? resolve(reader.result) : reject(new Error('Invalid image'));
+        reader.onerror = reader.onabort = () => reject(new Error('Image read failed'));
+        reader.readAsDataURL(file);
+      });
       const supabase = getSupabaseClient();
-      await supabase.from('profiles').update({ avatar_url: base64 }).eq('id', user.id);
+      const { error } = await supabase.from('profiles').update({ avatar_url: base64 }).eq('id', user.id);
+      if (error) throw error;
+      setAvatarPreview(base64);
       await refreshUser();
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setProfileError('Chưa thể lưu ảnh đại diện. Kiểm tra kết nối rồi thử lại.');
+    } finally {
+      avatarLock.current = false;
+      setAvatarSaving(false);
+    }
   };
 
   const handleSave = async () => {
+    if (saveLock.current) return;
+    saveLock.current = true;
     setSaving(true);
     setSaved(false);
-    const supabase = getSupabaseClient();
-    const { error } = await supabase.from('profiles').update({
-      name,
-      phone,
-      birth_date: birthDate || null,
-    }).eq('id', user.id);
-
-    if (error) {
-      alert('Lỗi: ' + error.message);
-    } else {
+    setProfileError('');
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.from('profiles').update({
+        name, phone, birth_date: birthDate || null,
+      }).eq('id', user.id);
+      if (error) throw error;
       await refreshUser();
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+    } catch {
+      setProfileError('Chưa thể lưu thông tin. Thay đổi của bạn vẫn ở đây; hãy thử lại khi có mạng.');
+    } finally {
+      saveLock.current = false;
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const words = name ? name.trim().split(/\s+/) : [];
@@ -145,6 +170,7 @@ function PersonalInfoTab({ user, refreshUser }: { user: any; refreshUser: () => 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-8 px-4 md:px-8">
+        {profileError && <p role="alert" className="rounded-xl bg-destructive-soft p-3 text-sm text-destructive">{profileError}</p>}
         {/* Avatar */}
         <div className="flex flex-wrap items-center gap-6">
           <div className="relative group">
@@ -153,8 +179,8 @@ function PersonalInfoTab({ user, refreshUser }: { user: any; refreshUser: () => 
               <AvatarFallback className="text-2xl font-bold bg-primary text-primary-foreground">{initials}</AvatarFallback>
             </Avatar>
             <label className="absolute inset-0 flex items-center justify-center bg-overlay/60 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 cursor-pointer transition-opacity backdrop-blur-sm">
-              <Camera className="w-6 h-6 text-white" />
-              <input aria-label="Đổi ảnh đại diện" type="file" accept="image/*" className="sr-only" onChange={handleAvatarChange} />
+              {avatarSaving ? <Loader2 className="h-6 w-6 animate-spin text-white" aria-hidden="true" /> : <Camera className="w-6 h-6 text-white" aria-hidden="true" />}
+              <input aria-label="Đổi ảnh đại diện" type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={avatarSaving} className="sr-only" onChange={handleAvatarChange} />
             </label>
           </div>
           <div>
@@ -171,7 +197,7 @@ function PersonalInfoTab({ user, refreshUser }: { user: any; refreshUser: () => 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2.5">
             <Label htmlFor="profile-name" className="flex items-center gap-2 text-foreground font-semibold"><UserIcon className="w-4 h-4 text-muted-foreground" /> Họ và tên</Label>
-            <Input id="profile-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nhập họ và tên" className="bg-surface border-control h-12 px-4 text-base rounded-md focus-visible:ring-primary" />
+            <Input id="profile-name" autoComplete="name" value={name} onChange={(e) => { setName(e.target.value); setSaved(false); }} placeholder="Nhập họ và tên" className="bg-surface border-control h-12 px-4 text-base rounded-md focus-visible:ring-primary" />
           </div>
 
           <div className="space-y-2.5">
@@ -182,16 +208,17 @@ function PersonalInfoTab({ user, refreshUser }: { user: any; refreshUser: () => 
 
           <div className="space-y-2.5">
             <Label htmlFor="profile-phone" className="flex items-center gap-2 text-foreground font-semibold"><Phone className="w-4 h-4 text-muted-foreground" /> Số điện thoại</Label>
-            <Input id="profile-phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0901234567" className="bg-surface border-control h-12 px-4 text-base rounded-md focus-visible:ring-primary" />
+            <Input id="profile-phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setSaved(false); }} placeholder="0901234567" className="bg-surface border-control h-12 px-4 text-base rounded-md focus-visible:ring-primary" />
           </div>
 
           <div className="space-y-2.5">
             <Label htmlFor="profile-birth" className="flex items-center gap-2 text-foreground font-semibold"><CalendarDays className="w-4 h-4 text-muted-foreground" /> Ngày sinh</Label>
-            <Input id="profile-birth" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="bg-surface border-control h-12 px-4 text-base rounded-md focus-visible:ring-primary" />
+            <Input id="profile-birth" type="date" value={birthDate} onChange={(e) => { setBirthDate(e.target.value); setSaved(false); }} className="bg-surface border-control h-12 px-4 text-base rounded-md focus-visible:ring-primary" />
           </div>
         </div>
 
-        <div className="pt-4 flex items-center justify-end">
+        <div className="pt-4 flex flex-wrap items-center justify-end gap-3">
+          {saved && <p role="status" className="text-sm text-success">Đã lưu thay đổi.</p>}
           <Button onClick={handleSave} disabled={saving} className="w-full md:w-auto min-w-[140px] h-12 rounded-md bg-primary text-primary-foreground font-bold text-base shadow-card hover:opacity-90">
             {saving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
             {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -271,6 +298,7 @@ function MembershipTab({ user }: { user: any }) {
 
 // ─── Security Tab ────────────────────────────────────────────────
 function SecurityTab({ userId, logoutAllDevices }: { userId: string; logoutAllDevices: () => Promise<void> }) {
+  const router = useRouter();
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
@@ -279,6 +307,8 @@ function SecurityTab({ userId, logoutAllDevices }: { userId: string; logoutAllDe
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const logoutLock = useRef(false);
+  const [logoutError, setLogoutError] = useState('');
 
   const handleChangePassword = async () => {
     setMessage(null);
@@ -326,9 +356,19 @@ function SecurityTab({ userId, logoutAllDevices }: { userId: string; logoutAllDe
   };
 
   const handleLogoutAll = async () => {
+    if (logoutLock.current) return;
+    logoutLock.current = true;
     setLoggingOut(true);
-    await logoutAllDevices();
-    window.location.href = '/login';
+    setLogoutError('');
+    try {
+      await logoutAllDevices();
+      router.replace('/login');
+    } catch {
+      setLogoutError('Chưa thể đăng xuất tất cả thiết bị. Kiểm tra kết nối rồi thử lại.');
+    } finally {
+      logoutLock.current = false;
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -402,6 +442,7 @@ function SecurityTab({ userId, logoutAllDevices }: { userId: string; logoutAllDe
             {loggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
             {loggingOut ? 'Đang đăng xuất...' : 'Đăng xuất tất cả thiết bị'}
           </Button>
+          {logoutError && <p role="alert" className="mt-3 text-sm text-destructive">{logoutError}</p>}
         </CardContent>
       </Card>
     </div>

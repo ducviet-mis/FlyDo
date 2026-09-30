@@ -2,11 +2,12 @@ import { LoginForm } from '@/features/auth/components/login-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { GraduationCap } from 'lucide-react';
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { oauth_error?: string; session_replaced?: string; device_limit?: string; device_setup?: string };
+  searchParams?: Promise<{ oauth_error?: string; session_replaced?: string; device_limit?: string; device_setup?: string }>;
 }) {
+  const query = await searchParams;
   return (
     <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-float border-border bg-card/70 backdrop-blur-md rounded-xl overflow-hidden">
@@ -21,10 +22,10 @@ export default function LoginPage({
         </CardHeader>
         <CardContent className="pb-8">
           <LoginForm
-            oauthError={searchParams?.oauth_error === '1'}
-            sessionReplaced={searchParams?.session_replaced === '1'}
-            deviceLimit={searchParams?.device_limit === '1'}
-            deviceSetup={searchParams?.device_setup === '1'}
+            oauthError={query?.oauth_error === '1'}
+            sessionReplaced={query?.session_replaced === '1'}
+            deviceLimit={query?.device_limit === '1'}
+            deviceSetup={query?.device_setup === '1'}
           />
         </CardContent>
       </Card>

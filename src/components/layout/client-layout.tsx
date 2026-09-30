@@ -27,7 +27,15 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
   const initialized = useAuthStore((state) => state.initialized);
   const pathname = usePathname();
-  useEffect(() => { initAuth(); }, [initAuth]);
+  useEffect(() => {
+    if (pathname !== '/offline') void initAuth();
+  }, [initAuth, pathname]);
+
+  // The cached recovery shell must not depend on auth/network monitors.
+  // It contains no protected data and must work before sign-in as well.
+  if (pathname === '/offline') {
+    return <main id="main-content" className="flex min-h-dvh items-center justify-center bg-background p-4">{children}</main>;
+  }
 
   const isMockExamRoom = Boolean(pathname?.match(/^\/mock-exams\/[a-zA-Z0-9-]+$/));
   const isPracticeRoom = Boolean(

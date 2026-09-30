@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, Laptop, Loader2, MonitorSmartphone, RefreshCw, Smartphone, Tablet, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,10 +29,12 @@ const groups = [
 ];
 
 function formatDate(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Chưa ghi nhận';
   return new Intl.DateTimeFormat('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
-  }).format(new Date(value));
+  }).format(date);
 }
 
 export function AccountDevices({ userId }: { userId: string }) {
@@ -44,53 +46,76 @@ export function AccountDevices({ userId }: { userId: string }) {
   const [removing, setRemoving] = useState(false);
   const [selected, setSelected] = useState<Device | null>(null);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const loadGeneration = useRef(0);
+  const removalLock = useRef(false);
   const deviceKey = getBrowserDeviceKey();
 
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setLoading(true);
-    const supabase = getSupabaseClient();
-    const [deviceResult, quotaResult, sessionResult] = await Promise.all([
-      supabase.from('account_devices')
-        .select('id,device_key,device_type,device_name,session_id,first_seen_at,last_login_at')
-        .eq('user_id', userId).is('revoked_at', null)
-        .order('last_login_at', { ascending: false }),
-      supabase.from('account_device_quota').select('removal_count').eq('user_id', userId).maybeSingle(),
-      supabase.auth.getSession(),
-    ]);
-    if (deviceResult.error || quotaResult.error) {
-      setLoadFailed(true);
-      setMessage({ kind: 'error', text: 'Không thể tải danh sách thiết bị. Hãy kiểm tra bản cập nhật cơ sở dữ liệu rồi thử lại.' });
-    } else {
-      setLoadFailed(false);
-      setMessage((previous) => previous?.kind === 'error' ? null : previous);
-      setDevices((deviceResult.data || []) as Device[]);
-      setRemaining(Math.max(0, 2 - Number(quotaResult.data?.removal_count || 0)));
-      setCurrentSessionId(getSessionIdFromAccessToken(sessionResult.data.session?.access_token));
+    try {
+      const supabase = getSupabaseClient();
+      const [deviceResult, quotaResult, sessionResult] = await Promise.all([
+        supabase.from('account_devices')
+          .select('id,device_key,device_type,device_name,session_id,first_seen_at,last_login_at')
+          .eq('user_id', userId).is('revoked_at', null)
+          .order('last_login_at', { ascending: false }),
+        supabase.from('account_device_quota').select('removal_count').eq('user_id', userId).maybeSingle(),
+        supabase.auth.getSession(),
+      ]);
+      if (generation !== loadGeneration.current) return;
+      if (deviceResult.error || quotaResult.error || sessionResult.error) {
+        setLoadFailed(true);
+        setMessage({ kind: 'error', text: 'Không thể tải danh sách thiết bị. Hãy kiểm tra bản cập nhật cơ sở dữ liệu rồi thử lại.' });
+      } else {
+        setLoadFailed(false);
+        setMessage((previous) => previous?.kind === 'error' ? null : previous);
+        setDevices((deviceResult.data || []) as Device[]);
+        setRemaining(Math.max(0, 2 - Number(quotaResult.data?.removal_count || 0)));
+        setCurrentSessionId(getSessionIdFromAccessToken(sessionResult.data.session?.access_token));
+      }
+    } catch {
+      if (generation === loadGeneration.current) {
+        setLoadFailed(true);
+        setMessage({ kind: 'error', text: 'Chưa thể tải thiết bị. Kiểm tra kết nối rồi thử làm mới.' });
+      }
+    } finally {
+      if (generation === loadGeneration.current) setLoading(false);
     }
-    setLoading(false);
   }, [userId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    return () => { loadGeneration.current += 1; };
+  }, [load]);
 
   const removeSelected = async () => {
-    if (!selected || removing) return;
+    if (!selected || removalLock.current) return;
+    removalLock.current = true;
     setRemoving(true);
-    const { data, error } = await getSupabaseClient().rpc('remove_account_device', {
-      p_device_id: selected.id,
-    });
-    if (error || data?.removed !== true) {
-      const explanation = data?.reason === 'quota' ? 'Bạn đã dùng hết 2 lượt xóa thiết bị của tài khoản.'
-        : data?.reason === 'current' ? 'Không thể xóa thiết bị đang sử dụng.'
-          : 'Không thể xóa thiết bị. Vui lòng tải lại và thử lại.';
-      setMessage({ kind: 'error', text: explanation });
+    try {
+      const { data, error } = await getSupabaseClient().rpc('remove_account_device', {
+        p_device_id: selected.id,
+      });
+      if (error || data?.removed !== true) {
+        const explanation = data?.reason === 'quota' ? 'Bạn đã dùng hết 2 lượt xóa thiết bị của tài khoản.'
+          : data?.reason === 'current' ? 'Không thể xóa thiết bị đang sử dụng.'
+            : 'Không thể xóa thiết bị. Vui lòng tải lại và thử lại.';
+        // Keep the failure visible; refreshing used to clear it immediately.
+        await load();
+        setMessage({ kind: 'error', text: explanation });
+      } else {
+        setMessage({ kind: 'success', text: `Đã xóa ${selected.device_name}. Thiết bị này sẽ bị đăng xuất.` });
+        await load();
+      }
       setSelected(null);
-      await load();
-    } else {
-      setMessage({ kind: 'success', text: `Đã xóa ${selected.device_name}. Thiết bị này sẽ bị đăng xuất.` });
+    } catch {
+      setMessage({ kind: 'error', text: 'Chưa thể xác nhận xóa thiết bị. Hãy làm mới danh sách trước khi thử lại.' });
       setSelected(null);
-      await load();
+    } finally {
+      removalLock.current = false;
+      setRemoving(false);
     }
-    setRemoving(false);
   };
 
   return (

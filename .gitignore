@@ -1,3 +1,11 @@
 node_modules/ 
 .next/ 
 .env.local 
+.env
+.env.*
+!.env.example
+tmp/
+*.tsbuildinfo
+public/sw.js
+public/swe-worker*.js
+public/workbox-*.js

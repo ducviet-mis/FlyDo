@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { HandbookCategory } from '@/features/handbook/types';
@@ -17,7 +17,8 @@ import { ArrowLeft, Loader2, Save, UploadCloud } from 'lucide-react';
 
 const CATEGORIES: HandbookCategory[] = ['Toán & Đời sống', 'Phương pháp học toán', 'Bản đồ lý thuyết'];
 
-export default function EditHandbookPostPage({ params }: { params: { id: string } }) {
+export default function EditHandbookPostPage() {
+  const params = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);

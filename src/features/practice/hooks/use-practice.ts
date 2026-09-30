@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { Question } from '../types';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
@@ -16,7 +16,7 @@ export function usePractice(questions: Question[], lessonId: string, initialAnsw
   const savingIds = useRef(new Set<string>());
   const scope = userScope(lessonId, useAuthStore((state) => state.user?.id));
   const currentScope = useRef(scope);
-  currentScope.current = scope;
+  useLayoutEffect(() => { currentScope.current = scope; }, [scope]);
   const [saveError, setSaveError] = useState('');
   
   const supabase = getSupabaseClient();

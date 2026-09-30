@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { getReadPostIds } from '@/features/handbook/utils/reading-status';
+import { loadAuthorProfiles } from '@/features/handbook/utils/author-profiles';
 import { StudyHeading } from '@/components/shared/study-heading';
 import { HandbookCover } from '@/features/handbook/components/handbook-cover';
 
@@ -44,12 +45,10 @@ export default function HandbookHubPage() {
 
     if (!error && data) {
       // Fetch avatar profiles for all distinct author names
-      const authorNames = Array.from(new Set(data.map((p: any) => p.author_name).filter(Boolean)));
+      const authorNames = Array.from(new Set<string>(data.map((p: any) => p.author_name)
+        .filter((name: unknown): name is string => typeof name === 'string' && name.length > 0)));
       if (authorNames.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('name, avatar_url')
-          .in('name', authorNames);
+        const profiles = await loadAuthorProfiles(authorNames);
 
         const avatarMap: Record<string, string> = {};
         profiles?.forEach((prof: any) => {

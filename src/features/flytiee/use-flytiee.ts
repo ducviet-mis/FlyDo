@@ -62,7 +62,7 @@ export function useFlytiee() {
   const [available, setAvailable] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [clock, setClock] = useState(Date.now());
+  const [clock, setClock] = useState(() => Date.now());
   const inFlight = useRef(false);
   const missionRequest = useRef(0);
   const profileRequest = useRef(0);

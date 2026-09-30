@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,8 @@ type MockExamDraft = {
 
 const MOCK_EXAM_DRAFT_VERSION = 1;
 
-export default function MockExamRoomPage({ params }: { params: { examId: string } }) {
+export default function MockExamRoomPage() {
+  const params = useParams<{ examId: string }>();
   const router = useRouter();
   const { user, initialized } = useAuthStore();
   const [loadError, setLoadError] = useState('');
