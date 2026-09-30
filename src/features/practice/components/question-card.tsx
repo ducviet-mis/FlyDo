@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { BookmarkCheck, BookmarkPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
+import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
 
 interface QuestionCardProps {
   question: Question;
@@ -41,7 +42,7 @@ export function QuestionCard({
     <div className="study-question w-full">
       <div className="mb-3 flex items-center justify-between gap-3 px-4 md:px-1">
         <p className="text-sm font-semibold text-foreground">Câu <span className="text-primary">{currentIndex + 1}</span><span className="ml-1 font-normal text-muted-foreground">/ {totalQuestions}</span></p>
-        <span className="text-xs text-muted-foreground">Chọn một đáp án</span>
+        <ReportQuestionButton key={question.id} source="practice" questionId={question.id} />
       </div>
 
       <Progress value={progressPercent} aria-label="Vị trí câu hỏi" className="mb-5 h-1 bg-track md:mb-6 [&>div]:bg-primary" />

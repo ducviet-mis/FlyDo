@@ -9,6 +9,7 @@ import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram
 import { ArrowLeft, CheckCircle2, XCircle, Clock, RotateCcw, Target, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
 
 export default function MockExamResultPage({ params }: { params: { examId: string } }) {
   const router = useRouter();
@@ -158,6 +159,7 @@ export default function MockExamResultPage({ params }: { params: { examId: strin
                         </span>
                       )}
                     </h3>
+                    <ReportQuestionButton source="mock_exam" questionId={q.id} />
                   </div>
 
                   <div className="prose vivux-prose max-w-none mb-6 text-foreground">

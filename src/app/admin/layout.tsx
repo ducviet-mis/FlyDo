@@ -4,7 +4,7 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { BellRing, BookOpen, FileText, Gift, LibraryBig, UploadCloud } from 'lucide-react';
+import { BellRing, BookOpen, FileText, Flag, Gift, LibraryBig, UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/shared/page-header';
 
@@ -35,6 +35,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Sidebar */}
         <aside className="w-full md:w-64 shrink-0">
           <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0">
+            <Link href="/admin/question-reports" aria-current={pathname === '/admin/question-reports' ? 'page' : undefined}
+              className={cn('flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold whitespace-nowrap transition-colors', pathname === '/admin/question-reports' ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:bg-muted')}>
+              <Flag className="h-5 w-5" aria-hidden="true" /> Báo lỗi câu hỏi
+            </Link>
             <Link href="/admin/practice">
               <div className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors whitespace-nowrap",

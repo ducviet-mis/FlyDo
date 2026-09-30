@@ -12,6 +12,10 @@ interface UseQuestionNavProps {
 export function useQuestionNav({ onNext, onPrev, onSelect, isAnswered }: UseQuestionNavProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+      if (target?.closest('input, textarea, select, button, a, [contenteditable="true"]')) return;
       if (e.key === 'ArrowRight' && isAnswered) {
         onNext();
       } else if (e.key === 'Enter' && isAnswered) {

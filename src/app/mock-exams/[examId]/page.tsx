@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { LayoutGrid } from 'lucide-react';
+import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
 
 type MockExamDraft = {
   version: 1;
@@ -260,6 +261,7 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
 
     const handleQuestionNavigation = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
+      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
 
       if (event.key === 'ArrowLeft' && currentIndex > 0) {
@@ -394,7 +396,7 @@ export default function MockExamRoomPage({ params }: { params: { examId: string 
               <div className="study-question bg-card rounded-none md:rounded-xl p-5 md:p-8 shadow-none md:shadow-card border-y md:border border-border">
                 <div className="mb-6 flex items-center justify-between gap-3 border-b border-border pb-4">
                   <h2 className="text-base font-semibold text-primary">Câu {currentIndex + 1}<span className="ml-1 font-normal text-muted-foreground">/ {questions.length}</span></h2>
-                  <span className="text-xs text-muted-foreground">Chọn một đáp án</span>
+                  <ReportQuestionButton key={currentQuestion.id} source="mock_exam" questionId={currentQuestion.id} />
                 </div>
                 <div className="prose vivux-prose max-w-none mb-8 text-lg text-foreground">
                   <MathRenderer content={currentQuestion.content} />
