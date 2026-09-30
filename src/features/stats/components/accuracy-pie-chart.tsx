@@ -1,25 +1,19 @@
 'use client';
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-
 interface AccuracyPieChartProps { correct: number; wrong: number; accuracy: number; }
 export function AccuracyPieChart({ correct, wrong, accuracy }: AccuracyPieChartProps) {
-  const data = [
-    { name: 'Đúng', value: correct, color: 'rgb(var(--color-success))' },
-    { name: 'Sai', value: wrong, color: 'rgb(var(--color-danger))' },
-  ];
+  const total = correct + wrong;
+  const correctPercent = total ? correct / total * 100 : 0;
+  const gap = correct > 0 && wrong > 0 ? 100 / 120 : 0; // Same 3-degree separation.
   return (
     <div role="img" aria-label={`Chính xác ${accuracy} phần trăm. ${correct} câu đúng, ${wrong} câu sai.`}>
       <div className="relative h-[180px] w-full">
-        {correct + wrong === 0 ? <div className="absolute left-1/2 top-1/2 h-[136px] w-[136px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[10px] border-track" /> :
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={58} outerRadius={68} paddingAngle={3} dataKey="value" stroke="none" isAnimationActive={false}>
-              {data.map((entry, index) => <Cell key={index} fill={entry.color} />)}
-            </Pie>
-            <Tooltip formatter={(value: number) => [`${value} câu`, '']} contentStyle={{ background: 'rgb(var(--color-surface-elevated))', color: 'rgb(var(--color-text-primary))', borderRadius: 'var(--radius-md)', border: '1px solid rgb(var(--color-border))', boxShadow: 'var(--shadow-float)' }} itemStyle={{ color: 'rgb(var(--color-text-primary))' }} />
-          </PieChart>
-        </ResponsiveContainer>}
+        <svg viewBox="0 0 180 180" className="mx-auto h-[180px] w-[180px] max-w-full" aria-hidden="true">
+          {total === 0 ? <circle cx="90" cy="90" r="63" fill="none" stroke="rgb(var(--color-track))" strokeWidth="10" /> : <g transform="rotate(-90 90 90)" fill="none" strokeWidth="10">
+            {correct > 0 && <circle cx="90" cy="90" r="63" pathLength="100" stroke="rgb(var(--color-success))" strokeDasharray={`${Math.max(0, correctPercent - gap)} 100`} strokeDashoffset={-gap / 2}><title>Đúng: {correct} câu</title></circle>}
+            {wrong > 0 && <circle cx="90" cy="90" r="63" pathLength="100" stroke="rgb(var(--color-danger))" strokeDasharray={`${Math.max(0, 100 - correctPercent - gap)} 100`} strokeDashoffset={-correctPercent - gap / 2}><title>Sai: {wrong} câu</title></circle>}
+          </g>}
+        </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className="vivux-stat-number text-3xl">{accuracy}%</span><span className="mt-1 text-xs text-muted-foreground">chính xác</span></div>
       </div>
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pb-3 text-xs text-muted-foreground">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { memo, useId } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { validateGeometryDiagram } from '../geometry-validator';
@@ -207,7 +207,7 @@ function DiagramSvg({ diagram }: { diagram: GeometryDiagramData }) {
   );
 }
 
-export function GeometryDiagram({ data, className, showValidationError = false }: Props) {
+export const GeometryDiagram = memo(function GeometryDiagram({ data, className, showValidationError = false }: Props) {
   if (!data) return null;
   const { diagram, errors } = validateGeometryDiagram(data);
   if (!diagram) {
@@ -228,4 +228,4 @@ export function GeometryDiagram({ data, className, showValidationError = false }
       <figcaption className="sr-only">{diagram.alt}</figcaption>
     </figure>
   );
-}
+});

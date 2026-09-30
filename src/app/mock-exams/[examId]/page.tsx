@@ -7,7 +7,8 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
 import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
-import { ArrowLeft, ArrowRight, Clock, Maximize2, Minimize2, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Maximize2, Minimize2, Send } from 'lucide-react';
+import { ExamClock } from '@/features/mock-exams/exam-clock';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
@@ -37,7 +38,7 @@ export default function MockExamRoomPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [expired, setExpired] = useState(false);
   const [deadlineAt, setDeadlineAt] = useState<number | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,6 +94,7 @@ export default function MockExamRoomPage() {
       setAnswers({});
       setCurrentIndex(0);
       autoSubmitAttemptedRef.current = false;
+      setExpired(false);
 
       const supabase = getSupabaseClient();
 
@@ -163,7 +165,6 @@ export default function MockExamRoomPage() {
       setAnswers(restoredAnswers);
       setCurrentIndex(restoredIndex);
       setDeadlineAt(restoredDeadline);
-      setTimeLeft(Math.max(0, Math.ceil((restoredDeadline - Date.now()) / 1000)));
       setDraftReady(true);
       } catch (error) {
         if (!cancelled) setLoadError(error instanceof Error ? error.message : 'Chưa thể tải đề thi. Hãy kiểm tra kết nối và thử lại.');
@@ -247,29 +248,13 @@ export default function MockExamRoomPage() {
     } finally { submitLockRef.current = false; setIsSubmitting(false); }
   }, [answers, deadlineAt, draftKey, exam, questions, router, user]);
 
-  useEffect(() => {
-    if (!exam || !draftReady || !deadlineAt || isSubmitting) return;
-
-    const updateTimer = () => {
-      const remaining = Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000));
-      setTimeLeft(remaining);
-
-      if (remaining === 0 && questions.length > 0 && !autoSubmitAttemptedRef.current) {
-        autoSubmitAttemptedRef.current = true;
-        void handleSubmit();
-      }
-    };
-
-    updateTimer();
-    const intervalId = window.setInterval(updateTimer, 1000);
-    return () => window.clearInterval(intervalId);
-  }, [deadlineAt, draftReady, exam, handleSubmit, isSubmitting, questions.length]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+  const handleExpire = useCallback(() => {
+    setExpired(true);
+    if (!autoSubmitAttemptedRef.current) {
+      autoSubmitAttemptedRef.current = true;
+      void handleSubmit();
+    }
+  }, [handleSubmit]);
 
   const goToPreviousQuestion = useCallback(() => setCurrentIndex((index) => Math.max(0, index - 1)), []);
   const goToNextQuestion = useCallback(() => setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)), [questions.length]);
@@ -393,13 +378,7 @@ export default function MockExamRoomPage() {
           >
             {isFullscreen ? <Minimize2 aria-hidden="true" className="h-4 w-4" /> : <Maximize2 aria-hidden="true" className="h-4 w-4" />}
           </Button>
-          <div className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold font-mono text-sm sm:text-lg transition-colors",
-            timeLeft < 300 ? "bg-destructive-soft text-destructive animate-pulse" : "bg-muted text-foreground"
-          )}>
-            <Clock aria-hidden="true" className="w-4 h-4 shrink-0" />
-            <span>{formatTime(timeLeft)}</span>
-          </div>
+          <ExamClock deadlineAt={deadlineAt!} onExpire={handleExpire} />
 
           <Button
             disabled={isSubmitting}
@@ -437,7 +416,7 @@ export default function MockExamRoomPage() {
                     return (
                       <button
                         key={idx}
-                        disabled={isSubmitting || timeLeft <= 0}
+                        disabled={isSubmitting || expired}
                         onClick={() => { if (deadlineAt && Date.now() < deadlineAt && !submitLockRef.current) setAnswers(prev => ({ ...prev, [currentQuestion.id]: idx })); }}
                         aria-pressed={isSelected}
                         className={cn(

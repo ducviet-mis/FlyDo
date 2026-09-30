@@ -203,7 +203,7 @@ export function formatOptionMath(opt: string): string {
   return formatPlainTextMath(s);
 }
 
-export function MathRenderer({ content, display = false, variant = 'inline' }: MathRendererProps) {
+export const MathRenderer = React.memo(function MathRenderer({ content, display = false, variant = 'inline' }: MathRendererProps) {
   const renderMath = (math: string, displayMode: boolean, key: React.Key) => {
     const html = katex.renderToString(normalizeLatexInput(math), { displayMode, throwOnError: false });
     return <span key={key} dangerouslySetInnerHTML={{ __html: html }} />;
@@ -302,4 +302,4 @@ export function MathRenderer({ content, display = false, variant = 'inline' }: M
   }
 
   return <div className={`math-renderer ${variant === 'solution' ? 'space-y-3 sm:space-y-4' : 'my-4 text-center'}`}>{renderedContent}</div>;
-}
+});

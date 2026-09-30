@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   ArrowRight,
   CalendarDays,
@@ -26,12 +27,17 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { ACCESSORY_SLOT_LABELS, FLYTIEE_ACCESSORIES, FLYTIEE_SETS, FLYTIEE_SKINS } from './config';
 import { FlytieeBird, FlytieeAccessoryPreview } from './flytiee-bird';
 import { FlytieeCoin } from './flytiee-coin';
-import { FlytieeEvents, FlytieeRewardOverlay } from './flytiee-events';
-import { FlytieeAdventure } from './flytiee-adventure';
 import type { FlytieeAccessorySlot, FlytieeMood, FlytieeRewardResult } from './types';
 import { useFlytiee } from './use-flytiee';
 import { localStudyDate } from '@/features/daily-goal/stores/online-study-store';
 import styles from './flytiee-widget.module.css';
+
+function ActivityLoading() {
+  return <div role="status" className="flex min-h-[320px] items-center justify-center rounded-xl border border-border bg-card text-sm text-muted-foreground">Đang chuẩn bị hành trình…</div>;
+}
+const FlytieeEvents = dynamic(() => import('./flytiee-events').then((m) => m.FlytieeEvents), { loading: ActivityLoading });
+const FlytieeAdventure = dynamic(() => import('./flytiee-adventure').then((m) => m.FlytieeAdventure), { loading: ActivityLoading });
+const FlytieeRewardOverlay = dynamic(() => import('./flytiee-events').then((m) => m.FlytieeRewardOverlay));
 
 const IDLE_ACTIONS: Array<{ mood: FlytieeMood; line: string; duration: number }> = [
   { mood: 'idle', line: 'Chớp chớp… tớ vẫn ở đây nhé!', duration: 2600 },
