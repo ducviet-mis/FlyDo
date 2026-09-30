@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Copy, Gift, Percent, UsersRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { clampReferralDiscount } from '../utils';
 
@@ -28,27 +27,27 @@ export function ReferralProgram() {
   };
 
   return (
-    <section className="rounded-2xl border border-primary/20 bg-primary-soft/35 p-4 sm:p-5" aria-labelledby="referral-heading">
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6" aria-labelledby="referral-heading">
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft">
           <UsersRound aria-hidden="true" className="h-5 w-5" />
         </div>
         <div>
-          <h3 id="referral-heading" className="font-bold text-foreground">Mời bạn bè cùng học</h3>
+          <h2 id="referral-heading" className="text-xl font-bold text-foreground">Mời bạn bè cùng học</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             Chia sẻ mã của bạn để cả hai cùng nhận tối đa 3 ngày FlyMax và thêm 5% ưu đãi cho mỗi lượt giới thiệu hợp lệ.
           </p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <Label htmlFor="my-referral-code" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mã giới thiệu của bạn</Label>
-          <p id="my-referral-code" className="mt-1 break-all font-mono text-lg font-bold tracking-[0.12em] text-foreground">
+      <div className="mt-5 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm text-muted-foreground">Mã giới thiệu của bạn</p>
+          <p className="mt-1 font-mono text-lg font-bold tracking-wide text-foreground [overflow-wrap:anywhere]">
             {user.referralCode || 'Đang tạo mã...'}
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={copyReferralCode} disabled={!user.referralCode} className="min-h-11 sm:self-end">
+        <Button type="button" variant="outline" onClick={copyReferralCode} disabled={!user.referralCode} className="min-h-11">
           <Copy aria-hidden="true" className="h-4 w-4" />
           {copied ? 'Đã sao chép' : 'Sao chép mã'}
         </Button>
@@ -71,8 +70,8 @@ function RewardMetric({ icon: Icon, label, value, progress }: { icon: typeof Gif
 
   return (
     <div className="rounded-xl border border-border bg-surface p-3.5">
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex items-center gap-2 text-sm text-muted-foreground"><Icon aria-hidden="true" className="h-4 w-4 text-primary" />{label}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"><Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />{label}</span>
         <span className="shrink-0 font-bold tabular-nums text-foreground">{value}</span>
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true"><div className="h-full rounded-full bg-primary" style={{ width }} /></div>

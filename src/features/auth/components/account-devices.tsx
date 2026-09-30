@@ -119,33 +119,34 @@ export function AccountDevices({ userId }: { userId: string }) {
   };
 
   return (
-    <Card className="rounded-2xl border-border shadow-soft">
-      <CardHeader className="border-b border-border pb-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
+    <Card className="overflow-hidden rounded-2xl border-border shadow-soft">
+      <CardHeader className="border-b border-border p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <CardTitle as="h2" className="flex items-center gap-2 text-xl font-bold text-foreground">
               <MonitorSmartphone aria-hidden="true" className="h-5 w-5 text-primary" /> Thiết bị đăng nhập
             </CardTitle>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Mỗi tài khoản dùng tối đa 2 điện thoại, 2 máy tính và 2 máy tính bảng.
-              Mỗi trình duyệt được tính là một thiết bị.
-            </p>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading} className="gap-2">
-            <RefreshCw aria-hidden="true" className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Làm mới
+          <Button type="button" variant="outline" onClick={() => void load()} disabled={loading} aria-label="Làm mới danh sách thiết bị" title="Làm mới danh sách thiết bị" className="h-11 w-11 shrink-0 p-0 sm:w-auto sm:px-3">
+            <RefreshCw aria-hidden="true" className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /><span className="hidden sm:inline">Làm mới</span>
           </Button>
         </div>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Tối đa 2 điện thoại, 2 máy tính và 2 máy tính bảng. Mỗi trình duyệt được tính là một thiết bị.
+        </p>
       </CardHeader>
-      <CardContent className="space-y-5 px-4 py-6 md:px-8">
-        {!loadFailed && <>
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-surface p-4">
-            <span className="text-sm font-semibold text-foreground">Lượt xóa/thay thế còn lại</span>
-            <span className="font-bold tabular-nums text-primary">{remaining}/2 lượt</span>
+      <CardContent className="space-y-5 p-5 sm:p-6">
+        {!loadFailed && !loading && (
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-foreground">Lượt xóa/thay thế còn lại</span>
+              <span className="shrink-0 font-bold tabular-nums text-primary">{remaining}/2 lượt</span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              2 lượt cho toàn bộ vòng đời tài khoản. Đăng xuất không xóa thiết bị và không dùng lượt.
+            </p>
           </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Giới hạn 2 lượt xóa áp dụng cho toàn bộ vòng đời tài khoản. Đăng xuất không xóa thiết bị khỏi danh sách.
-          </p>
-        </>}
+        )}
 
         {message && (
           <p role="status" className={`flex items-start gap-2 rounded-lg p-3 text-sm ${message.kind === 'error' ? 'bg-destructive-soft text-destructive' : 'bg-success-soft text-success'}`}>
@@ -161,31 +162,31 @@ export function AccountDevices({ userId }: { userId: string }) {
         ) : loadFailed ? null : groups.map((group) => {
           const entries = devices.filter((device) => device.device_type === group.type);
           return (
-            <section key={group.type} aria-label={group.label} className="space-y-3">
+            <section key={group.type} aria-label={group.label} className="space-y-2.5">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="flex items-center gap-2 font-semibold text-foreground">
                   <group.icon aria-hidden="true" className="h-4 w-4 text-primary" /> {group.label}
                 </h3>
-                <span className="text-sm tabular-nums text-muted-foreground">{entries.length}/2</span>
+                <span className="rounded-md bg-muted/60 px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground">{entries.length}/2 thiết bị</span>
               </div>
               {entries.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">Chưa có thiết bị nào.</p>
+                <p className="text-sm text-muted-foreground">Chưa có thiết bị nào.</p>
               ) : entries.map((device) => {
                 const isCurrent = device.device_key === deviceKey && device.session_id === currentSessionId;
                 return (
-                  <div key={device.id} className="flex flex-col gap-3 rounded-xl border border-border bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="flex flex-wrap items-center gap-2 font-semibold text-foreground">
-                        {device.device_name}
+                  <div key={device.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3 sm:p-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
+                        <span className="min-w-0 [overflow-wrap:anywhere]">{device.device_name}</span>
                         {isCurrent && <span className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-semibold text-success">Thiết bị này</span>}
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Đăng nhập gần nhất: <time dateTime={device.last_login_at} className="tabular-nums">{formatDate(device.last_login_at)}</time>
+                      <p className="mt-1.5 flex flex-wrap gap-x-1 text-xs leading-relaxed text-muted-foreground">
+                        <span>Đăng nhập gần nhất:</span><time dateTime={device.last_login_at} className="tabular-nums">{formatDate(device.last_login_at)}</time>
                       </p>
                     </div>
                     {!isCurrent && (
-                      <Button type="button" variant="outline" size="sm" disabled={remaining === 0} onClick={() => { setMessage(null); setSelected(device); }} className="self-start border-destructive/40 text-destructive hover:bg-destructive-soft sm:self-auto">
-                        <Trash2 aria-hidden="true" className="h-4 w-4" /> Xóa thiết bị
+                      <Button type="button" variant="ghost" disabled={remaining === 0} aria-label={`Xóa thiết bị ${device.device_name}`} title={remaining === 0 ? 'Đã dùng hết lượt xóa thiết bị' : `Xóa thiết bị ${device.device_name}`} onClick={() => { setMessage(null); setSelected(device); }} className="h-11 w-11 shrink-0 p-0 text-destructive hover:bg-destructive-soft hover:text-destructive sm:w-auto sm:px-3">
+                        <Trash2 aria-hidden="true" className="h-4 w-4" /><span className="hidden sm:inline">Xóa thiết bị</span>
                       </Button>
                     )}
                   </div>

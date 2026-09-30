@@ -14,6 +14,7 @@ interface GiftCodeFormProps {
 }
 
 export function GiftCodeForm({ compact = false }: GiftCodeFormProps) {
+  const Heading = compact ? 'h2' : 'h3';
   const { user, refreshUser } = useAuthStore();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,7 +71,7 @@ export function GiftCodeForm({ compact = false }: GiftCodeFormProps) {
           <Gift aria-hidden="true" className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="font-bold text-foreground">Bạn có mã quà tặng?</h3>
+          <Heading className={`font-bold text-foreground ${compact ? 'text-xl' : ''}`}>{compact ? 'Mã quà tặng' : 'Bạn có mã quà tặng?'}</Heading>
           <p className="mt-1 text-sm text-muted-foreground">Nhập mã để nhận số ngày trải nghiệm FlyMax được thiết lập cho mã đó.</p>
         </div>
       </div>
