@@ -51,6 +51,31 @@
   background-size: 97px 103px, 153px 147px, 223px 193px, 271px 211px;
 }
 
+.aurora {
+  position: absolute;
+  inset: -16% -7% 5% 39%;
+  pointer-events: none;
+  opacity: .58;
+  background: radial-gradient(ellipse at 42% 48%, rgb(var(--luna-ice) / .14), transparent 47%), radial-gradient(ellipse at 73% 32%, rgb(var(--luna-violet) / .17), transparent 46%);
+  filter: blur(28px);
+  animation: auroraDrift 19s ease-in-out infinite alternate;
+}
+
+.meteorField { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.meteorField span {
+  position: absolute;
+  top: 24%;
+  left: 68%;
+  width: 104px;
+  height: 1px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgb(var(--luna-ice) / .18), rgb(var(--luna-ice) / .95));
+  transform: rotate(-27deg);
+  animation: meteorSweep 14s ease-out infinite;
+}
+.meteorField span::after { position: absolute; top: -2px; right: 0; width: 5px; height: 5px; border-radius: 50%; background: #e7f6ff; box-shadow: 0 0 13px 4px rgb(var(--luna-ice) / .55); content: ''; }
+.meteorField span:nth-child(2) { top: 65%; left: 82%; width: 70px; animation-delay: -7s; }
+
 .heroCopy { position: relative; z-index: 2; padding: 52px 0 54px 54px; }
 .heroIndex { display: inline-flex; align-items: center; gap: 10px; color: rgb(var(--luna-ice)); font-size: 11px; font-weight: 750; letter-spacing: .19em; }
 .heroIndex span { color: rgb(178 206 239 / .4); }
@@ -68,34 +93,49 @@
 .heroFootnote { display: flex; align-items: center; gap: 9px; margin-top: 28px; color: rgb(188 209 235 / .74); font-size: 11px; letter-spacing: .02em; }
 .heroFootnote svg { color: rgb(var(--luna-gold)); }
 
-.chart { position: relative; min-width: 0; width: 100%; aspect-ratio: 600 / 420; align-self: center; }
+.chart { position: relative; min-width: 0; width: 100%; aspect-ratio: 600 / 420; align-self: center; scroll-margin-top: 95px; }
 .chart::before { content: ''; position: absolute; top: 20%; left: 22%; width: 55%; height: 55%; border-radius: 50%; background: radial-gradient(circle, rgb(132 198 255 / .19), transparent 70%); filter: blur(24px); pointer-events: none; }
 .chartArt { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
 .moonHalo { transform-origin: 300px 220px; animation: breathe 9s ease-in-out infinite; }
+.moonCorona { transform-origin: 300px 220px; animation: coronaPulse 7s ease-in-out infinite; }
 .moonBody { transform-origin: 300px 220px; animation: moonReveal 850ms var(--ease-out) both; }
 .orbitOuter { transform-origin: 300px 210px; animation: spinSlow 110s linear infinite; }
+.orbitSparkNear { transform-origin: 300px 210px; animation: spinSlow 38s linear infinite; }
+.orbitSparkFar { transform-origin: 300px 210px; animation: spinSlow 65s linear infinite reverse; }
+.constellationLine { animation: constellationGlow 5.5s ease-in-out infinite alternate; }
 .chartCoordinate,
 .chartLabel { position: absolute; pointer-events: none; color: rgb(192 219 247 / .55); font-size: 9px; font-weight: 700; letter-spacing: .17em; }
 .chartCoordinate { right: 7%; top: 6%; }
 .chartLabel { left: 7%; bottom: 8%; }
 .chartLabel span { color: rgb(var(--luna-gold)); }
 
-.starNode { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 7px; width: 80px; height: 80px; margin: -40px 0 0 -40px; padding-top: 12px; border-radius: 50%; color: #f2f9ff; text-decoration: none; transition: transform 220ms ease, filter 220ms ease; }
-.starNode:hover,
-.starNode:focus-visible { transform: scale(1.13); filter: brightness(1.3); }
-.starNode::before { content: ''; position: absolute; top: 6px; left: 23px; width: 34px; height: 34px; border: 1px solid rgb(211 234 255 / .56); border-radius: 50%; box-shadow: 0 0 0 7px rgb(139 194 255 / .07), 0 0 21px rgb(157 207 255 / .45); }
-.starNodeCore { position: relative; z-index: 1; width: 22px; height: 22px; border: 5px solid rgb(15 34 65 / .85); border-radius: 50%; background: #e4f6ff; box-shadow: 0 0 0 1px rgb(213 239 255 / .9), 0 0 19px rgb(174 222 255 / .9); }
-.starNodeLabel { position: relative; z-index: 1; border: 1px solid rgb(169 207 249 / .24); border-radius: 99px; background: rgb(11 25 50 / .86); padding: 3px 7px; white-space: nowrap; font-size: 10px; font-weight: 800; letter-spacing: .09em; box-shadow: 0 4px 12px rgb(0 0 0 / .25); }
-.nodeSix { left: 18.33%; top: 64.3%; }
-.nodeSeven { left: 40.83%; top: 38.1%; }
-.nodeEight { left: 65%; top: 45.2%; }
-.nodeNine { left: 83.33%; top: 21.4%; }
-.nodeEight .starNodeCore { background: #d8caff; box-shadow: 0 0 0 1px #ddd1ff, 0 0 22px rgb(189 154 255 / .83); }
-.nodeNine .starNodeCore { background: #ffe2ad; box-shadow: 0 0 0 1px #ffe5b8, 0 0 23px rgb(255 206 131 / .86); }
+.destination { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 96px; height: 96px; margin: -48px 0 0 -48px; padding-top: 4px; border-radius: 28px; color: #f2f9ff; text-decoration: none; cursor: pointer; touch-action: manipulation; }
+.destinationDisc { position: relative; display: grid; flex: none; width: 47px; height: 47px; place-items: center; border: 1px solid rgb(var(--node-tint) / .84); border-radius: 50%; color: #f7fbff; background: radial-gradient(circle at 34% 27%, rgb(var(--node-tint) / .48), rgb(var(--node-tint) / .16) 48%, rgb(12 28 55 / .95) 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), 0 0 0 5px rgb(var(--node-tint) / .08), 0 0 24px rgb(var(--node-tint) / .37), 0 8px 20px rgb(2 9 25 / .27); animation: destinationDrift 7.5s ease-in-out infinite; transition: box-shadow var(--motion-normal) var(--ease-out), scale var(--motion-normal) var(--ease-out); }
+.destinationDisc::after { position: absolute; inset: -8px; border: 1px dashed rgb(var(--node-tint) / .43); border-radius: 50%; content: ''; pointer-events: none; }
+.destinationDisc svg { filter: drop-shadow(0 0 6px rgb(var(--node-tint) / .7)); }
+.destinationLabel { position: relative; z-index: 1; border: 1px solid rgb(var(--node-tint) / .39); border-radius: 99px; padding: 4px 8px; color: #f2f9ff; background: rgb(9 23 47 / .91); box-shadow: 0 4px 13px rgb(2 9 25 / .36); white-space: nowrap; font-size: 10px; font-weight: 800; letter-spacing: .045em; }
+.destination:hover .destinationDisc, .destination:focus-visible .destinationDisc { animation-play-state: paused; scale: 1.12; box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 0 0 8px rgb(var(--node-tint) / .12), 0 0 36px rgb(var(--node-tint) / .55), 0 12px 23px rgb(2 9 25 / .33); }
+.destination:hover .destinationLabel, .destination:focus-visible .destinationLabel { border-color: rgb(var(--node-tint) / .8); background: rgb(19 43 77 / .98); }
+.destination:focus-visible { outline: 2px solid rgb(var(--luna-ice)); outline-offset: 3px; }
+.destinationTheory { left: 18.33%; top: 64.3%; --node-tint: 134 224 240; }
+.destinationPractice { left: 40.83%; top: 38.1%; --node-tint: 167 204 255; }
+.destinationExams { left: 65%; top: 45.2%; --node-tint: 205 185 255; }
+.destinationHandbook { left: 83.33%; top: 21.4%; --node-tint: 255 218 158; }
+.destinationPractice .destinationDisc { animation-delay: -2s; }
+.destinationExams .destinationDisc { animation-delay: -4s; }
+.destinationHandbook .destinationDisc { animation-delay: -6s; }
 .motionButton { position: absolute; right: 7%; bottom: 5%; z-index: 3; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid rgb(178 214 255 / .3); border-radius: 12px; background: rgb(13 30 59 / .78); color: #e1f2ff; }
 .motionButton:hover { background: rgb(37 64 102 / .95); }
 .hero[data-motion='paused'] .moonHalo,
-.hero[data-motion='paused'] .orbitOuter { animation-play-state: paused; }
+.hero[data-motion='paused'] .moonCorona,
+.hero[data-motion='paused'] .orbitOuter,
+.hero[data-motion='paused'] .orbitSparkNear,
+.hero[data-motion='paused'] .orbitSparkFar,
+.hero[data-motion='paused'] .constellationLine,
+.hero[data-motion='paused'] .aurora,
+.hero[data-motion='paused'] .meteorField span,
+.hero[data-motion='paused'] .destinationDisc,
+.chart:focus-within .destinationDisc { animation-play-state: paused; }
 
 .companionRow { display: grid; grid-template-columns: minmax(0, 1fr) 164px; gap: 14px; align-items: stretch; }
 .companionRow > * { min-width: 0; }
@@ -124,6 +164,11 @@
 @keyframes breathe { 0%, 100% { opacity: .6; transform: scale(.96); } 50% { opacity: 1; transform: scale(1.04); } }
 @keyframes moonReveal { from { opacity: .3; transform: scale(.86); } to { opacity: 1; transform: scale(1); } }
 @keyframes spinSlow { to { transform: rotate(360deg); } }
+@keyframes coronaPulse { 0%, 100% { opacity: .35; transform: scale(.96); } 50% { opacity: .75; transform: scale(1.06); } }
+@keyframes constellationGlow { from { opacity: .5; } to { opacity: 1; } }
+@keyframes auroraDrift { from { opacity: .38; transform: translate3d(-2%, 1%, 0); } to { opacity: .65; transform: translate3d(3%, -2%, 0); } }
+@keyframes meteorSweep { 0%, 7%, 21%, 100% { opacity: 0; transform: translate3d(-35px, 20px, 0) rotate(-27deg); } 10% { opacity: .7; } 17% { opacity: 0; transform: translate3d(75px, -33px, 0) rotate(-27deg); } }
+@keyframes destinationDrift { 0%, 100% { transform: translateY(2px); } 50% { transform: translateY(-3px); } }
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; }
@@ -145,16 +190,24 @@
   .chart { margin-top: 4px; }
   .chartCoordinate { right: 10%; top: 3%; font-size: 7px; }
   .chartLabel { left: 8%; bottom: 4%; font-size: 7px; }
-  .starNode { transform: scale(.86); }
-  .starNode:hover, .starNode:focus-visible { transform: scale(1); }
-  .motionButton { right: 6%; bottom: 1%; }
+  .destination { width: 78px; height: 86px; margin: -43px 0 0 -39px; }
+  .destinationDisc { width: 41px; height: 41px; }
+  .destinationDisc svg { width: 17px; height: 17px; }
+  .destinationLabel { padding: 3px 5px; font-size: 9px; }
+  .motionButton { top: 2%; right: auto; bottom: auto; left: 5%; }
   .companionRow { grid-template-columns: 1fr; }
   .resumeWrap :global(.study-resume) { min-height: 0; }
   .resumeWrap :global(.study-resume::after) { opacity: .45; }
 }
 
+@media (max-width: 360px) {
+  .heroCopy { padding-inline: 20px; }
+  .destinationTheory { left: 19%; }
+  .destinationHandbook { left: 81%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .moonHalo, .moonBody, .orbitOuter { animation: none !important; }
+  .moonHalo, .moonCorona, .moonBody, .orbitOuter, .orbitSparkNear, .orbitSparkFar, .constellationLine, .aurora, .meteorField span, .destinationDisc { animation: none !important; }
   .motionButton { display: none; }
-  .primaryAction:hover, .gradeLink:hover .gradeCard, .starNode:hover, .starNode:focus-visible { transform: none; }
+  .primaryAction:hover, .gradeLink:hover .gradeCard { transform: none; }
 }

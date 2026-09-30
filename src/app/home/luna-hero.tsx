@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDownRight, Moon, Pause, Play, Sparkles } from 'lucide-react';
+import { ArrowDownRight, BookMarked, BookOpen, FileText, Moon, Pause, PenLine, Play, Sparkles } from 'lucide-react';
 import styles from './luna-home.module.css';
 
 const destinations = [
-  { grade: 6, className: styles.nodeSix },
-  { grade: 7, className: styles.nodeSeven },
-  { grade: 8, className: styles.nodeEight },
-  { grade: 9, className: styles.nodeNine },
-];
+  { label: 'LÝ THUYẾT', href: '/theory', className: styles.destinationTheory, Icon: BookOpen },
+  { label: 'TỰ LUYỆN', href: '/practice', className: styles.destinationPractice, Icon: PenLine },
+  { label: 'THI THỬ', href: '/mock-exams', className: styles.destinationExams, Icon: FileText },
+  { label: 'CẨM NANG', href: '/handbook', className: styles.destinationHandbook, Icon: BookMarked },
+] as const;
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -38,33 +38,38 @@ export function LunaHero({ name }: { name?: string }) {
   return (
     <section className={styles.hero} aria-labelledby="luna-heading" data-motion={motionPaused ? 'paused' : 'playing'}>
       <div className={styles.heroAtmosphere} aria-hidden="true" />
+      <div className={styles.aurora} aria-hidden="true" />
+      <div className={styles.meteorField} aria-hidden="true"><span /><span /></div>
       <div className={styles.heroCopy}>
         <div className={styles.heroIndex}><Moon className="h-4 w-4" aria-hidden="true" /> ĐÀI QUAN SÁT LUNA <span aria-hidden="true">/</span> 01</div>
         <p className={styles.greeting}>{getGreeting()}, {name || 'bạn'}.</p>
         <h1 id="luna-heading">Dưới ánh trăng,<br /><span>mở lối tri thức.</span></h1>
-        <p className={styles.heroDescription}>Một hành trình Toán học đang chờ bạn khám phá. Tiếp tục bài học gần nhất hoặc chọn lớp trên quỹ đạo Luna.</p>
+        <p className={styles.heroDescription}>Một hành trình Toán học đang chờ bạn khám phá. Tiếp tục bài học gần nhất hoặc chọn điểm đến trên quỹ đạo Luna.</p>
         <div className={styles.heroActions}>
           <a href="#continue-learning" className={styles.primaryAction}>Tiếp tục hành trình <ArrowDownRight className="h-4 w-4" aria-hidden="true" /></a>
-          <a href="#practice-heading" className={styles.secondaryAction}>Xem các lớp học</a>
+          <a href="#luna-orbits" className={styles.secondaryAction}>Khám phá hệ Luna</a>
         </div>
         <div className={styles.heroFootnote}><Sparkles className="h-4 w-4" aria-hidden="true" /> Từng bước học nhỏ sẽ mở ra một bầu trời rộng hơn.</div>
       </div>
 
-      <div className={styles.chart} aria-label="Chọn lớp học trên quỹ đạo Luna">
+      <div id="luna-orbits" className={styles.chart} aria-label="Bốn điểm đến học tập trong hệ Luna">
         <svg className={styles.chartArt} viewBox="0 0 600 420" role="presentation" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <radialGradient id="luna-halo"><stop stopColor="#DCEBFA" stopOpacity=".35" /><stop offset=".4" stopColor="#8EBEF0" stopOpacity=".16" /><stop offset="1" stopColor="#6D97F1" stopOpacity="0" /></radialGradient>
+            <radialGradient id="luna-halo"><stop stopColor="#F0F8FF" stopOpacity=".48" /><stop offset=".38" stopColor="#8EBEF0" stopOpacity=".22" /><stop offset="1" stopColor="#6D97F1" stopOpacity="0" /></radialGradient>
             <linearGradient id="luna-route" x1="0" y1="1" x2="1" y2="0"><stop stopColor="#78deee" /><stop offset=".52" stopColor="#b9b2ff" /><stop offset="1" stopColor="#ffdb9b" /></linearGradient>
             <linearGradient id="luna-disc" x1="269" y1="181" x2="334" y2="262" gradientUnits="userSpaceOnUse"><stop stopColor="#F5F7EC" /><stop offset=".38" stopColor="#E2EBF5" /><stop offset="1" stopColor="#A8C3E2" /></linearGradient>
             <filter id="luna-glow"><feGaussianBlur stdDeviation="4" /></filter>
           </defs>
           <circle className={styles.moonHalo} cx="300" cy="220" r="182" fill="url(#luna-halo)" />
+          <circle className={styles.moonCorona} cx="300" cy="220" r="78" fill="none" stroke="#cfe7ff" strokeOpacity=".2" strokeWidth="1" />
           <circle className={styles.orbitOuter} cx="300" cy="210" r="176" fill="none" stroke="#a8c8ff" strokeOpacity=".17" strokeWidth="1" strokeDasharray="3 9" />
           <circle className={styles.orbitInner} cx="300" cy="210" r="127" fill="none" stroke="#a8c8ff" strokeOpacity=".22" strokeWidth="1" />
           <ellipse cx="300" cy="210" rx="226" ry="88" fill="none" stroke="#8dc0ff" strokeOpacity=".15" transform="rotate(-28 300 210)" />
           <path d="M300 46v26M300 348v26M120 210h26M454 210h26" stroke="#a9c9ec" strokeOpacity=".25" strokeWidth="1" />
           <path d="M110 270 245 160 390 190 500 90" fill="none" stroke="#9ec9ff" strokeOpacity=".28" strokeWidth="12" filter="url(#luna-glow)" />
           <path className={styles.constellationLine} d="M110 270 245 160 390 190 500 90" fill="none" stroke="url(#luna-route)" strokeWidth="1.5" strokeDasharray="4 7" strokeLinecap="round" />
+          <g className={styles.orbitSparkNear}><circle cx="427" cy="210" r="3.5" fill="#c9f1ff" /><circle cx="427" cy="210" r="8" fill="#c9f1ff" fillOpacity=".12" /></g>
+          <g className={styles.orbitSparkFar}><circle cx="300" cy="34" r="2.7" fill="#ffe7b8" /><circle cx="300" cy="34" r="7" fill="#ffe7b8" fillOpacity=".1" /></g>
           <path d="M160 85 204 105 232 70M387 300 427 278 466 323M95 140l34-24 28 12" fill="none" stroke="#a9c9ec" strokeOpacity=".25" strokeWidth="1" />
           <g className={styles.moonBody}>
             <circle cx="300" cy="220" r="53" fill="#B8D4F4" fillOpacity=".14" filter="url(#luna-glow)" />
@@ -77,10 +82,10 @@ export function LunaHero({ name }: { name?: string }) {
         </svg>
         <span className={styles.chartCoordinate} aria-hidden="true">FLYDO / LUNA 01</span>
         <span className={styles.chartLabel} aria-hidden="true">QUỸ ĐẠO HỌC TẬP <span>•</span> 04 ĐIỂM ĐẾN</span>
-        {destinations.map(({ grade, className }) => (
-          <Link key={grade} href={`/practice?grade=${grade}`} className={`${styles.starNode} ${className}`} aria-label={`Khám phá Toán lớp ${grade}`}>
-            <span className={styles.starNodeCore} aria-hidden="true" />
-            <span className={styles.starNodeLabel}>LỚP {grade}</span>
+        {destinations.map(({ label, href, className, Icon }) => (
+          <Link key={href} href={href} className={`${styles.destination} ${className}`} aria-label={`Đến ${label.toLowerCase()}`}>
+            <span className={styles.destinationDisc}><Icon className="h-5 w-5" aria-hidden="true" /></span>
+            <span className={styles.destinationLabel}>{label}</span>
           </Link>
         ))}
         <button type="button" onClick={toggleMotion} className={styles.motionButton} aria-label={motionPaused ? 'Bật hiệu ứng Luna' : 'Tạm dừng hiệu ứng Luna'} aria-pressed={motionPaused} title={motionPaused ? 'Bật hiệu ứng' : 'Tạm dừng hiệu ứng'}>
