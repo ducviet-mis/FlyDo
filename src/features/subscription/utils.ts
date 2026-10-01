@@ -51,6 +51,12 @@ export function calculateReferralDiscount(price: number, discountPercent?: numbe
   return Math.floor(price * clampReferralDiscount(discountPercent) / 100);
 }
 
+// Referral rewards remain capped at 20%; a selected streak offer can be 50%.
+export function calculateSubscriptionDiscount(price: number, discountPercent?: number): number {
+  const percent = Math.min(50, Math.max(0, Number(discountPercent) || 0));
+  return Math.floor(price * percent / 100);
+}
+
 export function getStreakDiscountPercent(planCode: PaidPlanCode, expiresAt?: string | null): number {
   return isReferralDiscountEligible(planCode) && expiresAt && new Date(expiresAt).getTime() > Date.now() ? 50 : 0;
 }

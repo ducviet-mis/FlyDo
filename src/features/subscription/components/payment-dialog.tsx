@@ -14,7 +14,7 @@ import {
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { useStreak } from '@/features/streak/hooks/use-streak';
-import { calculateReferralDiscount, clampReferralDiscount, createTransferCode, formatCurrency, getStreakDiscountPercent, isReferralDiscountEligible } from '../utils';
+import { calculateSubscriptionDiscount, clampReferralDiscount, createTransferCode, formatCurrency, getStreakDiscountPercent, isReferralDiscountEligible } from '../utils';
 import type { PaidPlan, PaymentSettings } from '../types';
 
 interface PaymentDialogProps {
@@ -40,7 +40,7 @@ export function PaymentDialog({ open, onOpenChange, plan }: PaymentDialogProps) 
   const discountPercent = plan && isReferralDiscountEligible(plan.code)
     ? Math.max(clampReferralDiscount(user?.referralDiscountPercent), getStreakDiscountPercent(plan.code, discountExpiresAt))
     : 0;
-  const discountAmount = plan ? calculateReferralDiscount(plan.price, discountPercent) : 0;
+  const discountAmount = plan ? calculateSubscriptionDiscount(plan.price, discountPercent) : 0;
   const amountDue = plan ? plan.price - discountAmount : 0;
 
   useEffect(() => {
@@ -83,51 +83,51 @@ export function PaymentDialog({ open, onOpenChange, plan }: PaymentDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0">
-        <DialogHeader className="border-b border-border px-5 py-5 sm:px-7">
+      <DialogContent className="max-w-2xl p-0 motion-reduce:animate-none">
+        <DialogHeader className="border-b border-border py-5 pl-5 pr-14 sm:pl-7">
           <DialogTitle className="text-xl font-bold">Thanh toán {plan.name}</DialogTitle>
           <DialogDescription>
             Giao diện thanh toán chuyển khoản đang ở chế độ demo. FlyDo chưa tự động trừ tiền hoặc kích hoạt gói.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-5 px-5 pb-2 sm:px-7 md:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-2xl border border-dashed border-primary/35 bg-primary-soft/50 p-4">
-            {settings.qrImageUrl ? (
-              <img src={settings.qrImageUrl} alt="Mã QR thanh toán FlyDo" className="aspect-square w-full rounded-xl object-contain" />
-            ) : (
-              <div className="text-center">
-                <QrCode aria-hidden="true" className="mx-auto h-16 w-16 text-primary" />
-                <p className="mt-3 font-bold text-foreground">QR thanh toán</p>
-                <p className="mt-1 text-sm text-muted-foreground">Chưa cấu hình ảnh QR</p>
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 space-y-3">
-            <div className="rounded-xl border border-border bg-muted/50 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">Gói đăng ký</p>
-                  <p className="mt-1 font-bold text-foreground">{plan.name} · {plan.billingLabel}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-xl font-bold tabular-nums text-primary">{formatCurrency(amountDue)}</p>
-                  {discountPercent > 0 && <p className="mt-0.5 text-xs font-semibold text-success">Đã giảm {discountPercent}%</p>}
-                </div>
-              </div>
-              {discountPercent > 0 && (
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3 text-sm">
-                  <span className="text-muted-foreground">Ưu đãi {discountPercent === 50 ? 'streak' : 'giới thiệu'} ({discountPercent}%)</span>
-                  <span className="font-semibold tabular-nums text-success">−{formatCurrency(discountAmount)}</span>
-                </div>
-              )}
+        <div className="mx-5 rounded-xl border border-primary/20 bg-primary-soft/50 p-4 sm:mx-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm text-muted-foreground">Gói đã chọn</p>
+              <p className="mt-1 font-bold text-foreground">{plan.name} · {plan.billingLabel}</p>
             </div>
+            <div className="shrink-0">
+              <p className="text-xs text-muted-foreground">Số tiền thanh toán</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums text-primary">{formatCurrency(amountDue)}</p>
+              {discountPercent > 0 && <p className="mt-0.5 text-xs font-semibold text-success">Đã giảm {discountPercent}%</p>}
+            </div>
+          </div>
+          {discountPercent > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-sm">
+              <span className="text-muted-foreground">Ưu đãi {discountPercent === 50 ? 'streak' : 'giới thiệu'} ({discountPercent}%)</span>
+              <span className="font-semibold tabular-nums text-success">−{formatCurrency(discountAmount)}</span>
+            </div>
+          )}
+        </div>
 
+        <div className="grid items-start gap-4 px-5 sm:px-7 sm:grid-cols-[minmax(0,1fr)_200px]">
+          <div className="min-w-0 space-y-3">
             <PaymentRow icon={Landmark} label="Ngân hàng" value={settings.bankName} />
             <PaymentRow icon={Clipboard} label="Số tài khoản" value={settings.accountNumber} onCopy={() => copyText('account', settings.accountNumber)} copied={copied === 'account'} />
             <PaymentRow icon={ShieldCheck} label="Chủ tài khoản" value={settings.accountHolder} />
             <PaymentRow icon={Clipboard} label="Nội dung chuyển khoản" value={transferCode} onCopy={() => copyText('content', transferCode)} copied={copied === 'content'} />
+          </div>
+          <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-xl border border-dashed border-primary/35 bg-primary-soft/50 p-4 sm:min-h-[200px]">
+            {settings.qrImageUrl ? (
+              <img src={settings.qrImageUrl} alt="Mã QR thanh toán FlyDo" width={200} height={200} className="aspect-square w-full max-w-[200px] rounded-lg object-contain" />
+            ) : (
+              <div className="text-center">
+                <QrCode aria-hidden="true" className="mx-auto h-12 w-12 text-primary" />
+                <p className="mt-3 font-bold text-foreground">QR thanh toán</p>
+                <p className="mt-1 text-sm text-muted-foreground">Chưa cấu hình ảnh QR</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -136,15 +136,15 @@ export function PaymentDialog({ open, onOpenChange, plan }: PaymentDialogProps) 
         </div>
 
         {confirmedDemo && (
-          <p role="status" className="mx-5 flex items-center gap-2 rounded-xl bg-success-soft px-4 py-3 text-sm font-medium text-success sm:mx-7">
-            <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+          <p role="status" className="mx-5 flex items-start gap-2 rounded-xl bg-success-soft px-4 py-3 text-sm font-medium text-success sm:mx-7">
+            <CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
             Đã hoàn tất thao tác demo. Chưa có giao dịch hoặc gói tài khoản nào được tạo.
           </p>
         )}
 
-        <DialogFooter className="border-t border-border px-5 py-5 sm:px-7">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Đóng</Button>
-          <Button type="button" onClick={() => setConfirmedDemo(true)}>Xác nhận chuyển khoản (demo)</Button>
+        <DialogFooter className="gap-2 border-t border-border px-5 py-4 sm:space-x-0 sm:px-7">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Đóng</Button>
+          <Button type="button" onClick={() => setConfirmedDemo(true)} className="h-auto min-h-11 w-full whitespace-normal py-3 sm:w-auto">Xác nhận chuyển khoản (demo)</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -172,7 +172,7 @@ function PaymentRow({
         <p className="mt-0.5 break-words font-semibold text-foreground [overflow-wrap:anywhere]">{value}</p>
       </div>
       {onCopy && value !== 'Chưa cấu hình' && (
-        <button type="button" onClick={onCopy} className="flex min-h-11 shrink-0 items-center rounded-md px-3 text-xs font-semibold text-primary hover:bg-primary-soft" aria-label={`Sao chép ${label.toLowerCase()}`}>
+        <button type="button" onClick={onCopy} className="flex min-h-11 shrink-0 items-center rounded-md px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none" aria-label={`Sao chép ${label.toLowerCase()}`}>
           {copied ? 'Đã chép' : 'Sao chép'}
         </button>
       )}
