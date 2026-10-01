@@ -10,9 +10,11 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { cn } from '@/lib/utils';
 import { MixModeDialog } from './mix-mode-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Portal as TooltipPortal } from '@radix-ui/react-tooltip';
 
 interface LessonListProps {
   lessons: Lesson[];
+  lessonNumbers?: Record<string, number>;
   progress: Record<string, { answered: number, total: number }>;
   wrongCounts?: Record<string, number>;
   savedCounts?: Record<string, number>;
@@ -26,7 +28,7 @@ const LEVELS = [
   { id: 4, name: 'Vận dụng cao' },
 ];
 
-export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = {}, onProgressReset }: LessonListProps) {
+export function LessonList({ lessons, lessonNumbers = {}, progress, wrongCounts = {}, savedCounts = {}, onProgressReset }: LessonListProps) {
   const router = useRouter();
   const { user } = useAuthStore();
   const [resettingId, setResettingId] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
 
   return (
     <TooltipProvider delayDuration={200}>
-    <div className="space-y-8 md:space-y-12">
+    <div className="space-y-8">
       {lessons.map((lesson, lessonIndex) => {
         const availableLevels = LEVELS.filter((level) => {
           const levelKey = `${lesson.id}_${level.id}`;
@@ -79,18 +81,24 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
         });
 
         return (
-          <div key={lesson.id} className="w-full">
+          <section key={lesson.id} aria-labelledby={`lesson-${lesson.id}`} className="w-full">
             {/* Tên bài học */}
-            <h3 className="mb-5 flex items-center gap-3 text-lg font-semibold text-foreground md:text-xl">
-              <span aria-hidden="true" className="text-2xl font-light tabular-nums text-primary/70">{String(lessonIndex + 1).padStart(2, '0')}</span>
-              <span>{lesson.title}</span>
-            </h3>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-5">
+              <div className="flex min-w-0 items-start gap-3">
+                <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-sm font-semibold tabular-nums text-primary">{String(lessonNumbers[lesson.id] ?? lessonIndex + 1).padStart(2, '0')}</span>
+                <div className="min-w-0">
+                  <h3 id={`lesson-${lesson.id}`} className="text-base font-semibold leading-6 text-foreground sm:text-lg">{lesson.title}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">{progress[lesson.id]?.total || 0} câu hỏi · {availableLevels.length} mức độ</p>
+                </div>
+              </div>
+              {availableLevels.length > 1 && <MixModeDialog lessonId={lesson.id} lessonTitle={lesson.title} totalQuestions={progress[lesson.id]?.total || 0} />}
+            </div>
 
             {/* Chỉ hiển thị những Level đã có câu hỏi. */}
             {availableLevels.length > 0 ? (
               <div
                 className={cn(
-                  'mb-4 grid grid-cols-1 gap-3 md:gap-4',
+                  'grid grid-cols-1 gap-3 md:gap-4',
                   availableLevels.length === 1 && 'max-w-sm',
                   availableLevels.length === 2 && 'sm:grid-cols-2',
                   availableLevels.length === 3 && 'sm:grid-cols-2 xl:grid-cols-3',
@@ -117,7 +125,7 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 font-bold leading-snug text-foreground text-sm md:text-base">
+                        <h4 className="min-w-0 font-semibold leading-snug text-foreground text-base">
                           <span className="mb-2 block text-xs font-medium tracking-wide text-muted-foreground">Level {level.id}</span>
                           {level.name}
                           {isCompleted && (
@@ -126,7 +134,7 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
                               <span className="sr-only">Đã hoàn thành</span>
                             </>
                           )}
-                        </div>
+                        </h4>
                         <span className="shrink-0 text-xs font-bold tabular-nums text-primary">{completionPercent}%</span>
                       </div>
 
@@ -143,7 +151,7 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
                           aria-valuenow={levelProg.answered}
                           className="h-2 overflow-hidden rounded-full bg-track"
                         >
-                          <div className="h-full rounded-full bg-primary transition-[width] duration-220 ease-out" style={{ width: `${completionPercent}%` }} />
+                          <div className="h-full rounded-full bg-primary motion-safe:transition-[width] motion-safe:duration-220 ease-out" style={{ width: `${completionPercent}%` }} />
                         </div>
                       </div>
 
@@ -153,27 +161,25 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
                             <span className="font-medium text-muted-foreground">Độ chính xác</span>
                             <span className="font-bold tabular-nums text-foreground">{accuracyPercent}%</span>
                           </div>
-                          <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-border" aria-label={`${correctCount} câu đúng, ${wrongCount} câu sai`}>
-                            <div className="bg-success transition-[width] duration-220 ease-out" style={{ width: `${(correctCount / levelProg.answered) * 100}%` }} />
-                            <div className="bg-destructive transition-[width] duration-220 ease-out" style={{ width: `${(wrongCount / levelProg.answered) * 100}%` }} />
-                          </div>
                           <div className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold tabular-nums">
                             <span className="inline-flex items-center gap-1 text-success"><Check aria-hidden="true" className="h-3.5 w-3.5" />{correctCount} đúng</span>
                             <span className="inline-flex items-center gap-1 text-destructive"><X aria-hidden="true" className="h-3.5 w-3.5" />{wrongCount} sai</span>
                           </div>
                         </div>
                       ) : (
-                        <p className="border-t border-border/70 py-3 text-xs leading-5 text-muted-foreground">Sẵn sàng bắt đầu bài luyện này.</p>
+                        <p className="min-h-[57px] border-t border-border/70 pt-3 text-xs leading-5 text-muted-foreground">Chưa luyện · Bắt đầu khi bạn sẵn sàng.</p>
                       )}
                     </div>
 
-                    <div className="mt-auto flex items-center gap-1.5 pt-4">
+                    <div className="mt-auto pt-4">
                       <Button
                         onClick={() => router.push(`/practice/${lesson.id}?level=${level.id}`)}
-                        className="min-w-0 flex-1 rounded-md h-11 bg-primary px-2 hover:opacity-90 text-primary-foreground font-bold shadow-card transition-all"
+                        className="h-11 w-full rounded-lg font-semibold"
                       >
                         Luyện tập
                       </Button>
+
+                      <div className="mt-3 flex items-center gap-2" role="group" aria-label={`Công cụ ôn tập Level ${level.id}`}>
 
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -192,7 +198,7 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
                             </span>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{wrongCount > 0 ? `Thi lại ${wrongCount} câu sai` : 'Chưa có câu sai'}</TooltipContent>
+                        <TooltipPortal><TooltipContent side="top">{wrongCount > 0 ? `Thi lại ${wrongCount} câu sai` : 'Chưa có câu sai'}</TooltipContent></TooltipPortal>
                       </Tooltip>
 
                       <Tooltip>
@@ -212,7 +218,7 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
                             </span>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{savedCount > 0 ? `${savedCount} câu hỏi đã lưu` : 'Chưa có câu hỏi đã lưu'}</TooltipContent>
+                        <TooltipPortal><TooltipContent side="top">{savedCount > 0 ? `${savedCount} câu hỏi đã lưu` : 'Chưa có câu hỏi đã lưu'}</TooltipContent></TooltipPortal>
                       </Tooltip>
 
                       <Tooltip>
@@ -224,13 +230,14 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
                             aria-label="Xóa tiến độ Level này"
                             aria-disabled={!hasProgress || isResetting}
                             onClick={(e) => { if (hasProgress && !isResetting) void handleReset(e, lesson.id, level.id); }}
-                            className={cn('h-11 w-11 rounded-md border-border text-muted-foreground', hasProgress ? 'hover:border-destructive/35 hover:bg-destructive-soft hover:text-destructive' : 'cursor-not-allowed opacity-50')}
+                            className={cn('ml-auto h-11 w-11 rounded-md border-border text-muted-foreground', hasProgress ? 'hover:border-destructive/35 hover:bg-destructive-soft hover:text-destructive' : 'cursor-not-allowed opacity-50')}
                           >
                             {isResetting ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Trash2 aria-hidden="true" className="h-4 w-4" />}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{hasProgress ? 'Xóa tiến độ Level này' : 'Chưa có tiến độ để xóa'}</TooltipContent>
+                        <TooltipPortal><TooltipContent side="top">{hasProgress ? 'Xóa tiến độ Level này' : 'Chưa có tiến độ để xóa'}</TooltipContent></TooltipPortal>
                       </Tooltip>
+                      </div>
                     </div>
                   </div>
                 );
@@ -242,17 +249,7 @@ export function LessonList({ lessons, progress, wrongCounts = {}, savedCounts = 
               </div>
             )}
 
-            {/* Chỉ trộn theo tỉ lệ khi có từ hai Level trở lên. */}
-            {availableLevels.length > 1 && (
-              <div className="mt-2 flex justify-end">
-                <MixModeDialog
-                  lessonId={lesson.id}
-                  lessonTitle={lesson.title}
-                  totalQuestions={progress[lesson.id]?.total || 0}
-                />
-              </div>
-            )}
-          </div>
+          </section>
         );
       })}
     </div>
