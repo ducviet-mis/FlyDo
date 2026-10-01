@@ -7,6 +7,8 @@ export type PersonalExamLevel = 1 | 2 | 3 | 4;
 export type ChapterWeight = {
   chapter: string;
   weight: number;
+  /** Omitted in older templates means all lessons in this chapter. */
+  lessonIds?: string[];
 };
 
 export type LevelWeights = Record<PersonalExamLevel, number>;
@@ -14,6 +16,7 @@ export type LevelWeights = Record<PersonalExamLevel, number>;
 export type PersonalExamQuestion = {
   id: string;
   lessonId: string;
+  lessonTitle?: string;
   chapter: string;
   content: string;
   options: string[];
@@ -40,6 +43,7 @@ export type PersonalExamSession = {
   config: PersonalExamConfig;
   questions: PersonalExamQuestion[];
   createdAt: string;
+  ownerId?: string;
   startedAt?: string;
   deadlineAt?: number;
   answers?: Record<string, number>;
