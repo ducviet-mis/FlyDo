@@ -142,15 +142,21 @@
   .widget-card { @apply rounded-xl border border-border bg-card shadow-card; }
   .widget-card-static { @apply rounded-xl border border-border bg-card shadow-soft; }
   .vivux-page { @apply mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8; }
-  .vivux-nav-link { @apply relative flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground; }
-  .vivux-nav-link[aria-current="page"] { @apply bg-primary-soft font-semibold text-primary; }
-  .vivux-nav-link[aria-current="page"]::after { content: ''; @apply absolute -bottom-2 left-3 right-3 h-0.5 rounded-full bg-primary; }
+  .flydo-nav-link { @apply relative flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm px-2.5 text-sm font-medium text-muted-foreground transition-colors duration-160 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none xl:px-3; }
+  .flydo-nav-link::after { content: ''; @apply absolute -bottom-3 left-2.5 right-2.5 h-0.5 bg-primary opacity-0 xl:left-3 xl:right-3; transform: scaleX(.65); transition: transform var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
+  .flydo-nav-link[aria-current="page"] { @apply text-foreground; }
+  .flydo-nav-link[aria-current="page"]::after { opacity: 1; transform: scaleX(1); }
+  .flydo-nav-link[data-state="open"] { @apply text-primary; }
+  .flydo-header-action { @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-0 bg-transparent text-muted-foreground transition-colors duration-160 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted data-[state=open]:text-foreground motion-reduce:transition-none; }
+  .flydo-account-trigger { @apply flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-full px-1.5 text-foreground transition-colors duration-160 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-muted motion-reduce:transition-none xl:px-2; }
+  .flydo-header-menu { @apply rounded-xl motion-reduce:animate-none; }
   .vivux-skip-link { @apply fixed left-4 top-4 z-[100] -translate-y-24 rounded-md bg-primary px-4 py-3 text-primary-foreground focus:translate-y-0; }
   .vivux-quote-scroll { scrollbar-width: none; -ms-overflow-style: none; }
   .vivux-quote-scroll::-webkit-scrollbar { display: none; }
   .vivux-stat-number { @apply font-bold tracking-tight tabular-nums text-foreground; }
 }
 @media (max-width: 1023px) { .study-heading > div { max-width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .flydo-nav-link::after { transition: none; } }
 .katex-display { margin: .5em 0; overflow-x: auto; overflow-y: hidden; }
 .katex { font-size: 1.1em; }
 .vivux-prose {

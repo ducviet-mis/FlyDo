@@ -21,7 +21,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="h-11 w-11 border border-border bg-surface" aria-label="Chuyển giao diện" disabled>
+      <Button variant="ghost" size="icon" className="flydo-header-action rounded-full active:translate-y-0" aria-label="Chuyển giao diện" disabled>
         <Sun className="h-5 w-5" />
       </Button>
     );
@@ -33,11 +33,11 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-11 w-11 rounded-md border border-border bg-surface hover:bg-muted" aria-label={`Giao diện hiện tại: ${options.find((option) => option.id === active)?.label ?? 'Sol'}. Chọn giao diện`} title="Chọn giao diện">
-          <ActiveIcon className="h-[18px] w-[18px] text-primary" aria-hidden="true" />
+        <Button variant="ghost" size="icon" className="flydo-header-action rounded-full active:translate-y-0" aria-label={`Giao diện hiện tại: ${options.find((option) => option.id === active)?.label ?? 'Sol'}. Chọn giao diện`} title="Chọn giao diện">
+          <ActiveIcon className="h-[19px] w-[19px]" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 p-2">
+      <DropdownMenuContent align="end" sideOffset={10} className="flydo-header-menu w-64 p-2">
         <DropdownMenuLabel className="px-2 py-1 text-xs uppercase tracking-widest text-muted-foreground">Giao diện FlyDo</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map(({ id, label, description, icon: Icon }) => (

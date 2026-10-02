@@ -14,8 +14,8 @@ html.dark #main-content[data-star-immersive="true"] {
 }
 
 html.dark nav[aria-label="Điều hướng chính"] {
-  background: linear-gradient(90deg, rgb(11 23 45 / .96), rgb(17 32 59 / .94) 60%, rgb(11 23 45 / .96));
-  box-shadow: inset 0 -1px rgb(var(--luna-ice) / .06), 0 10px 35px -26px rgb(var(--color-primary) / .4);
+  background: rgb(var(--color-surface) / .98);
+  box-shadow: none;
 }
 
 html.dark nav[aria-label="Điều hướng mobile"] {
