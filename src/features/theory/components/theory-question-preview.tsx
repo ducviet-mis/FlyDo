@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MathRenderer } from '@/features/practice/components/math-renderer';
+import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
 import type { DragFillData, TheoryQuestion, TrueFalseData } from '../types';
 
 export function TheoryQuestionPreview({ question, index }: { question: TheoryQuestion; index: number }) {
@@ -16,6 +17,7 @@ export function TheoryQuestionPreview({ question, index }: { question: TheoryQue
           </Badge>
         </div>
         <div className="font-semibold text-foreground"><MathRenderer content={question.prompt} /></div>
+        <GeometryDiagram data={question.data.diagram} showValidationError />
 
         {isTrueFalse ? (
           <div className="space-y-3">

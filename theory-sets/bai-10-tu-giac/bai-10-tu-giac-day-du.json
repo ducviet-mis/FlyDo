@@ -1,0 +1,1458 @@
+{
+  "title": "Bài 10. Tứ giác",
+  "summary": "Nhận biết tứ giác và tứ giác lồi; xác định đỉnh, cạnh, góc, các cặp yếu tố đối nhau và đường chéo; hiểu vì sao tổng bốn góc trong của một tứ giác bằng 360°.",
+  "sections": [
+    {
+      "heading": "1. Tứ giác là gì?",
+      "blocks": [
+        {
+          "content": "Tứ giác $ABCD$ là hình gồm bốn đoạn thẳng $AB$, $BC$, $CD$, $DA$, trong đó không có hai đoạn thẳng nào nằm trên cùng một đường thẳng.",
+          "example": "Ở Hình 1, bốn đoạn thẳng $AB$, $BC$, $CD$, $DA$ tạo thành tứ giác $ABCD$; các điểm $A$, $B$, $C$, $D$ là bốn đỉnh của hình.",
+          "diagram": {
+            "type": "geometry",
+            "width": 360,
+            "height": 280,
+            "alt": "Tứ giác lồi ABCD gồm bốn cạnh AB, BC, CD, DA.",
+            "points": [
+              {
+                "id": "A",
+                "x": 151.96286001381247,
+                "y": 207.23408653309403,
+                "label_dx": -10,
+                "label_dy": 14
+              },
+              {
+                "id": "B",
+                "x": 298.40000000000003,
+                "y": 207.23408653309403,
+                "label_dx": 8,
+                "label_dy": 15
+              },
+              {
+                "id": "D",
+                "x": 61.60000000000001,
+                "y": 99.54382347454535,
+                "label_dx": -10,
+                "label_dy": -10
+              },
+              {
+                "id": "C",
+                "x": 223.4608558913927,
+                "y": 72.765913466906,
+                "label_dx": 8,
+                "label_dy": -10
+              }
+            ],
+            "segments": [
+              {
+                "from": "A",
+                "to": "B"
+              },
+              {
+                "from": "D",
+                "to": "A"
+              },
+              {
+                "from": "B",
+                "to": "C"
+              },
+              {
+                "from": "C",
+                "to": "D"
+              }
+            ],
+            "polygons": [],
+            "circles": [],
+            "arcs": [],
+            "ellipses": [],
+            "paths": [],
+            "angles": [],
+            "right_angles": [],
+            "labels": [],
+            "plots": []
+          },
+          "caption": "Hình 1. Tứ giác ABCD."
+        },
+        {
+          "content": "Bốn điểm phân biệt không phải lúc nào cũng tạo thành một tứ giác theo thứ tự đã chọn.",
+          "example": "Ở Hình 2, ba điểm $B$, $C$, $D$ thẳng hàng nên $BC$ và $CD$ cùng nằm trên một đường thẳng. Vì vậy hình gồm $AB$, $BC$, $CD$, $DA$ không phải tứ giác.",
+          "diagram": {
+            "type": "geometry",
+            "width": 360,
+            "height": 280,
+            "alt": "Hình không phải tứ giác: B, C, D thẳng hàng nên BC và CD nằm trên cùng một đường thẳng.",
+            "points": [
+              {
+                "id": "A",
+                "x": 151.96286001381247,
+                "y": 193.84513152927434,
+                "label_dx": -10,
+                "label_dy": 14
+              },
+              {
+                "id": "B",
+                "x": 298.40000000000003,
+                "y": 193.84513152927434,
+                "label_dx": 8,
+                "label_dy": 15
+              },
+              {
+                "id": "D",
+                "x": 61.60000000000001,
+                "y": 86.15486847072566,
+                "label_dx": -10,
+                "label_dy": -10
+              },
+              {
+                "id": "C",
+                "x": 180.00000000000003,
+                "y": 140,
+                "label_dx": 9,
+                "label_dy": -10
+              }
+            ],
+            "segments": [
+              {
+                "from": "A",
+                "to": "B"
+              },
+              {
+                "from": "D",
+                "to": "A"
+              },
+              {
+                "from": "B",
+                "to": "C"
+              },
+              {
+                "from": "C",
+                "to": "D"
+              }
+            ],
+            "polygons": [],
+            "circles": [],
+            "arcs": [],
+            "ellipses": [],
+            "paths": [],
+            "angles": [],
+            "right_angles": [],
+            "labels": [],
+            "plots": []
+          },
+          "caption": "Hình 2. Không phải tứ giác vì B, C, D thẳng hàng."
+        }
+      ]
+    },
+    {
+      "heading": "2. Tứ giác lồi",
+      "blocks": [
+        {
+          "content": "Tứ giác lồi là tứ giác mà đối với đường thẳng chứa mỗi cạnh, hai đỉnh còn lại luôn nằm cùng một phía của đường thẳng đó.\n\nKhi chỉ nói “tứ giác” mà không giải thích thêm, ta hiểu đó là tứ giác lồi.",
+          "example": "Tứ giác ở Hình 1 là tứ giác lồi. Đối với đường thẳng chứa cạnh $AB$, hai đỉnh $C$, $D$ cùng phía; điều kiện tương tự đúng với các cạnh còn lại."
+        },
+        {
+          "content": "Tứ giác có một đỉnh thụt vào trong như hình dưới không phải tứ giác lồi.",
+          "example": "Ở Hình 3, đối với đường thẳng chứa cạnh $BC$, hai đỉnh $A$, $D$ nằm khác phía. Tứ giác này không lồi.",
+          "diagram": {
+            "type": "geometry",
+            "width": 360,
+            "height": 280,
+            "alt": "Tứ giác lõm ABCD có đỉnh C thụt vào trong; hình này không lồi.",
+            "points": [
+              {
+                "id": "A",
+                "x": 151.96286001381247,
+                "y": 193.84513152927434,
+                "label_dx": -10,
+                "label_dy": 14
+              },
+              {
+                "id": "B",
+                "x": 298.40000000000003,
+                "y": 193.84513152927434,
+                "label_dx": 8,
+                "label_dy": 15
+              },
+              {
+                "id": "D",
+                "x": 61.60000000000001,
+                "y": 86.15486847072566,
+                "label_dx": -10,
+                "label_dy": -10
+              },
+              {
+                "id": "C",
+                "x": 215.2615739466587,
+                "y": 170.80628379038697,
+                "label_dx": 9,
+                "label_dy": 15
+              }
+            ],
+            "segments": [
+              {
+                "from": "A",
+                "to": "B"
+              },
+              {
+                "from": "D",
+                "to": "A"
+              },
+              {
+                "from": "B",
+                "to": "C"
+              },
+              {
+                "from": "C",
+                "to": "D"
+              }
+            ],
+            "polygons": [],
+            "circles": [],
+            "arcs": [],
+            "ellipses": [],
+            "paths": [],
+            "angles": [],
+            "right_angles": [],
+            "labels": [],
+            "plots": []
+          },
+          "caption": "Hình 3. Tứ giác lõm ABCD."
+        },
+        {
+          "content": "Theo định nghĩa tứ giác trong bài học, hình tự cắt dưới đây cũng là tứ giác, nhưng không phải tứ giác lồi.",
+          "example": "Ở Hình 4, hai cạnh $AB$ và $CD$ cắt nhau. Hai đỉnh $C$, $D$ nằm khác phía đối với đường thẳng chứa cạnh $AB$, nên tứ giác không lồi.",
+          "diagram": {
+            "type": "geometry",
+            "width": 360,
+            "height": 280,
+            "alt": "Tứ giác ABCD tự cắt: hai cạnh AB và CD cắt nhau; hình này không lồi.",
+            "points": [
+              {
+                "id": "A",
+                "x": 149.12278421516933,
+                "y": 149.11421069460908,
+                "label_dx": -10,
+                "label_dy": 14
+              },
+              {
+                "id": "B",
+                "x": 261.4035688872808,
+                "y": 149.11421069460908,
+                "label_dx": 8,
+                "label_dy": -10
+              },
+              {
+                "id": "D",
+                "x": 98.59643111271919,
+                "y": 61.60000000000001,
+                "label_dx": -10,
+                "label_dy": -10
+              },
+              {
+                "id": "C",
+                "x": 231.69437253559448,
+                "y": 218.40000000000003,
+                "label_dx": 8,
+                "label_dy": 14
+              }
+            ],
+            "segments": [
+              {
+                "from": "A",
+                "to": "B"
+              },
+              {
+                "from": "D",
+                "to": "A"
+              },
+              {
+                "from": "B",
+                "to": "C"
+              },
+              {
+                "from": "C",
+                "to": "D"
+              }
+            ],
+            "polygons": [],
+            "circles": [],
+            "arcs": [],
+            "ellipses": [],
+            "paths": [],
+            "angles": [],
+            "right_angles": [],
+            "labels": [],
+            "plots": []
+          },
+          "caption": "Hình 4. Tứ giác tự cắt ABCD."
+        }
+      ]
+    },
+    {
+      "heading": "3. Các yếu tố của tứ giác lồi",
+      "blocks": [
+        {
+          "content": "Với tứ giác lồi $ABCD$, ta có:",
+          "items": [
+            "Bốn đỉnh là $A$, $B$, $C$, $D$; bốn cạnh là $AB$, $BC$, $CD$, $DA$.",
+            "Bốn góc trong là $\\angle DAB$, $\\angle ABC$, $\\angle BCD$, $\\angle CDA$; có thể gọi ngắn là góc $A$, $B$, $C$, $D$.",
+            "Các cặp đỉnh đối là $A$ và $C$, $B$ và $D$.",
+            "Các cặp cạnh đối là $AB$ và $CD$, $AD$ và $BC$; các cặp góc đối là góc $A$ và góc $C$, góc $B$ và góc $D$.",
+            "Hai đường chéo là $AC$ và $BD$. Mỗi đường chéo nối hai đỉnh đối nhau; trong tứ giác lồi, chúng cắt nhau tại một điểm nằm giữa hai đầu mút của mỗi đường."
+          ],
+          "example": "Ở Hình 5, $A$ và $C$ là hai đỉnh đối, $AB$ và $CD$ là hai cạnh đối. $AC$ là đường chéo, còn $AB$ là cạnh; không nhầm hai loại đoạn thẳng này.",
+          "diagram": {
+            "type": "geometry",
+            "width": 360,
+            "height": 280,
+            "alt": "Tứ giác lồi ABCD có bốn cạnh AB, BC, CD, DA; hai đường chéo AC và BD vẽ nét đứt, cắt nhau trong hình.",
+            "points": [
+              {
+                "id": "A",
+                "x": 151.96286001381247,
+                "y": 207.23408653309403,
+                "label_dx": -10,
+                "label_dy": 14
+              },
+              {
+                "id": "B",
+                "x": 298.40000000000003,
+                "y": 207.23408653309403,
+                "label_dx": 8,
+                "label_dy": 15
+              },
+              {
+                "id": "D",
+                "x": 61.60000000000001,
+                "y": 99.54382347454535,
+                "label_dx": -10,
+                "label_dy": -10
+              },
+              {
+                "id": "C",
+                "x": 223.4608558913927,
+                "y": 72.765913466906,
+                "label_dx": 8,
+                "label_dy": -10
+              }
+            ],
+            "segments": [
+              {
+                "from": "A",
+                "to": "B"
+              },
+              {
+                "from": "B",
+                "to": "D",
+                "style": "dashed",
+                "tone": "primary"
+              },
+              {
+                "from": "D",
+                "to": "A"
+              },
+              {
+                "from": "B",
+                "to": "C"
+              },
+              {
+                "from": "C",
+                "to": "D"
+              },
+              {
+                "from": "A",
+                "to": "C",
+                "style": "dashed",
+                "tone": "primary"
+              }
+            ],
+            "polygons": [],
+            "circles": [],
+            "arcs": [],
+            "ellipses": [],
+            "paths": [],
+            "angles": [],
+            "right_angles": [],
+            "labels": [],
+            "plots": []
+          },
+          "caption": "Hình 5. Hai đường chéo AC, BD được vẽ nét đứt."
+        }
+      ]
+    },
+    {
+      "heading": "4. Gọi tên tứ giác",
+      "blocks": [
+        {
+          "content": "Tên tứ giác phải viết các đỉnh liên tiếp theo thứ tự đi quanh hình. Có thể bắt đầu từ bất kì đỉnh nào và đi theo một trong hai chiều.\n\nKhông được đổi thứ tự các đỉnh tùy ý.",
+          "example": "Tứ giác $ABCD$ ở Hình 5 cũng có thể gọi là $BCDA$ hoặc $DCBA$. Không gọi cùng hình ấy là $ACBD$, vì $A$ và $C$ là hai đỉnh đối, không phải hai đỉnh kề."
+        }
+      ]
+    },
+    {
+      "heading": "5. Tổng các góc trong một tứ giác",
+      "blocks": [
+        {
+          "content": "Định lí: Tổng số đo bốn góc trong của một tứ giác bằng $360^\\circ$.\n\n$\\widehat{A}+\\widehat{B}+\\widehat{C}+\\widehat{D}=360^\\circ$.",
+          "example": "Kẻ đường chéo $BD$ như Hình 6, tứ giác lồi $ABCD$ được chia thành hai tam giác $ABD$ và $BCD$. Mỗi tam giác có tổng ba góc bằng $180^\\circ$, nên tổng bốn góc của tứ giác bằng $180^\\circ+180^\\circ=360^\\circ$.",
+          "diagram": {
+            "type": "geometry",
+            "width": 360,
+            "height": 280,
+            "alt": "Đường chéo BD chia tứ giác lồi ABCD thành hai tam giác ABD và BCD; bốn góc trong được đánh dấu.",
+            "points": [
+              {
+                "id": "A",
+                "x": 151.96286001381247,
+                "y": 207.23408653309403,
+                "label_dx": -10,
+                "label_dy": 14
+              },
+              {
+                "id": "B",
+                "x": 298.40000000000003,
+                "y": 207.23408653309403,
+                "label_dx": 8,
+                "label_dy": 15
+              },
+              {
+                "id": "D",
+                "x": 61.60000000000001,
+                "y": 99.54382347454535,
+                "label_dx": -10,
+                "label_dy": -10
+              },
+              {
+                "id": "C",
+                "x": 223.4608558913927,
+                "y": 72.765913466906,
+                "label_dx": 8,
+                "label_dy": -10
+              }
+            ],
+            "segments": [
+              {
+                "from": "A",
+                "to": "B"
+              },
+              {
+                "from": "B",
+                "to": "D",
+                "tone": "primary"
+              },
+              {
+                "from": "D",
+                "to": "A"
+              },
+              {
+                "from": "B",
+                "to": "C"
+              },
+              {
+                "from": "C",
+                "to": "D"
+              }
+            ],
+            "polygons": [
+              {
+                "points": [
+                  "A",
+                  "B",
+                  "D"
+                ],
+                "fill": "primary",
+                "opacity": 0.08
+              },
+              {
+                "points": [
+                  "B",
+                  "C",
+                  "D"
+                ],
+                "fill": "success",
+                "opacity": 0.08
+              }
+            ],
+            "circles": [],
+            "arcs": [],
+            "ellipses": [],
+            "paths": [],
+            "angles": [
+              {
+                "from": "D",
+                "vertex": "A",
+                "to": "B",
+                "radius": 22
+              },
+              {
+                "from": "A",
+                "vertex": "B",
+                "to": "C",
+                "radius": 22
+              },
+              {
+                "from": "B",
+                "vertex": "C",
+                "to": "D",
+                "radius": 22
+              },
+              {
+                "from": "C",
+                "vertex": "D",
+                "to": "A",
+                "radius": 22
+              }
+            ],
+            "right_angles": [],
+            "labels": [],
+            "plots": []
+          },
+          "caption": "Hình 6. Đường chéo BD chia tứ giác thành hai tam giác."
+        },
+        {
+          "content": "Vận dụng định lí: Biết ba góc trong của một tứ giác, ta lấy $360^\\circ$ trừ đi tổng số đo ba góc ấy để tìm góc còn lại.",
+          "example": "Ở Hình 7, góc $A$ bằng $110^\\circ$, góc $B$ bằng $120^\\circ$, góc $C$ bằng $80^\\circ$. Vậy góc $D$ bằng $360^\\circ-(110^\\circ+120^\\circ+80^\\circ)=50^\\circ$.",
+          "diagram": {
+            "type": "geometry",
+            "width": 360,
+            "height": 320,
+            "alt": "Tứ giác ABCD có góc A 110 độ, góc B 120 độ, góc C 80 độ; góc D chưa biết.",
+            "points": [
+              {
+                "id": "A",
+                "x": 117.1353748637199,
+                "y": 238.63130729948733,
+                "label_dx": -10,
+                "label_dy": 14
+              },
+              {
+                "id": "B",
+                "x": 198.80438712781756,
+                "y": 238.63130729948733,
+                "label_dx": 8,
+                "label_dy": 15
+              },
+              {
+                "id": "D",
+                "x": 70.40000000000002,
+                "y": 110.2269201716698,
+                "label_dx": -10,
+                "label_dy": -10
+              },
+              {
+                "id": "C",
+                "x": 237.76821937665602,
+                "y": 171.1439701869084,
+                "label_dx": 8,
+                "label_dy": -10
+              }
+            ],
+            "segments": [
+              {
+                "from": "A",
+                "to": "B"
+              },
+              {
+                "from": "D",
+                "to": "A"
+              },
+              {
+                "from": "B",
+                "to": "C"
+              },
+              {
+                "from": "C",
+                "to": "D"
+              }
+            ],
+            "polygons": [],
+            "circles": [],
+            "arcs": [],
+            "ellipses": [],
+            "paths": [],
+            "angles": [
+              {
+                "from": "D",
+                "vertex": "A",
+                "to": "B",
+                "radius": 22,
+                "label": "110°"
+              },
+              {
+                "from": "A",
+                "vertex": "B",
+                "to": "C",
+                "radius": 22,
+                "label": "120°"
+              },
+              {
+                "from": "B",
+                "vertex": "C",
+                "to": "D",
+                "radius": 26,
+                "label": "80°"
+              },
+              {
+                "from": "C",
+                "vertex": "D",
+                "to": "A",
+                "radius": 51.9251359745299,
+                "label": "?"
+              }
+            ],
+            "right_angles": [],
+            "labels": [],
+            "plots": []
+          },
+          "caption": "Hình 7. Ví dụ tìm góc còn lại trong tứ giác."
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "question_type": "true_false",
+      "prompt": "Xét các khẳng định về khái niệm tứ giác:",
+      "data": {
+        "statements": [
+          {
+            "text": "Tứ giác ABCD gồm các đoạn thẳng AB, BC, CD và DA.",
+            "answer": true
+          },
+          {
+            "text": "Trong một tứ giác, hai đoạn thẳng tạo nên hình có thể cùng nằm trên một đường thẳng.",
+            "answer": false
+          },
+          {
+            "text": "Nếu B, C, D thẳng hàng thì hình tạo bởi AB, BC, CD, DA không phải tứ giác.",
+            "answer": true
+          },
+          {
+            "text": "Chỉ cần có bốn điểm phân biệt là luôn tạo được một tứ giác theo mọi thứ tự gọi tên.",
+            "answer": false
+          }
+        ]
+      },
+      "solution": "Tứ giác ABCD gồm đúng bốn đoạn AB, BC, CD, DA và không có hai đoạn nào cùng nằm trên một đường thẳng. Thứ tự các đỉnh phải đi quanh hình.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Tứ giác lồi ABCD gồm bốn cạnh AB, BC, CD, DA.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          }
+        ],
+        "polygons": [],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    },
+    {
+      "question_type": "drag_fill",
+      "prompt": "Hoàn thiện định nghĩa tứ giác ABCD:",
+      "data": {
+        "template": "Bốn đoạn thẳng tạo nên tứ giác ABCD lần lượt là {{1}}, {{2}}, {{3}}, {{4}}.",
+        "options": [
+          "AB",
+          "BC",
+          "CD",
+          "DA",
+          "AC",
+          "BD"
+        ],
+        "answers": [
+          "AB",
+          "BC",
+          "CD",
+          "DA"
+        ]
+      },
+      "solution": "Các cạnh đi theo thứ tự A-B-C-D-A là AB, BC, CD, DA; AC và BD là các đoạn nối hai đỉnh đối.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Tứ giác lồi ABCD gồm bốn cạnh AB, BC, CD, DA.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          }
+        ],
+        "polygons": [],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    },
+    {
+      "question_type": "true_false",
+      "prompt": "Xét các khẳng định về tứ giác lồi:",
+      "data": {
+        "statements": [
+          {
+            "text": "Đối với đường thẳng chứa mỗi cạnh của tứ giác lồi, hai đỉnh còn lại nằm cùng một phía.",
+            "answer": true
+          },
+          {
+            "text": "Tứ giác có một đỉnh thụt vào phía trong luôn là tứ giác lồi.",
+            "answer": false
+          },
+          {
+            "text": "Tứ giác tự cắt cũng là tứ giác lồi.",
+            "answer": false
+          },
+          {
+            "text": "Khi sách chỉ nói tứ giác mà không chú thích thêm, ta hiểu đó là tứ giác lồi.",
+            "answer": true
+          }
+        ]
+      },
+      "solution": "Tứ giác lồi có hai đỉnh còn lại cùng phía đối với đường thẳng chứa mỗi cạnh. Tứ giác lõm hoặc tự cắt không lồi; theo quy ước của bài, tứ giác không chú thích được hiểu là tứ giác lồi."
+    },
+    {
+      "question_type": "drag_fill",
+      "prompt": "Điền từ để nhận biết tứ giác lồi:",
+      "data": {
+        "template": "Với mỗi {{1}} của tứ giác lồi, hai đỉnh còn lại nằm {{2}} đối với đường thẳng chứa cạnh ấy. Khi chỉ nói 'tứ giác', ta ngầm hiểu là tứ giác {{3}}.",
+        "options": [
+          "cạnh",
+          "cùng một phía",
+          "lồi",
+          "đường chéo",
+          "hai phía đối nhau",
+          "tự cắt"
+        ],
+        "answers": [
+          "cạnh",
+          "cùng một phía",
+          "lồi"
+        ]
+      },
+      "solution": "Điều kiện cùng phía đối với đường thẳng chứa mỗi cạnh là dấu hiệu trong định nghĩa tứ giác lồi; đây cũng là cách hiểu mặc định của từ tứ giác trong bài."
+    },
+    {
+      "question_type": "true_false",
+      "prompt": "Xét các yếu tố của tứ giác lồi ABCD:",
+      "data": {
+        "statements": [
+          {
+            "text": "A, B, C, D là bốn đỉnh của tứ giác.",
+            "answer": true
+          },
+          {
+            "text": "AC và BD là hai cạnh của tứ giác.",
+            "answer": false
+          },
+          {
+            "text": "Góc tại B có thể gọi là góc ABC.",
+            "answer": true
+          },
+          {
+            "text": "AB và BC là hai cạnh đối.",
+            "answer": false
+          }
+        ]
+      },
+      "solution": "Các cạnh là AB, BC, CD, DA. AC và BD là đường chéo; AB và BC chung đỉnh B nên là hai cạnh kề.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Tứ giác lồi ABCD gồm bốn cạnh AB, BC, CD, DA.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          }
+        ],
+        "polygons": [],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    },
+    {
+      "question_type": "drag_fill",
+      "prompt": "Hoàn thiện các cặp yếu tố đối nhau trong tứ giác ABCD:",
+      "data": {
+        "template": "Hai đỉnh đối là A và {{1}}, B và {{2}}. Hai cặp cạnh đối là AB và {{3}}, AD và {{4}}.",
+        "options": [
+          "C",
+          "D",
+          "CD",
+          "BC",
+          "AC",
+          "BD"
+        ],
+        "answers": [
+          "C",
+          "D",
+          "CD",
+          "BC"
+        ]
+      },
+      "solution": "Đỉnh đối không cùng thuộc một cạnh. Vì vậy A đối C, B đối D; AB đối CD và AD đối BC.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Tứ giác lồi ABCD gồm bốn cạnh AB, BC, CD, DA.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          }
+        ],
+        "polygons": [],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    },
+    {
+      "question_type": "true_false",
+      "prompt": "Xét các khẳng định về góc và đường chéo của tứ giác lồi ABCD:",
+      "data": {
+        "statements": [
+          {
+            "text": "Góc A và góc C là hai góc đối; góc B và góc D là hai góc đối.",
+            "answer": true
+          },
+          {
+            "text": "AC và BD nối các cặp đỉnh đối nhau nên là hai đường chéo.",
+            "answer": true
+          },
+          {
+            "text": "Hai đường chéo của tứ giác lồi luôn bằng nhau.",
+            "answer": false
+          },
+          {
+            "text": "Hai đường chéo của tứ giác lồi cắt nhau tại điểm nằm giữa hai đầu mút của mỗi đường.",
+            "answer": true
+          }
+        ]
+      },
+      "solution": "Các góc đối là A-C và B-D; hai đường chéo là AC, BD. Chúng giao nhau bên trong tứ giác lồi nhưng không nhất thiết bằng nhau.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Tứ giác lồi ABCD có bốn cạnh AB, BC, CD, DA; hai đường chéo AC và BD vẽ nét đứt, cắt nhau trong hình.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "B",
+            "to": "D",
+            "style": "dashed",
+            "tone": "primary"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          },
+          {
+            "from": "A",
+            "to": "C",
+            "style": "dashed",
+            "tone": "primary"
+          }
+        ],
+        "polygons": [],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    },
+    {
+      "question_type": "drag_fill",
+      "prompt": "Điền tên gọi hợp lệ của cùng một tứ giác:",
+      "data": {
+        "template": "Bắt đầu từ B và giữ chiều đi quanh tứ giác ABCD, ta được tên {{1}}. Đảo chiều và bắt đầu từ D, ta được tên {{2}}.",
+        "options": [
+          "BCDA",
+          "DCBA",
+          "ACBD",
+          "ABDC"
+        ],
+        "answers": [
+          "BCDA",
+          "DCBA"
+        ]
+      },
+      "solution": "Tên tứ giác phải đi liên tiếp qua các đỉnh kề nhau; có thể đổi điểm bắt đầu hoặc đi theo chiều ngược lại.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Tứ giác lồi ABCD gồm bốn cạnh AB, BC, CD, DA.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          }
+        ],
+        "polygons": [],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    },
+    {
+      "question_type": "true_false",
+      "prompt": "Xét các khẳng định về tổng góc trong một tứ giác:",
+      "data": {
+        "statements": [
+          {
+            "text": "Tổng bốn góc trong của một tứ giác bằng 360°.",
+            "answer": true
+          },
+          {
+            "text": "Tổng bốn góc trong của một tứ giác bằng 180°.",
+            "answer": false
+          },
+          {
+            "text": "Kẻ một đường chéo của tứ giác lồi có thể chia hình thành hai tam giác.",
+            "answer": true
+          },
+          {
+            "text": "Có thể giải thích định lí tổng góc tứ giác bằng cách cộng tổng góc của hai tam giác.",
+            "answer": true
+          }
+        ]
+      },
+      "solution": "Một đường chéo chia tứ giác lồi thành hai tam giác; tổng góc của mỗi tam giác là 180°, nên tổng góc tứ giác là 360°.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Đường chéo BD chia tứ giác lồi ABCD thành hai tam giác ABD và BCD; bốn góc trong được đánh dấu.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "B",
+            "to": "D",
+            "tone": "primary"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          }
+        ],
+        "polygons": [
+          {
+            "points": [
+              "A",
+              "B",
+              "D"
+            ],
+            "fill": "primary",
+            "opacity": 0.08
+          },
+          {
+            "points": [
+              "B",
+              "C",
+              "D"
+            ],
+            "fill": "success",
+            "opacity": 0.08
+          }
+        ],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [
+          {
+            "from": "D",
+            "vertex": "A",
+            "to": "B",
+            "radius": 22
+          },
+          {
+            "from": "A",
+            "vertex": "B",
+            "to": "C",
+            "radius": 22
+          },
+          {
+            "from": "B",
+            "vertex": "C",
+            "to": "D",
+            "radius": 22
+          },
+          {
+            "from": "C",
+            "vertex": "D",
+            "to": "A",
+            "radius": 22
+          }
+        ],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    },
+    {
+      "question_type": "drag_fill",
+      "prompt": "Hoàn thiện cách giải thích định lí tổng góc:",
+      "data": {
+        "template": "Kẻ đường chéo BD của tứ giác lồi ABCD, ta được hai tam giác {{1}} và {{2}}. Mỗi tam giác có tổng ba góc bằng {{3}}, nên tổng bốn góc của tứ giác bằng {{4}}.",
+        "options": [
+          "ABD",
+          "BCD",
+          "180°",
+          "360°",
+          "ABC",
+          "ACD"
+        ],
+        "answers": [
+          "ABD",
+          "BCD",
+          "180°",
+          "360°"
+        ]
+      },
+      "solution": "Đường chéo BD tạo thành hai tam giác ABD và BCD. Hai tổng 180° cho kết quả 360°.",
+      "diagram": {
+        "type": "geometry",
+        "width": 360,
+        "height": 280,
+        "alt": "Đường chéo BD chia tứ giác lồi ABCD thành hai tam giác ABD và BCD; bốn góc trong được đánh dấu.",
+        "points": [
+          {
+            "id": "A",
+            "x": 151.96286001381247,
+            "y": 207.23408653309403,
+            "label_dx": -10,
+            "label_dy": 14
+          },
+          {
+            "id": "B",
+            "x": 298.40000000000003,
+            "y": 207.23408653309403,
+            "label_dx": 8,
+            "label_dy": 15
+          },
+          {
+            "id": "D",
+            "x": 61.60000000000001,
+            "y": 99.54382347454535,
+            "label_dx": -10,
+            "label_dy": -10
+          },
+          {
+            "id": "C",
+            "x": 223.4608558913927,
+            "y": 72.765913466906,
+            "label_dx": 8,
+            "label_dy": -10
+          }
+        ],
+        "segments": [
+          {
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "from": "B",
+            "to": "D",
+            "tone": "primary"
+          },
+          {
+            "from": "D",
+            "to": "A"
+          },
+          {
+            "from": "B",
+            "to": "C"
+          },
+          {
+            "from": "C",
+            "to": "D"
+          }
+        ],
+        "polygons": [
+          {
+            "points": [
+              "A",
+              "B",
+              "D"
+            ],
+            "fill": "primary",
+            "opacity": 0.08
+          },
+          {
+            "points": [
+              "B",
+              "C",
+              "D"
+            ],
+            "fill": "success",
+            "opacity": 0.08
+          }
+        ],
+        "circles": [],
+        "arcs": [],
+        "ellipses": [],
+        "paths": [],
+        "angles": [
+          {
+            "from": "D",
+            "vertex": "A",
+            "to": "B",
+            "radius": 22
+          },
+          {
+            "from": "A",
+            "vertex": "B",
+            "to": "C",
+            "radius": 22
+          },
+          {
+            "from": "B",
+            "vertex": "C",
+            "to": "D",
+            "radius": 22
+          },
+          {
+            "from": "C",
+            "vertex": "D",
+            "to": "A",
+            "radius": 22
+          }
+        ],
+        "right_angles": [],
+        "labels": [],
+        "plots": []
+      }
+    }
+  ]
+}

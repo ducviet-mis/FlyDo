@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MathRenderer } from '@/features/practice/components/math-renderer';
+import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
 import type { DragFillData, TheoryLesson, TheoryQuestion, TrueFalseData } from '@/features/theory/types';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -145,6 +146,7 @@ export default function TheoryQuizPage() {
             <CardContent className="space-y-5 p-5 sm:p-7">
               <div className="flex flex-wrap items-center justify-between gap-2"><Badge variant="outline" className="border-primary/30 bg-primary-soft text-primary">Câu {currentIndex + 1}</Badge><span className="text-xs font-medium text-muted-foreground">{currentQuestion.question_type === 'true_false' ? 'Đúng / Sai' : 'Kéo thả điền khuyết'}</span></div>
               <div className="text-base font-semibold leading-7 text-foreground sm:text-lg"><MathRenderer content={currentQuestion.prompt} /></div>
+              <GeometryDiagram data={currentQuestion.data.diagram} />
 
               {currentQuestion.question_type === 'true_false' ? (
                 <div className="space-y-3">

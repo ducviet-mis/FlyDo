@@ -1,3 +1,5 @@
+import type { GeometryDiagram } from '@/features/geometry/types';
+
 export type TheoryQuestionType = 'true_false' | 'drag_fill';
 
 export type TrueFalseStatement = {
@@ -7,12 +9,28 @@ export type TrueFalseStatement = {
 
 export type TrueFalseData = {
   statements: TrueFalseStatement[];
+  diagram?: GeometryDiagram;
 };
 
 export type DragFillData = {
   template: string;
   options: string[];
   answers: string[];
+  diagram?: GeometryDiagram;
+};
+
+export type TheoryContentBlock = {
+  content: string;
+  items?: string[];
+  example?: string;
+  diagram?: GeometryDiagram;
+  caption?: string;
+};
+
+export type TheoryDocument = {
+  title?: string;
+  summary?: string;
+  sections: Array<{ heading: string; blocks: TheoryContentBlock[] }>;
 };
 
 export type TheoryQuestion = {

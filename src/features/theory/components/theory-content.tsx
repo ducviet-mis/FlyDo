@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { normalizeLatexInput } from '@/lib/math/normalize-latex';
 import { sanitizeRichHtml } from '@/lib/security/safe-content';
+import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
+import { isTheoryJson, parseTheoryDocument, theoryBlockHtml } from '../theory-document';
 
 function renderMathInHtml(source: string) {
   const container = document.createElement('div');
@@ -51,7 +53,7 @@ function renderMathInHtml(source: string) {
   return container.innerHTML;
 }
 
-export function TheoryContent({ html, className }: { html: string; className?: string }) {
+function RichTheoryHtml({ html, className }: { html: string; className?: string }) {
   const [renderedHtml, setRenderedHtml] = useState('');
 
   useEffect(() => {
@@ -63,5 +65,28 @@ export function TheoryContent({ html, className }: { html: string; className?: s
       className={className ?? 'prose prose-base vivux-prose max-w-none break-words leading-7 prose-headings:font-bold prose-img:mx-auto prose-img:max-w-full prose-img:rounded-2xl sm:prose-lg sm:leading-8'}
       dangerouslySetInnerHTML={{ __html: renderedHtml }}
     />
+  );
+}
+
+export function TheoryContent({ html, className }: { html: string; className?: string }) {
+  const parsed = useMemo(() => isTheoryJson(html) ? parseTheoryDocument(html) : null, [html]);
+  if (!parsed) return <RichTheoryHtml html={html} className={className} />;
+  if (!parsed.document) return <p role="alert" className="text-destructive">Không thể hiển thị lý thuyết: {parsed.errors[0]}</p>;
+
+  return (
+    <div className={className ?? 'prose prose-base vivux-prose max-w-none break-words leading-7 sm:prose-lg sm:leading-8'}>
+      {parsed.document.sections.map((section, index) => (
+        <section key={index}>
+          <h2>{section.heading}</h2>
+          {section.blocks.map((block, blockIndex) => (
+            <div key={blockIndex}>
+              <RichTheoryHtml html={theoryBlockHtml(block)} className="contents" />
+              {block.diagram && <GeometryDiagram data={block.diagram} className="theory-geometry not-prose" showValidationError />}
+              {block.diagram && block.caption && <p className="text-center text-sm">{block.caption}</p>}
+            </div>
+          ))}
+        </section>
+      ))}
+    </div>
   );
 }

@@ -12,11 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { RichTextEditor } from '@/features/handbook/components/rich-text-editor';
+import { TheoryLessonEditor } from '@/features/theory/components/theory-lesson-editor';
 import { AdminLessonPicker } from '@/components/admin/lesson-picker';
 import { MathRenderer } from '@/features/practice/components/math-renderer';
 import { TheoryQuestionPreview } from '@/features/theory/components/theory-question-preview';
 import { buildTheoryAiPrompt, parseTheoryQuestionJson, THEORY_JSON_EXAMPLE } from '@/features/theory/theory-import';
+import { isTheoryJson, parseTheoryDocument } from '@/features/theory/theory-document';
 import type { TheoryLesson, TheoryQuestion } from '@/features/theory/types';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
@@ -39,6 +40,8 @@ export default function AdminTheoryPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingTheoryJson, setPendingTheoryJson] = useState(false);
+  const [editorRevision, setEditorRevision] = useState(0);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [reorderingLessonId, setReorderingLessonId] = useState<string | null>(null);
@@ -197,6 +200,8 @@ export default function AdminTheoryPage() {
     setForm(EMPTY_FORM);
     setChapterChoice('');
     setEditingId(null);
+    setPendingTheoryJson(false);
+    setEditorRevision((current) => current + 1);
   }
 
   function changeGrade(value: string) {
@@ -212,6 +217,17 @@ export default function AdminTheoryPage() {
   async function saveLesson() {
     setNotice('');
     setError('');
+    if (pendingTheoryJson) {
+      setError('JSON lý thuyết chưa được áp dụng. Chọn “Kiểm tra và áp dụng” tại ô nhập JSON trước khi lưu.');
+      return;
+    }
+    if (isTheoryJson(form.content)) {
+      const checked = parseTheoryDocument(form.content);
+      if (!checked.document) {
+        setError(checked.errors[0]);
+        return;
+      }
+    }
     if (!form.chapter.trim() || !form.title.trim() || !form.content.trim() || form.content === '<p></p>') {
       setError('Hãy nhập đủ chương, tên bài và nội dung lý thuyết.');
       return;
@@ -263,6 +279,8 @@ export default function AdminTheoryPage() {
 
   function editLesson(lesson: TheoryLesson) {
     setEditingId(lesson.id);
+    setPendingTheoryJson(false);
+    setEditorRevision((current) => current + 1);
     setChapterChoice(lesson.chapter);
     setForm({ grade: String(lesson.grade), chapter: lesson.chapter, title: lesson.title, summary: lesson.summary, content: lesson.content, isPublished: lesson.is_published });
     setNotice('');
@@ -379,7 +397,10 @@ export default function AdminTheoryPage() {
               </div>
               <div className="space-y-2"><Label htmlFor="theory-title">Tên bài lý thuyết</Label><Input id="theory-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="VD: Định lý Pythagore" /></div>
               <div className="space-y-2"><Label htmlFor="theory-summary">Mô tả ngắn</Label><Textarea id="theory-summary" value={form.summary} onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))} placeholder="Nội dung trọng tâm học sinh sẽ nắm được..." className="min-h-24" /></div>
-              <div className="space-y-2"><Label>Nội dung lý thuyết</Label><p className="text-xs text-muted-foreground">Có thể dùng công thức LaTeX trong dấu $...$ hoặc $$...$$.</p><RichTextEditor key={editingId ?? 'new-theory'} content={form.content} onChange={(content) => setForm((current) => ({ ...current, content }))} /></div>
+              <div className="space-y-2"><Label>Nội dung lý thuyết</Label><p className="text-xs text-muted-foreground">Có thể dùng công thức LaTeX trong dấu $...$ hoặc $$...$$.</p><TheoryLessonEditor key={`${editingId ?? 'new-theory'}-${editorRevision}`} content={form.content}
+                onChange={(content) => setForm((current) => ({ ...current, content }))}
+                onMetadata={(document) => setForm((current) => ({ ...current, title: document.title || current.title, summary: document.summary ?? current.summary }))}
+                onDraftChange={setPendingTheoryJson} /></div>
               <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border bg-muted/30 px-4"><input type="checkbox" checked={form.isPublished} onChange={(event) => setForm((current) => ({ ...current, isPublished: event.target.checked }))} className="h-4 w-4 accent-primary" /><span className="text-sm font-semibold">Xuất bản để học sinh nhìn thấy ngay</span></label>
               <div className="flex flex-col gap-2 sm:flex-row"><Button onClick={saveLesson} disabled={saving} className="min-h-11">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{editingId ? 'Lưu thay đổi' : 'Thêm bài lý thuyết'}</Button>{editingId && <Button variant="outline" onClick={resetForm} className="min-h-11"><X className="h-4 w-4" />Hủy sửa</Button>}</div>
             </CardContent>

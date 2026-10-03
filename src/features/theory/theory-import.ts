@@ -1,4 +1,5 @@
 import type { DragFillData, TheoryQuestion, TrueFalseData } from './types';
+import { validateGeometryDiagram } from '../geometry/geometry-validator';
 
 export const THEORY_JSON_EXAMPLE = JSON.stringify({
   questions: [
@@ -87,6 +88,14 @@ export function parseTheoryQuestionJson(raw: string): { questions: TheoryQuestio
       return;
     }
 
+    // Store the imported root-level diagram inside the existing JSONB data column.
+    const checkedDiagram = validateGeometryDiagram(record.diagram ?? data.diagram);
+    if (checkedDiagram.errors.length) {
+      errors.push('Câu ' + row + ': ' + checkedDiagram.errors.join(' '));
+      return;
+    }
+    const diagramData = checkedDiagram.diagram ? { diagram: checkedDiagram.diagram } : {};
+
     if (questionType === 'true_false') {
       const statements = Array.isArray(data.statements) ? data.statements : [];
       const normalized = statements.flatMap((statement) => {
@@ -99,7 +108,7 @@ export function parseTheoryQuestionJson(raw: string): { questions: TheoryQuestio
         errors.push('Câu ' + row + ': Đúng/Sai cần từ 2–6 mệnh đề, mỗi mệnh đề có text và answer dạng true/false.');
       }
       if (prompt && statements.length >= 2 && statements.length <= 6 && normalized.length === statements.length) {
-        questions.push({ question_type: questionType, prompt, data: { statements: normalized } satisfies TrueFalseData, solution });
+        questions.push({ question_type: questionType, prompt, data: { statements: normalized, ...diagramData } satisfies TrueFalseData, solution });
       }
       return;
     }
@@ -119,7 +128,7 @@ export function parseTheoryQuestionJson(raw: string): { questions: TheoryQuestio
     if (answers.some((answer) => !options.includes(answer))) errors.push('Câu ' + row + ': mọi đáp án phải xuất hiện trong options.');
 
     if (prompt && template && slots > 0 && options.length >= 2 && answers.length === slots && answers.every((answer) => options.includes(answer))) {
-      questions.push({ question_type: questionType, prompt, data: { template, options, answers } satisfies DragFillData, solution });
+      questions.push({ question_type: questionType, prompt, data: { template, options, answers, ...diagramData } satisfies DragFillData, solution });
     }
   });
 
@@ -131,6 +140,7 @@ export function buildTheoryAiPrompt(lessonName: string) {
     'Hãy tạo bộ câu hỏi kiểm tra lý thuyết Toán THCS cho bài "' + lessonName + '".',
     'Chỉ trả về JSON hợp lệ, không dùng markdown và không giải thích ngoài JSON.',
     'Chỉ sử dụng hai loại question_type: "true_false" và "drag_fill".',
+    'Khi cần hình minh họa, thêm trường diagram cùng cấp với prompt; diagram.type là "geometry", chứa điểm, đoạn thẳng và nhãn theo mẫu FlyDo.',
     '',
     'Quy tắc Đúng/Sai:',
     '- data.statements có 2–6 mệnh đề.',

@@ -12,20 +12,20 @@ type Props = {
   showValidationError?: boolean;
 };
 
-const color = (tone: GeometryTone = 'default') => ({
+const color = (tone: GeometryTone = 'default') => `var(--geometry-${tone}, ${{
   default: 'rgb(var(--color-text-primary))',
   primary: 'rgb(var(--color-primary))',
   muted: 'rgb(var(--color-text-secondary))',
   success: 'rgb(var(--color-success))',
   warning: 'rgb(var(--color-warning))',
-}[tone]);
+}[tone]})`;
 
 const fillColor = (fill = 'none') => ({
   none: 'none',
-  primary: 'rgb(var(--color-primary))',
-  muted: 'rgb(var(--color-muted))',
-  success: 'rgb(var(--color-success))',
-  warning: 'rgb(var(--color-warning))',
+  primary: 'var(--geometry-fill-primary, rgb(var(--color-primary)))',
+  muted: 'var(--geometry-fill-muted, rgb(var(--color-muted)))',
+  success: 'var(--geometry-fill-success, rgb(var(--color-success)))',
+  warning: 'var(--geometry-fill-warning, rgb(var(--color-warning)))',
 }[fill] ?? 'none');
 
 const dash = (style: GeometryLineStyle = 'solid') => style === 'dashed' ? '8 6' : style === 'dotted' ? '2 5' : undefined;
@@ -50,7 +50,7 @@ function labelNode(key: string, x: number, y: number, label?: string, anchor: 's
       fontSize="13"
       fontWeight="650"
       fill={color(tone)}
-      stroke="rgb(var(--color-card))"
+      stroke="var(--geometry-background, rgb(var(--color-card)))"
       strokeWidth="4"
       paintOrder="stroke"
       strokeLinejoin="round"
@@ -201,7 +201,7 @@ function DiagramSvg({ diagram }: { diagram: GeometryDiagramData }) {
         return <polyline key={`right-angle-${index}`} points={`${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`} fill="none" stroke={color('primary')} strokeWidth="1.8" vectorEffect="non-scaling-stroke" />;
       })}
 
-      {diagram.points.map((point) => <g key={point.id}>{!point.hidden && <circle cx={point.x} cy={point.y} r="3.2" fill={color('primary')} stroke="rgb(var(--color-card))" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />}{labelNode(`point-${point.id}`, point.x + (point.label_dx ?? 8), point.y + (point.label_dy ?? -10), point.label ?? point.id, point.label_dx !== undefined && point.label_dx < 0 ? 'end' : 'start')}</g>)}
+      {diagram.points.map((point) => <g key={point.id}>{!point.hidden && <circle cx={point.x} cy={point.y} r="3.2" fill={color('primary')} stroke="var(--geometry-background, rgb(var(--color-card)))" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />}{labelNode(`point-${point.id}`, point.x + (point.label_dx ?? 8), point.y + (point.label_dy ?? -10), point.label ?? point.id, point.label_dx !== undefined && point.label_dx < 0 ? 'end' : 'start')}</g>)}
       {diagram.labels.map((label, index) => labelNode(`label-${index}`, label.x, label.y, label.text, label.align, label.tone))}
     </svg>
   );
