@@ -34,6 +34,9 @@ const grades = [
   { id: 9, title: 'Lớp 9', tone: 'bg-success-soft text-success' },
 ];
 
+// Temporary homepage visibility switch; set to true to restore the FlyTiee card.
+const SHOW_FLYTIEE_ON_HOME = false;
+
 export default function HomePage() {
   const { user } = useAuth();
   const { resolvedTheme } = useTheme();
@@ -47,7 +50,7 @@ export default function HomePage() {
       <div className={`study-page space-y-7 ${sol ? solStyles.page : lunaStyles.page}`}>
         {sol && <SolHero name={user?.name} greeting={getGreeting()} />}
         {!sol && <LunaHero name={user?.name} />}
-        {user && <div className={`grid min-w-0 grid-cols-1 items-stretch gap-3 sm:gap-4 ${sol ? solStyles.companionRow : lunaStyles.companionRow}`}><FlytieeWidget variant="hero" /><StreakCard /></div>}
+        {user && SHOW_FLYTIEE_ON_HOME && <div className={`grid min-w-0 grid-cols-1 items-stretch gap-3 sm:gap-4 ${sol ? solStyles.companionRow : lunaStyles.companionRow}`}><FlytieeWidget variant="hero" /><StreakCard /></div>}
         <div className={`grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] ${sol ? solStyles.contentGrid : lunaStyles.contentGrid}`}>
           <div className="min-w-0 space-y-6">
             <div id="continue-learning" className={sol ? solStyles.resumeWrap : lunaStyles.resumeWrap}><ContinueLearning /></div>
@@ -78,6 +81,7 @@ export default function HomePage() {
             <div className={sol ? solStyles.statsWrap : lunaStyles.statsWrap}><StatsOverviewCard /></div>
           </div>
           <aside aria-label="Thông tin học tập bổ trợ" className={`grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-1 ${sol ? solStyles.aside : lunaStyles.aside}`}>
+            {user && !SHOW_FLYTIEE_ON_HOME && <StreakCard />}
             <CountdownCard />
             <QuoteCarousel />
             <WrongNotebookCard />
