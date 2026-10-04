@@ -5,6 +5,7 @@ import "@/styles/sol-system.css";
 import "@/styles/luna-system.css";
 import { Providers } from "./providers";
 import { ClientLayout } from "@/components/layout/client-layout";
+import { SiteAnalytics } from "@/components/analytics/site-analytics";
 
 const inter = Inter({ subsets: ["latin", "vietnamese"] });
 
@@ -41,6 +42,7 @@ export default function RootLayout({
         <Providers>
           <ClientLayout>{children}</ClientLayout>
         </Providers>
+        <SiteAnalytics />
       </body>
     </html>
   );
