@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
-import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, Clipboard, Code2, Edit3, Eye, GripVertical, Loader2, Plus, Save, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, CheckCircle2, Clipboard, Code2, Edit3, Eye, GripVertical, Loader2, Save, Sparkles, Trash2, UploadCloud, X } from 'lucide-react';
+import { AdminCreatePanel } from '@/components/admin/create-panel';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -369,7 +370,7 @@ export default function AdminTheoryPage() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="lessons" className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-muted p-1">
+        <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg bg-muted p-1 sm:w-fit">
           <TabsTrigger value="lessons" className="min-h-11"><BookOpen className="mr-2 h-4 w-4" />Soạn lý thuyết</TabsTrigger>
           <TabsTrigger value="questions" className="min-h-11"><UploadCloud className="mr-2 h-4 w-4" />Nhập câu hỏi</TabsTrigger>
         </TabsList>
@@ -377,8 +378,7 @@ export default function AdminTheoryPage() {
         {(notice || error) && <Alert variant={error ? 'destructive' : 'default'} className={error ? 'mt-5' : 'mt-5 border-success/40 bg-success-soft'}>{error ? <X className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4 text-success" />}<AlertTitle>{error ? 'Cần kiểm tra lại' : 'Hoàn tất'}</AlertTitle><AlertDescription>{error || notice}</AlertDescription></Alert>}
 
         <TabsContent value="lessons" className="mt-6 space-y-6">
-          <Card className="rounded-2xl border-border">
-            <CardHeader><CardTitle className="flex items-center gap-2 text-xl">{editingId ? <Edit3 className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}{editingId ? 'Sửa bài lý thuyết' : 'Tạo bài lý thuyết mới'}</CardTitle></CardHeader>
+          <AdminCreatePanel title={editingId ? 'Sửa bài lý thuyết' : 'Soạn bài lý thuyết'} description="Nội dung được lưu theo Lớp → Chương → Bài; hỗ trợ văn bản, công thức và hình học." actionLabel="Thêm bài" openKey={editingId ? `${editingId}-${editorRevision}` : null}>
             <CardContent className="space-y-5">
               <div className="grid items-start gap-4 sm:grid-cols-[140px_1fr]">
                 <div className="space-y-2"><Label htmlFor="theory-grade">Lớp</Label><Select value={form.grade} onValueChange={changeGrade}><SelectTrigger id="theory-grade"><SelectValue /></SelectTrigger><SelectContent>{[6, 7, 8, 9].map((grade) => <SelectItem key={grade} value={String(grade)}>Lớp {grade}</SelectItem>)}</SelectContent></Select></div>
@@ -404,11 +404,11 @@ export default function AdminTheoryPage() {
               <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border bg-muted/30 px-4"><input type="checkbox" checked={form.isPublished} onChange={(event) => setForm((current) => ({ ...current, isPublished: event.target.checked }))} className="h-4 w-4 accent-primary" /><span className="text-sm font-semibold">Xuất bản để học sinh nhìn thấy ngay</span></label>
               <div className="flex flex-col gap-2 sm:flex-row"><Button onClick={saveLesson} disabled={saving} className="min-h-11">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{editingId ? 'Lưu thay đổi' : 'Thêm bài lý thuyết'}</Button>{editingId && <Button variant="outline" onClick={resetForm} className="min-h-11"><X className="h-4 w-4" />Hủy sửa</Button>}</div>
             </CardContent>
-          </Card>
+          </AdminCreatePanel>
 
           <Card className="rounded-2xl border-border">
             <CardHeader>
-              <CardTitle className="text-xl">Danh sách bài lý thuyết ({lessons.length})</CardTitle>
+              <CardTitle as="h2" className="text-lg">Danh sách bài lý thuyết ({lessons.length})</CardTitle>
               <p className="text-sm text-muted-foreground">Giữ biểu tượng kéo để đổi thứ tự bài trong cùng chương. Trên điện thoại hoặc bàn phím, dùng nút lên/xuống.</p>
             </CardHeader>
             <CardContent>
@@ -416,13 +416,13 @@ export default function AdminTheoryPage() {
                 <div className="space-y-6">{Object.entries(groupedLessons).map(([group, rows]) => (
                   <section key={group}>
                     <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">{group}</h3>
-                    <div className="space-y-2">{rows.map((lesson, index) => (
+                    <div className="admin-record-list">{rows.map((lesson, index) => (
                       <div
                         key={lesson.id}
                         data-theory-lesson-id={lesson.id}
                         data-theory-grade={lesson.grade}
                         data-theory-chapter={lesson.chapter}
-                        className={'flex flex-wrap items-center gap-2 rounded-xl border bg-muted/20 p-2 transition-colors sm:flex-nowrap sm:p-3 ' + (dragOverLessonId === lesson.id ? 'border-primary bg-primary-soft ring-2 ring-primary/30' : 'border-border') + (draggingLessonId === lesson.id ? ' opacity-50' : '')}
+                        className={'admin-record flex flex-wrap items-center gap-2 transition-colors sm:flex-nowrap ' + (dragOverLessonId === lesson.id ? 'bg-primary-soft ring-2 ring-primary/30' : '') + (draggingLessonId === lesson.id ? ' opacity-50' : '')}
                       >
                         <button
                           type="button"
@@ -461,7 +461,7 @@ export default function AdminTheoryPage() {
 
         <TabsContent value="questions" className="mt-6 space-y-6">
           <Card className="rounded-2xl border-border">
-            <CardHeader><CardTitle className="flex items-center gap-2 text-xl"><Sparkles className="h-5 w-5 text-primary" />Nhập câu hỏi kiểm tra bằng JSON</CardTitle></CardHeader>
+            <CardHeader><CardTitle as="h2" className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5 text-primary" />Nhập câu hỏi kiểm tra bằng JSON</CardTitle></CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-3"><p className="text-sm font-semibold text-foreground">1. Chọn Lớp → Chương → Bài lý thuyết</p><AdminLessonPicker lessons={lessons} value={selectedLessonId} onChange={(id) => { setSelectedLessonId(id); setPreviewQuestions([]); setPreviewErrors([]); }} idPrefix="theory-questions" /></div>
 
@@ -511,7 +511,7 @@ export default function AdminTheoryPage() {
               </div>
               {copyStatus && <p role="status" className="text-sm font-medium text-success">{copyStatus}</p>}
 
-              <div className="rounded-xl border border-primary/25 bg-primary-soft p-4 text-sm leading-6 text-foreground"><p className="font-bold text-primary">Hai dạng được hỗ trợ</p><p>• <code>true_false</code>: một câu gồm 2–6 nhận định Đúng/Sai.</p><p>• <code>drag_fill</code>: dùng <code>{'{{1}}'}</code>, <code>{'{{2}}'}</code>… để đánh dấu từng chỗ trống.</p></div>
+              <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm leading-6 text-foreground"><p className="font-bold text-primary">Hai dạng được hỗ trợ</p><p>• <code>true_false</code>: một câu gồm 2–6 nhận định Đúng/Sai.</p><p>• <code>drag_fill</code>: dùng <code>{'{{1}}'}</code>, <code>{'{{2}}'}</code>… để đánh dấu từng chỗ trống.</p></div>
 
               <div className="space-y-2"><div className="flex items-center justify-between gap-3"><Label htmlFor="theory-json">2. Dán JSON câu hỏi</Label><Button type="button" variant="ghost" size="sm" onClick={() => setJsonText(THEORY_JSON_EXAMPLE)}>Điền mẫu</Button></div><Textarea id="theory-json" value={jsonText} onChange={(event) => { setJsonText(event.target.value); setPreviewQuestions([]); setPreviewErrors([]); }} placeholder={THEORY_JSON_EXAMPLE} className="min-h-[360px] font-mono text-xs leading-5" spellCheck={false} /></div>
               <Button type="button" onClick={previewJson} disabled={!selectedLessonId || !jsonText.trim()} className="min-h-11"><Eye className="h-4 w-4" />Kiểm tra và xem trước</Button>
@@ -522,7 +522,7 @@ export default function AdminTheoryPage() {
 
           {previewQuestions.length > 0 && previewErrors.length === 0 && (
             <Card className="rounded-2xl border-primary/30">
-              <CardHeader><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><CardTitle className="text-xl">Xem trước nội dung</CardTitle><p className="mt-1 text-sm text-muted-foreground">Đáp án đúng chỉ hiện ở màn hình Admin.</p></div><Badge variant="outline" className="w-fit border-primary/40 bg-primary-soft text-primary">{previewQuestions.length} câu hợp lệ</Badge></div></CardHeader>
+              <CardHeader><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><CardTitle as="h2" className="text-lg">Xem trước nội dung</CardTitle><p className="mt-1 text-sm text-muted-foreground">Đáp án đúng chỉ hiện ở màn hình Admin.</p></div><Badge variant="outline" className="w-fit border-primary/40 bg-primary-soft text-primary">{previewQuestions.length} câu hợp lệ</Badge></div></CardHeader>
               <CardContent className="space-y-5">
                 <div className="flex flex-wrap gap-2" aria-label="Chọn câu xem trước">{previewQuestions.map((_, index) => <Button key={index} type="button" variant={previewIndex === index ? 'default' : 'outline'} size="icon" onClick={() => setPreviewIndex(index)} className="h-11 w-11" aria-label={'Xem câu ' + (index + 1)}>{index + 1}</Button>)}</div>
                 <TheoryQuestionPreview question={previewQuestions[previewIndex]} index={previewIndex} />

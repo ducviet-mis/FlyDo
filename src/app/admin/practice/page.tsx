@@ -3,14 +3,14 @@
 import { useState, useEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
-import { PageHeader } from '@/components/shared/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { AdminCreatePanel } from '@/components/admin/create-panel';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { Plus, Trash2, Database, AlertCircle, ChevronDown, ChevronRight, BookOpen, Pencil, GripVertical, ListX, Loader2 } from 'lucide-react';
+import { Trash2, Database, AlertCircle, ChevronDown, ChevronRight, BookOpen, Pencil, GripVertical, ListX, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -520,7 +520,7 @@ export default function AdminPage() {
   if (!user || (user.email !== 'vietdang293.vn@gmail.com' && user.email !== 'vietdang293@gmail.com')) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
 
       {dbError && (
         <Card className="mt-8 border-warning bg-warning-soft">
@@ -563,22 +563,16 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
       )}
 
       {!dbError && (
-        <div className="space-y-8 mt-8">
-          <Card className="rounded-xl shadow-soft">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5 text-primary" />
-                Thêm bài tự luyện vào chương
-              </CardTitle>
-            </CardHeader>
+        <div className="space-y-6">
+          <AdminCreatePanel title="Thêm bài học" description="Chọn lớp và chương trước, sau đó nhập tên bài." actionLabel="Thêm bài">
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                <div className="space-y-2 lg:col-span-2">
-                  <Label>Lớp</Label>
-                  <Input type="number" value={grade} onChange={e => { setGrade(e.target.value); setChapter(''); setIsNewChapter(false); }} placeholder="VD: 8" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-4 items-end">
+                <div className="space-y-2 xl:col-span-2">
+                  <Label htmlFor="practice-create-grade">Lớp</Label>
+                  <Input id="practice-create-grade" type="number" value={grade} onChange={e => { setGrade(e.target.value); setChapter(''); setIsNewChapter(false); }} placeholder="VD: 8" />
                 </div>
-                <div className="space-y-2 lg:col-span-4">
-                  <Label>Chương</Label>
+                <div className="space-y-2 xl:col-span-5">
+                  <Label htmlFor="practice-create-chapter">Chương</Label>
                   {!isNewChapter ? (
                     <Select
                       value={chapter}
@@ -591,7 +585,7 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                         }
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="practice-create-chapter">
                         <SelectValue placeholder="Chọn chương..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -606,6 +600,7 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                   ) : (
                     <div className="flex gap-2">
                       <Input
+                        id="practice-create-chapter"
                         value={chapter}
                         onChange={e => setChapter(e.target.value)}
                         placeholder="Tên chương mới..."
@@ -624,26 +619,26 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                     </div>
                   )}
                 </div>
-                <div className="space-y-2 lg:col-span-4">
-                  <Label>Bài học</Label>
-                  <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="VD: Phép cộng phân thức" />
+                <div className="space-y-2 sm:col-span-2 xl:col-span-5">
+                  <Label htmlFor="practice-create-title">Bài học</Label>
+                  <Input id="practice-create-title" value={title} onChange={e => setTitle(e.target.value)} placeholder="VD: Phép cộng phân thức" />
                 </div>
-
-                <div className="lg:col-span-2 pt-2 md:pt-0">
-                  <Button onClick={handleAddLesson} disabled={saving} className="w-full rounded-md bg-primary hover:bg-primary-hover text-primary-foreground">
+                <div className="sm:col-span-2 xl:col-span-12 border-t border-border pt-4 flex justify-end">
+                  <Button onClick={handleAddLesson} disabled={saving} className="min-h-11 w-full sm:w-auto">
                     {saving ? 'Đang thêm...' : 'Thêm mới'}
                   </Button>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </AdminCreatePanel>
 
           <Card className="rounded-xl shadow-soft">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle as="h2" className="flex items-center gap-2 text-lg">
                 <Database className="w-5 h-5 text-primary" />
                 Danh sách chương và bài ({lessons.length} bài)
               </CardTitle>
+              <p className="text-sm text-muted-foreground">Lớp → Chương → Bài. Dùng tay kéo hoặc phím mũi tên để sắp xếp.</p>
             </CardHeader>
             <CardContent>
               <p className="sr-only" aria-live="polite" aria-atomic="true">{sortStatus}</p>
@@ -655,7 +650,7 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                 <div className="space-y-8">
                   {groupedLessons.map(gradeGroup => (
                     <div key={gradeGroup.gradeNum}>
-                      <h3 className="text-xl md:text-2xl font-bold mb-4 text-foreground">Toán Lớp {gradeGroup.gradeNum}</h3>
+                      <h3 className="text-base font-semibold mb-3 text-foreground">Toán Lớp {gradeGroup.gradeNum}</h3>
                       <div className="space-y-4">
                         {gradeGroup.chapters.map((ch) => {
                           const chapterId = `g${gradeGroup.gradeNum}-c${ch.title}`;
@@ -669,7 +664,7 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                               data-sort-kind="chapter"
                               data-sort-grade={gradeGroup.gradeNum}
                               data-sort-id={ch.title}
-                              className={'border rounded-xl bg-card overflow-hidden shadow-soft transition-colors ' + (isChapterDragTarget ? 'border-primary ring-2 ring-primary/30 bg-primary-soft' : 'border-border')}
+                              className={'border rounded-xl bg-card overflow-hidden transition-colors ' + (isChapterDragTarget ? 'border-primary ring-2 ring-primary/30 bg-primary-soft' : 'border-border')}
                             >
                               <div className="flex items-center gap-2 p-2">
                                 <button
@@ -692,12 +687,12 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                                   onClick={() => setExpandedId(isExpanded ? null : chapterId)}
                                   aria-expanded={isExpanded}
                                 >
-                                  <div className="flex items-center gap-3">
+                                  <div className="min-w-0 flex items-center gap-2">
                                     {isExpanded ? <ChevronDown className="w-5 h-5 text-primary" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
-                                    <span className="font-semibold text-foreground text-left uppercase tracking-wide text-sm">{ch.title}</span>
+                                    <span className="font-semibold text-foreground text-left break-words text-sm">{ch.title}</span>
                                   </div>
-                                  <Badge variant="secondary" className="bg-primary-soft text-primary">
-                                    {ch.items.length} bài học
+                                  <Badge variant="secondary" className="ml-2 shrink-0 bg-muted text-muted-foreground">
+                                    {ch.items.length} bài
                                   </Badge>
                                 </button>
                                 <Button
@@ -715,24 +710,6 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                               {isExpanded && (
                                 <div className="p-4 pt-0 border-t border-border bg-muted/50">
                                   <div className="space-y-2 mt-4">
-                                    <Card className="shadow-none border-dashed bg-primary-soft border-primary mb-4">
-                                      <CardContent className="p-6">
-                                        <div className="flex items-start gap-3">
-                                          <div className="bg-primary-soft p-2 rounded-full mt-0.5 shrink-0">
-                                            <Database className="w-4 h-4 text-primary" />
-                                          </div>
-                                          <div>
-                                            <h3 className="font-semibold text-primary">Nhập câu hỏi bằng JSON</h3>
-                                            <p className="text-sm text-primary mt-1">
-                                              FlyDo tự tạo ID nội bộ cho bài học. Vào mục <strong>Nhập đề JSON</strong> để chọn bài này theo tên, chọn Level, dán JSON từ AI và xem trước trước khi lưu hàng loạt.
-                                            </p>
-                                            <p className="text-sm text-primary mt-1 font-medium">
-                                              Lưu ý tính năng Level: Cột <code>difficulty_level</code> (1: Nhận biết, 2: Thông hiểu, 3: Vận dụng, 4: Vận dụng cao) sẽ tự động phân loại câu hỏi vào từng Level tương ứng trên giao diện tự luyện.
-                                            </p>
-                                          </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
                                     <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
                                       <GripVertical className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                                       <span>Nhấn giữ biểu tượng rồi kéo thả bài học đến vị trí mong muốn.</span>
@@ -744,7 +721,7 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                                         data-sort-grade={gradeGroup.gradeNum}
                                         data-sort-id={lesson.id}
                                         data-sort-chapter={ch.title}
-                                        className={'flex flex-wrap items-center gap-2 rounded-xl transition-colors ' + (draggingItem?.kind === 'lesson' && dragOverId === lesson.id ? 'bg-primary-soft ring-2 ring-primary/30' : '')}
+                                        className={'admin-practice-row rounded-lg transition-colors ' + (draggingItem?.kind === 'lesson' && dragOverId === lesson.id ? 'bg-primary-soft ring-2 ring-primary/30' : '')}
                                       >
                                         <button
                                           type="button"
@@ -754,27 +731,28 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                                           onPointerCancel={handleSortPointerEnd}
                                           onKeyDown={(event) => handleSortKeyDown(event, { kind: 'lesson', id: lesson.id, grade: gradeGroup.gradeNum, chapter: ch.title }, ch.items.map((item) => item.id))}
                                           disabled={reorderingLessonId !== null}
-                                          className="flex h-12 w-11 shrink-0 touch-none cursor-grab items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 active:cursor-grabbing"
+                                          className="flex h-11 w-11 shrink-0 touch-none cursor-grab items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 active:cursor-grabbing"
                                           style={{ touchAction: 'none' }}
                                           title="Nhấn giữ và kéo để sắp xếp bài học"
                                           aria-label={'Kéo để sắp xếp bài ' + lesson.title + '. Dùng phím mũi tên lên hoặc xuống để đổi vị trí.'}
                                         >
                                           <GripVertical className="h-5 w-5" aria-hidden="true" />
                                         </button>
-                                        <div className="min-w-0 flex-1 flex items-center justify-between p-3 rounded-xl border border-transparent bg-card shadow-soft group-hover:border-primary transition-all">
-                                          <div className="flex items-center gap-4">
-                                            <div className="bg-primary-soft p-2.5 rounded-lg text-primary">
+                                        <div className="min-w-0 py-2">
+                                          <div className="flex items-center gap-3">
+                                            <div className="hidden sm:block text-primary shrink-0">
                                               <BookOpen className="w-4 h-4" />
                                             </div>
-                                            <div>
-                                              <div className="font-semibold text-foreground">{lesson.title}</div>
+                                            <div className="min-w-0">
+                                              <div className="break-words text-sm font-semibold text-foreground">{lesson.title}</div>
                                             </div>
                                           </div>
                                         </div>
+                                        <div className="admin-practice-actions">
                                         <Button
                                           variant="outline"
                                           onClick={() => openLevelManager(lesson)}
-                                          className="h-12 shrink-0 rounded-md border-border px-3 text-muted-foreground transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary"
+                                          className="h-11 shrink-0 rounded-md border-border px-3 text-muted-foreground transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary"
                                           aria-label={`Quản lý câu hỏi theo Level của ${lesson.title}`}
                                         >
                                           <ListX className="h-5 w-5" aria-hidden="true" />
@@ -784,7 +762,7 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                                           variant="outline"
                                           size="icon"
                                           onClick={() => openEditLesson(lesson)}
-                                          className="rounded-md shrink-0 border-border hover:bg-primary-soft hover:border-primary hover:text-primary text-muted-foreground transition-all h-12 w-12"
+                                          className="rounded-md shrink-0 border-border hover:bg-primary-soft hover:border-primary hover:text-primary text-muted-foreground transition-colors h-11 w-11"
                                           title="Sửa bài học"
                                           aria-label={`Sửa ${lesson.title}`}
                                         >
@@ -794,11 +772,13 @@ INSERT INTO public.practice_lessons (id, grade, chapter, title) VALUES
                                           variant="outline"
                                           size="icon"
                                           onClick={() => handleDelete(lesson.id)}
-                                          className="rounded-md shrink-0 border-border hover:bg-destructive-soft hover:border-destructive hover:text-destructive text-muted-foreground transition-all h-12 w-12"
-                                          title="Xóa chuyên đề"
+                                          className="rounded-md shrink-0 border-border hover:bg-destructive-soft hover:border-destructive hover:text-destructive text-destructive transition-colors h-11 w-11"
+                                          title="Xóa bài học"
+                                          aria-label={`Xóa ${lesson.title}`}
                                         >
                                           <Trash2 className="w-5 h-5" />
                                         </Button>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>

@@ -1,7 +1,9 @@
 'use client';
 
+import { AdminCreatePanel } from '@/components/admin/create-panel';
+
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Check, Copy, Gift, LockKeyhole, Plus, Sparkles } from 'lucide-react';
+import { Check, Copy, LockKeyhole, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -216,27 +218,13 @@ export default function GiftCodesAdminPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary-soft via-card to-card p-5 sm:p-7">
-        <div className="flex items-start gap-3">
-          <span className="rounded-xl bg-primary/10 p-2.5 text-primary"><Gift className="h-6 w-6" aria-hidden="true" /></span>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Dành riêng cho ADMIN</p>
-            <h2 className="mt-1 text-2xl font-extrabold tracking-tight">Tạo mã quà tặng</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Phát hành quà FlyTiee hoặc ngày FlyMax mà không cần vào Table Editor.</p>
-          </div>
-        </div>
+      <div className="admin-tabs" role="group" aria-label="Loại mã quà tặng">
+        <button type="button" aria-pressed={type === 'flytiee'} onClick={() => chooseType('flytiee')}>FlyTiee</button>
+        <button type="button" aria-pressed={type === 'flymax'} onClick={() => chooseType('flymax')}>FlyMax</button>
       </div>
-
-      <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-surface p-1" role="tablist" aria-label="Loại mã quà tặng">
-        <button type="button" role="tab" aria-selected={type === 'flytiee'} onClick={() => chooseType('flytiee')} className={`min-h-11 rounded-lg px-3 py-2 text-sm font-bold transition-colors ${type === 'flytiee' ? 'bg-primary text-primary-foreground shadow-soft' : 'text-muted-foreground hover:bg-muted'}`}>FlyTiee</button>
-        <button type="button" role="tab" aria-selected={type === 'flymax'} onClick={() => chooseType('flymax')} className={`min-h-11 rounded-lg px-3 py-2 text-sm font-bold transition-colors ${type === 'flymax' ? 'bg-primary text-primary-foreground shadow-soft' : 'text-muted-foreground hover:bg-muted'}`}>FlyMax</button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Plus className="h-5 w-5 text-primary" aria-hidden="true" /> Phát hành mã {type === 'flytiee' ? 'FlyTiee' : 'FlyMax'}</CardTitle>
-          <CardDescription>{type === 'flytiee' ? 'Mã dùng trong Birdie Mail. Mỗi người chỉ nhận một lần.' : 'Mã dùng trong mục “Mã quà tặng”. Số ngày được cộng tiếp vào hạn FlyMax hiện tại.'}</CardDescription>
-        </CardHeader>
+      {error ? <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><p>{error}</p>{accessReady === false || error.includes('Chính sách tạo mã') ? <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => { setError(''); void loadCodes(); }}>Kiểm tra lại quyền</Button> : null}</div> : null}
+      {success ? <p role="status" className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success">{success}</p> : null}
+      <AdminCreatePanel title={`Phát hành mã ${type === 'flytiee' ? 'FlyTiee' : 'FlyMax'}`} actionLabel="Tạo mã" description={type === 'flytiee' ? 'Quà FlyTiee: mỗi người nhận một lần cho mỗi mã.' : 'Số ngày được cộng tiếp vào hạn FlyMax hiện tại.'}>
         <CardContent>
           <form onSubmit={createCode} className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -294,31 +282,29 @@ export default function GiftCodesAdminPage() {
               </div>
             </div>
 
-            {error ? <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><p>{error}</p>{accessReady === false || error.includes('Chính sách tạo mã') ? <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => { setError(''); void loadCodes(); }}>Kiểm tra lại quyền</Button> : null}</div> : null}
-            {success ? <p role="status" className="rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success">{success}</p> : null}
             <Button type="submit" disabled={saving || accessReady !== true} className="min-h-11 w-full sm:w-auto"><Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />{saving ? 'Đang tạo mã…' : 'Tạo mã quà tặng'}</Button>
           </form>
         </CardContent>
-      </Card>
+      </AdminCreatePanel>
 
       <Card>
         <CardHeader>
-          <CardTitle>Danh sách mã {type === 'flytiee' ? 'FlyTiee' : 'FlyMax'}</CardTitle>
+          <CardTitle as="h2" className="text-lg">Danh sách mã {type === 'flytiee' ? 'FlyTiee' : 'FlyMax'}</CardTitle>
           <CardDescription>50 mã gần nhất · sao chép để gửi hoặc tạm khóa khi cần.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? <p className="text-sm text-muted-foreground">Đang tải mã…</p> : rows.length === 0 ? <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Chưa có mã nào. Tạo mã đầu tiên ở phía trên.</p> : (
-            <div className="space-y-3">
+            <div className="admin-record-list">
               {rows.map((gift) => (
-                <div key={gift.code} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div key={gift.code} className="admin-record flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0 space-y-1">
                     <p className="flex flex-wrap items-center gap-2"><span className="break-all font-mono text-sm font-bold text-primary">{gift.code}</span><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${gift.is_active ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>{gift.is_active ? 'Đang dùng' : 'Đã khóa'}</span></p>
                     <p className="text-sm font-semibold">{type === 'flytiee' ? (gift as FlytieeCode).title : (gift as FlymaxCode).name} · {type === 'flytiee' ? rewardDescription(gift as FlytieeCode) : `${(gift as FlymaxCode).flymax_days} ngày FlyMax`}</p>
                     <p className="text-xs text-muted-foreground">Đã dùng {type === 'flytiee' ? (gift as FlytieeCode).redemption_count : (gift as FlymaxCode).usage_count}/{gift.max_redemptions ?? '∞'} · {displayDate(gift.expires_at)}</p>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <Button type="button" variant="outline" size="sm" className="min-h-10" onClick={() => void copyCode(gift.code)}><Copy className="mr-1.5 h-4 w-4" aria-hidden="true" />{copied === gift.code ? 'Đã chép' : 'Sao chép'}</Button>
-                    <Button type="button" variant="outline" size="sm" className="min-h-10" disabled={busyCode === gift.code} onClick={() => void toggleCode(gift)}>{gift.is_active ? <LockKeyhole className="mr-1.5 h-4 w-4" aria-hidden="true" /> : <Check className="mr-1.5 h-4 w-4" aria-hidden="true" />}{gift.is_active ? 'Khóa mã' : 'Mở lại'}</Button>
+                    <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => void copyCode(gift.code)}><Copy className="mr-1.5 h-4 w-4" aria-hidden="true" />{copied === gift.code ? 'Đã chép' : 'Sao chép'}</Button>
+                    <Button type="button" variant="outline" size="sm" className="min-h-11" disabled={busyCode === gift.code} onClick={() => void toggleCode(gift)}>{gift.is_active ? <LockKeyhole className="mr-1.5 h-4 w-4" aria-hidden="true" /> : <Check className="mr-1.5 h-4 w-4" aria-hidden="true" />}{gift.is_active ? 'Khóa mã' : 'Mở lại'}</Button>
                   </div>
                 </div>
               ))}

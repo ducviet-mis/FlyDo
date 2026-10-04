@@ -53,7 +53,7 @@ export default function QuestionReportsPage() {
 
   return <div className="space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-4"><div>
-      <h2 className="flex items-center gap-2 text-xl font-bold"><Flag className="h-5 w-5 text-primary" aria-hidden="true" /> Báo lỗi câu hỏi</h2>
+      <h2 className="flex items-center gap-2 text-lg font-semibold"><Flag className="h-5 w-5 text-primary" aria-hidden="true" /> Tiếp nhận & phản hồi</h2>
       <p className="mt-2 text-sm text-muted-foreground">Tiếp nhận góp ý từ Tự luyện và Thi thử. Phản hồi được gửi riêng đến người báo lỗi.</p>
     </div><Button variant="outline" disabled={loading} onClick={() => setRevision((value) => value + 1)}><RefreshCw className="h-4 w-4" aria-hidden="true" /> Làm mới</Button></div>
     <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-3">
@@ -65,7 +65,7 @@ export default function QuestionReportsPage() {
     {loading ? <p role="status" className="py-10 text-center text-muted-foreground">Đang tải báo lỗi…</p> : <>
       <p className="text-sm text-muted-foreground">{total} báo lỗi phù hợp</p>
       {!reports.length && !error && <div className="rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">Chưa có báo lỗi trong bộ lọc này.</div>}
-      <div className="space-y-3">{reports.map((report) => <button key={report.id} type="button" onClick={() => setSelected(report)} className="w-full rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-5">
+      <div className="admin-record-list">{reports.map((report) => <button data-admin-report key={report.id} type="button" onClick={() => setSelected(report)} className="admin-record block w-full text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-muted-foreground">{sourceLabel(report.source)}{report.grade ? ` · Lớp ${report.grade}` : ''} · {formatDate(report.created_at)}</span><StatusBadge status={report.status} /></div>
         <h3 className="break-words font-semibold">{report.source_title}</h3><p className="mt-1 text-sm font-medium text-primary">{REPORT_REASONS[report.reason]}</p>
         <p className="mt-2 line-clamp-2 break-words text-sm text-muted-foreground">{report.details || 'Không có mô tả thêm'}</p>

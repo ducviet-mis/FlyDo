@@ -1,7 +1,9 @@
 'use client';
 
+import { AdminCreatePanel } from '@/components/admin/create-panel';
+
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { BellRing, CheckCircle2, Loader2, Megaphone, Send, Undo2 } from 'lucide-react';
+import { CheckCircle2, Loader2, Megaphone, Send, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -146,15 +148,11 @@ export default function AdminNotificationsPage() {
   if (!isAdmin) return null;
 
   return <div className="space-y-6">
-    <Card className="overflow-hidden rounded-2xl">
-      <CardHeader className="border-b border-border bg-hero">
-        <CardTitle as="h2" className="flex items-center gap-2 text-xl"><BellRing aria-hidden="true" className="h-5 w-5 text-primary" /> Tạo thông báo</CardTitle>
-        <CardDescription>Thông báo được gửi ngay sau khi xác nhận và xuất hiện ở chuông của học sinh.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5 px-4 py-6 sm:px-6">
-        {error && <p role="alert" className="rounded-lg bg-destructive-soft p-3 text-sm text-destructive">{error}</p>}
-        {success && <p role="status" className="flex items-center gap-2 rounded-lg bg-success-soft p-3 text-sm text-success"><CheckCircle2 aria-hidden="true" className="h-4 w-4" />{success}</p>}
-        {accessReady === false && <Button type="button" variant="outline" onClick={() => void loadHistory()} disabled={loading}>Kiểm tra lại quyền</Button>}
+    {error && <p role="alert" className="rounded-lg bg-destructive-soft p-3 text-sm text-destructive">{error}</p>}
+    {success && <p role="status" className="flex items-center gap-2 rounded-lg bg-success-soft p-3 text-sm text-success"><CheckCircle2 aria-hidden="true" className="h-4 w-4" />{success}</p>}
+    {accessReady === false && <Button type="button" variant="outline" onClick={() => void loadHistory()} disabled={loading}>Kiểm tra lại quyền</Button>}
+    <AdminCreatePanel title="Soạn thông báo" actionLabel="Tạo thông báo" description="Kiểm tra người nhận và nội dung trước khi xác nhận gửi tới học sinh.">
+      <CardContent className="space-y-5">
         <form onSubmit={askToSend} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="notification-title">Tiêu đề</Label>
@@ -187,17 +185,18 @@ export default function AdminNotificationsPage() {
           <Button type="submit" disabled={accessReady !== true || saving} className="min-h-11"><Send aria-hidden="true" className="h-4 w-4" /> Gửi thông báo</Button>
         </form>
       </CardContent>
-    </Card>
+    </AdminCreatePanel>
 
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle as="h2" className="flex items-center gap-2"><Megaphone aria-hidden="true" className="h-5 w-5 text-primary" /> Lịch sử thông báo</CardTitle>
         <CardDescription>50 thông báo gần nhất. Thu hồi sẽ ẩn thông báo khỏi hộp thư học sinh.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent>
+        <div className="admin-record-list">
         {loading ? <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> Đang tải...</p>
           : history.length === 0 ? <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">Chưa gửi thông báo nào.</p>
-            : history.map((item) => <article key={item.id} className="rounded-xl border border-border bg-surface p-4">
+            : history.map((item) => <article key={item.id} className="admin-record">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -207,9 +206,10 @@ export default function AdminNotificationsPage() {
                   <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted-foreground">{item.body}</p>
                   <p className="mt-3 text-xs text-muted-foreground">{item.target_email || 'Toàn bộ học sinh'} · <time dateTime={item.created_at}>{displayDate(item.created_at)}</time>{item.action_url ? ` · ${item.action_url}` : ''}</p>
                 </div>
-                {item.is_active && <Button type="button" size="sm" variant="outline" disabled={busyId !== null} onClick={() => setRetractTarget(item)}><Undo2 aria-hidden="true" className="h-4 w-4" /> Thu hồi</Button>}
+                {item.is_active && <Button type="button" variant="outline" className="min-h-11" disabled={busyId !== null} onClick={() => setRetractTarget(item)}><Undo2 aria-hidden="true" className="h-4 w-4" /> Thu hồi</Button>}
               </div>
             </article>)}
+        </div>
       </CardContent>
     </Card>
 
