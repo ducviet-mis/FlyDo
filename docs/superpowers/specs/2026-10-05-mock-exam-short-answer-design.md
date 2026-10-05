@@ -1,6 +1,6 @@
 # FlyDo — câu hỏi trả lời ngắn trong Thi thử
 
-Ngày: 05/10/2026. Trạng thái: đã đồng ý phương án trong chat; chờ duyệt bản thiết kế này trước khi lập kế hoạch và sửa mã.
+Ngày: 05/10/2026. Trạng thái: người dùng đã duyệt bản thiết kế và yêu cầu triển khai; kế hoạch thực hiện đang chờ duyệt trước khi sửa mã.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -138,4 +138,4 @@ Không yêu cầu chạy lại SQL tạo bảng ban đầu hoặc SQL importer/c
 
 ## 11. Tình trạng và bước tiếp theo
 
-Hiện mới có tài liệu thiết kế; chưa tạo SQL, mẫu nhập có hiệu lực hoặc sửa mã ứng dụng. Sau khi người dùng duyệt tệp này mới lập kế hoạch triển khai, trình duyệt kế hoạch/cách thực hiện, rồi bắt đầu viết kiểm thử và mã.
+Người dùng đã duyệt tệp này và yêu cầu triển khai. Kế hoạch nằm ở `docs/superpowers/plans/2026-10-05-mock-exam-short-answer.md`; chưa tạo SQL, mẫu nhập có hiệu lực hoặc sửa mã ứng dụng. Sau khi người dùng duyệt kế hoạch và chọn cách thực hiện mới bắt đầu viết kiểm thử và mã.
