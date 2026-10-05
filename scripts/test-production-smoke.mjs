@@ -7,7 +7,7 @@ const base = new URL(process.argv[2] || 'http://localhost:3502');
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(base.hostname), 'Use a local test server only');
 const pages = ['/home', '/login', '/register', '/theory?grade=8', '/practice?grade=8',
   '/mock-exams?grade=8', '/handbook', '/notifications', '/profile', '/pricing',
-  '/practice/wrong', '/personal-exams'];
+  '/practice/wrong', '/personal-exams', '/terms', '/privacy', '/payment-policy', '/support'];
 for (const path of pages) {
   const response = await fetch(new URL(path, base), { redirect: 'manual' });
   assert.equal(response.status, 200, path);

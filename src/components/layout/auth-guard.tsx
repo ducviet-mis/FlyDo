@@ -5,7 +5,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { Loader2 } from 'lucide-react';
 
-const EXACT_PUBLIC_PATHS = ['/', '/home', '/login', '/register', '/practice', '/theory', '/mock-exams', '/pricing', '/offline'];
+const EXACT_PUBLIC_PATHS = [
+  '/', '/home', '/login', '/register', '/practice', '/theory', '/mock-exams', '/pricing', '/offline',
+  '/terms', '/privacy', '/payment-policy', '/support',
+];
 
 function checkIsPublicPath(pathname: string | null): boolean {
   if (!pathname) return false;
