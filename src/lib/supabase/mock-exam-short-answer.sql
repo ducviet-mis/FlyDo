@@ -203,8 +203,12 @@ BEGIN
   SELECT * INTO v_session FROM public.mock_exam_sessions WHERE attempt_id=v_attempt.id AND user_id=auth.uid();
   IF FOUND THEN v_exam:=v_session.exam_snapshot; v_questions:=v_session.questions_snapshot;
   ELSE
+    -- Snapshotless attempts predate short answers. Never disclose newly appended
+    -- keys through a historical result while a new session is still in progress.
     SELECT to_jsonb(e) INTO v_exam FROM public.mock_exams e WHERE id=p_exam_id;
-    SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY q.order_index,q.id),'[]'::jsonb) INTO v_questions FROM public.mock_exam_questions q WHERE q.exam_id=p_exam_id;
+    SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY q.order_index,q.id),'[]'::jsonb) INTO v_questions
+      FROM public.mock_exam_questions q WHERE q.exam_id=p_exam_id AND q.question_type='multiple_choice'
+        AND q.created_at <= v_attempt.created_at;
   END IF;
   SELECT coalesce(jsonb_agg(q || jsonb_build_object('is_correct',public.flydo_exam_answer_correct(q,v_attempt.answers->(q->>'id'))) ORDER BY ord),'[]'::jsonb)
     INTO v_questions FROM jsonb_array_elements(v_questions) WITH ORDINALITY AS items(q,ord);

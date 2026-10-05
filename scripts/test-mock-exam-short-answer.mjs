@@ -19,6 +19,7 @@ await db.exec(`INSERT INTO mock_exams(id,grade,title,duration) VALUES('${exam}',
  INSERT INTO mock_exam_questions(exam_id,content,options,correct_answer,order_index) VALUES('${exam}','legacy','["a","b","c","d"]',0,0);`);
 await db.exec(sql('mock-exam-server-grading.sql'));
 await db.exec(sql('mock-exam-server-lockdown.sql'));
+const snapshotless=(await db.query(`INSERT INTO mock_exam_attempts(user_id,exam_id,score,total_questions) VALUES('${a}','${exam}',7,1) RETURNING id`)).rows[0].id;
 async function as(id,email='student@test.invalid',role='authenticated') {
  await db.exec('RESET ROLE'); await db.query("SELECT set_config('request.jwt.claims',$1,false)",[JSON.stringify({sub:id,email})]); await db.exec('SET ROLE '+role);
 }
@@ -45,6 +46,11 @@ await assert.rejects(()=>imp([short],'practice'),/Thi thử/);
 // Authenticated ADMIN direct edits pass the private SECURITY DEFINER trigger.
 await db.query('UPDATE mock_exam_questions SET content=$1 WHERE question_type=$2',['fraction edit','short_answer']);
 await as(a); const s=await rpc('start_mock_exam_session',[exam,null]);
+const oldResult=await rpc('get_my_mock_exam_result',[exam,snapshotless]);
+assert.equal(oldResult.attempt.score,7);
+assert.equal(oldResult.server_graded,false);
+assert.equal(oldResult.questions.length,1,'Snapshotless historical results must not expose new short-answer questions');
+assert.equal(oldResult.questions.some(q=>q.question_type==='short_answer'||q.accepted_answers?.length),false);
 assert.equal(s.questions.length,3); const [q1,q2,q3]=s.questions.map(q=>q.id);
 for (const q of s.questions) { assert.equal(q.accepted_answers,undefined); assert.equal(q.correct_answer,undefined); assert.equal(q.solution,undefined); }
 for (const bad of [null,[],{outside:'5'},{[q1]:'0'},{[q2]:5},{[q2]:'😀'.repeat(101)},{[q1]:4}]) await assert.rejects(()=>rpc('save_mock_exam_answers',[s.session_id,bad,0]),/hợp lệ/);
@@ -69,5 +75,14 @@ await as(b); assert.equal((await rpc('save_mock_exam_answers',[late.session_id,{
 const lr=await rpc('submit_mock_exam_session',[late.session_id,{[q2]:'changed'},1]);
 assert.equal((await rpc('get_my_mock_exam_result',[exam,lr.attempt_id])).attempt.score,6.67);
 await as(null,'','anon'); await assert.rejects(()=>rpc('start_mock_exam_session',[exam,null]),/permission denied/);
+await db.exec('RESET ROLE');
+for (const answer of ['0,5','0.5','1/2']) assert.equal(await rpc('flydo_exam_answer_correct',[short,JSON.stringify(answer)]),true);
+for (const answer of ['2/4','0.50','50%']) assert.equal(await rpc('flydo_exam_answer_correct',[short,JSON.stringify(answer)]),false);
+assert.equal(await rpc('flydo_exam_normalize_short_answer',['\u2003A\u2003']),'\u2003A\u2003');
+assert.equal(await rpc('flydo_exam_answer_correct',[word,JSON.stringify('Hình chữ nhật')]),false);
+assert.equal(await rpc('flydo_exam_answer_correct',[word,JSON.stringify('hinh chu nhat')]),false);
+const manyQuestions=Array.from({length:1000},(_,i)=>({...short,id:'item'+i}));
+const oversized=Object.fromEntries(manyQuestions.map(q=>[q.id,'x'.repeat(100)]));
+await assert.rejects(()=>rpc('flydo_exam_validate_answers',[manyQuestions,oversized]),/hợp lệ/);
 console.log('PASS: rerunnable mixed migration/import, atomic rejection, legacy snapshots, Unicode, variants, ownership, private keys/helpers, revision/deadline and ADMIN writes.');
 await db.close();
