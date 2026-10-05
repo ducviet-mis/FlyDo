@@ -15,7 +15,8 @@ import { AdminLessonPicker, type AdminLessonOption } from '@/components/admin/le
 import { MOCK_EXAM_CATEGORIES } from '@/features/mock-exams/exam-categories';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
 import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
-import { buildAiPrompt, parseQuestionJson, type ImportedQuestion, type ImportTarget } from '@/features/question-import/json-import';
+import { buildAiPrompt, buildQuestionJsonSample, parseQuestionJson, type ImportedQuestion, type ImportTarget } from '@/features/question-import/json-import';
+import type { QuestionType } from '@/features/mock-exams/question-model';
 
 type ExamOption = { id: string; grade: number; title: string; category: string | null; topic_id: string | null };
 type TopicOption = { id: string; grade: number; name: string };
@@ -63,11 +64,15 @@ function PreviewQuestion({ question, index }: { question: ImportedQuestion; inde
     <article className="rounded-xl border border-border bg-card p-4 shadow-soft sm:p-6">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge className="bg-primary-soft text-primary hover:bg-primary-soft">Câu {index + 1}</Badge>
+        <Badge variant="outline">{question.question_type === 'short_answer' ? 'Trả lời ngắn' : 'Trắc nghiệm'}</Badge>
         {question.diagram && <Badge variant="outline" className="border-primary/40 bg-primary-soft text-primary">Hình vẽ tự động</Badge>}
       </div>
       <div className="text-base font-semibold leading-7 text-foreground sm:text-lg"><MathRenderer content={question.content} /></div>
       <GeometryDiagram data={question.diagram} showValidationError />
-      <div className="mt-5 grid gap-2 sm:grid-cols-2">
+      {question.question_type === 'short_answer' ? <div className="mt-5 rounded-lg border border-success/40 bg-success-soft p-4">
+        <p className="mb-3 text-sm font-semibold text-success">Đáp án được chấp nhận</p>
+        <ul className="flex flex-wrap gap-2">{question.accepted_answers.map((answer, i) => <li key={i} className="whitespace-pre-wrap break-words rounded-md border border-border bg-card px-3 py-2 font-mono text-sm text-foreground">{answer}</li>)}</ul>
+      </div> : <div className="mt-5 grid gap-2 sm:grid-cols-2">
         {question.options.map((option, optionIndex) => {
           const isCorrect = optionIndex === question.correct_answer;
           return (
@@ -78,7 +83,7 @@ function PreviewQuestion({ question, index }: { question: ImportedQuestion; inde
             </div>
           );
         })}
-      </div>
+      </div>}
       {question.solution && <div className="mt-5 border-t border-border pt-4"><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Lời giải</p><div className="rounded-lg bg-muted/50 p-3 text-sm text-foreground"><MathRenderer content={question.solution} variant="solution" /></div></div>}
     </article>
   );
@@ -88,6 +93,8 @@ export default function JsonQuestionImportPage() {
   const router = useRouter();
   const { user, initialized, isLoading } = useAuthStore();
   const [target, setTarget] = useState<ImportTarget>('practice');
+  const [sampleQuestionType, setSampleQuestionType] = useState<QuestionType>('multiple_choice');
+  const effectiveType = target === 'mock_exam' ? sampleQuestionType : 'multiple_choice';
   const [lessons, setLessons] = useState<AdminLessonOption[]>([]);
   const [exams, setExams] = useState<ExamOption[]>([]);
   const [topics, setTopics] = useState<TopicOption[]>([]);
@@ -147,7 +154,7 @@ export default function JsonQuestionImportPage() {
   const clearPreview = () => { setQuestions([]); setErrors([]); setMessage(''); };
 
   const handlePreview = () => {
-    const result = parseQuestionJson(jsonText);
+    const result = parseQuestionJson(jsonText, target);
     setQuestions(result.questions);
     setErrors(result.errors);
     setPreviewIndex(0);
@@ -155,7 +162,7 @@ export default function JsonQuestionImportPage() {
   };
 
   const handleCopyPrompt = async () => {
-    const prompt = buildAiPrompt(target, destinationName, target === 'practice' ? level : undefined);
+    const prompt = buildAiPrompt(target, destinationName, target === 'practice' ? level : undefined, effectiveType);
     try {
       await navigator.clipboard.writeText(prompt);
       setMessage('Đã sao chép prompt. Hãy gửi prompt cho AI rồi dán JSON nhận được vào đây.');
@@ -173,6 +180,13 @@ export default function JsonQuestionImportPage() {
     }
   };
 
+  const handleCopyQuestionSample = async () => {
+    try {
+      await navigator.clipboard.writeText(buildQuestionJsonSample(target, effectiveType));
+      setMessage('Đã sao chép mẫu câu hỏi. Dán JSON vào bên dưới để xem trước.');
+    } catch { setMessage('Không thể tự sao chép. Mẫu có trong ô gợi ý JSON bên dưới.'); }
+  };
+
   const handleImport = async () => {
     if (target === 'practice' && !lessonId) {
       setErrors(['Hãy chọn bài tự luyện trước khi nhập.']);
@@ -182,7 +196,7 @@ export default function JsonQuestionImportPage() {
       setErrors(['Hãy chọn đề thi thử trước khi nhập.']);
       return;
     }
-    const result = parseQuestionJson(jsonText);
+    const result = parseQuestionJson(jsonText, target);
     setQuestions(result.questions);
     setErrors(result.errors);
     if (result.errors.length || result.questions.length === 0) return;
@@ -199,7 +213,7 @@ export default function JsonQuestionImportPage() {
     });
 
     if (error) {
-      setErrors([`Không thể nhập đề: ${error.message}. Hãy chắc rằng bạn đã chạy tệp SQL của tính năng Nhập đề JSON.`]);
+      setErrors([`Không thể nhập đề: ${error.message}. ${result.questions.some((q) => q.question_type === 'short_answer') ? 'Nếu chưa nâng cấp, ADMIN cần chạy mock-exam-short-answer.sql trước.' : 'Hãy chắc rằng bạn đã chạy tệp SQL của tính năng Nhập đề JSON.'}`]);
       setMessage('');
     } else {
       setErrors([]);
@@ -235,6 +249,11 @@ export default function JsonQuestionImportPage() {
           </section>
           <section data-admin-step aria-labelledby="import-input-heading" className="space-y-4 border-t border-border pt-6">
           <h3 id="import-input-heading" className="admin-step-heading font-semibold"><span className="admin-step-number" aria-hidden="true">2</span>Nội dung JSON</h3>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            {target === 'mock_exam' && <div className="max-w-sm flex-1 space-y-2"><Label htmlFor="sample-question-type">Loại câu cho mẫu / prompt</Label><Select value={sampleQuestionType} onValueChange={(value) => setSampleQuestionType(value as QuestionType)}><SelectTrigger id="sample-question-type" className="h-11 bg-surface"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="multiple_choice">Trắc nghiệm</SelectItem><SelectItem value="short_answer">Trả lời ngắn</SelectItem></SelectContent></Select></div>}
+            <Button type="button" variant="outline" onClick={handleCopyQuestionSample} className="h-11"><Clipboard className="mr-2 h-4 w-4" />Sao chép mẫu câu hỏi</Button>
+          </div>
+          {target === 'mock_exam' && <p className="text-sm leading-6 text-muted-foreground">Một đề có thể trộn trắc nghiệm và trả lời ngắn. Với <code>accepted_answers</code>, ghi tất cả cách viết được chấp nhận, ví dụ <code>{'["0,5", "0.5", "1/2"]'}</code>. Chỉ gộp khoảng trắng, không tự quy đổi biểu thức. Bộ chọn trên chỉ đổi mẫu, không đổi loại các câu đã dán.</p>}
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-3"><Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" /><div><p className="font-bold text-foreground">Tạo JSON với AI theo mẫu FlyDo</p><p className="mt-1 text-sm leading-6 text-muted-foreground">Hệ thống tự gắn bài/đề và Level bạn đã chọn; AI không cần tạo ID hay mã đề.</p></div></div>
@@ -252,7 +271,7 @@ export default function JsonQuestionImportPage() {
             </section>}
           </div>
 
-          <div className="space-y-2"><Label htmlFor="question-json">Dán JSON câu hỏi</Label><Textarea id="question-json" value={jsonText} onChange={(event) => { setJsonText(event.target.value); setMessage(''); }} placeholder={'{\n  "questions": [\n    {\n      "content": "...",\n      "options": ["A", "B", "C", "D"],\n      "correct_answer": 0,\n      "solution": "..."\n    }\n  ]\n}'} className="min-h-72 resize-y bg-surface font-mono text-sm leading-6" spellCheck={false} /></div>
+          <div className="space-y-2"><Label htmlFor="question-json">Dán JSON câu hỏi</Label><Textarea id="question-json" value={jsonText} onChange={(event) => { setJsonText(event.target.value); setQuestions([]); setErrors([]); setMessage(''); }} placeholder={buildQuestionJsonSample(target, effectiveType)} className="min-h-72 resize-y bg-surface font-mono text-sm leading-6" spellCheck={false} /></div>
           <div className="flex flex-col gap-3 sm:flex-row"><Button type="button" onClick={handlePreview} disabled={!canPreview} className="h-11 bg-primary text-primary-foreground"><Code2 className="mr-2 h-4 w-4" />Kiểm tra và xem trước</Button><Button type="button" variant="outline" onClick={() => { setJsonText(''); setQuestions([]); setErrors([]); setMessage(''); }} disabled={!jsonText && !questions.length} className="h-11">Xóa bản nháp</Button></div>
           </section>
         </CardContent>

@@ -14,10 +14,14 @@ export const REPORT_STATUSES = {
 } as const;
 export type ReportStatus = keyof typeof REPORT_STATUSES;
 export type ReportSource = 'practice' | 'mock_exam';
-export type QuestionSnapshot = {
-  content: string; options: string[]; correct_answer: number; solution?: string;
+type SnapshotBase = {
+  content: string; solution?: string;
   diagram?: GeometryDiagram; difficulty_level?: number; order_index?: number;
 };
+export type QuestionSnapshot = SnapshotBase & (
+  | { question_type?: 'multiple_choice'; options: string[]; correct_answer: number }
+  | { question_type: 'short_answer'; options: []; correct_answer: null; accepted_answers: string[] }
+);
 export type QuestionReport = {
   id: string; reporter_id: string; reporter_name: string; reporter_email: string;
   source: ReportSource; question_id: string; source_id: string; source_title: string;

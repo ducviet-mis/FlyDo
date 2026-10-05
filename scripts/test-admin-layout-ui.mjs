@@ -271,6 +271,45 @@ await test('anonymous and ordinary accounts still cannot render ADMIN children',
   authState = original;
 });
 
+await test('mixed exam JSON uses short templates, previews accepted answers and reparses the current destination', async () => {
+  writes.length = 0; await mount('import');
+  await select('content-target', 'Thi thử');
+  await select('exam-grade', 'Lớp 8'); await select('exam-category', 'Giữa HK1');
+  await select('exam-target', 'ĐỀ GIỮA HỌC KÌ 1 - SỐ 01');
+  await select('sample-question-type', 'Trả lời ngắn');
+  let copied=''; Object.defineProperty(navigator,'clipboard',{ configurable:true,value:{ writeText: async text => { copied=text; } } });
+  await click(button('Sao chép mẫu câu hỏi')); assert.match(copied,/accepted_answers/);
+  const mcq={content:'MCQ',options:['a','b','c','d'],correct_answer:0};
+  const short={question_type:'short_answer',content:'SHORT',accepted_answers:['0,5','0.5','1/2'],solution:'SOLUTION'};
+  const text=JSON.stringify({questions:[mcq,short]});
+  await input(document.getElementById('question-json'),text); await click(button('Kiểm tra và xem trước'));
+  await click(document.querySelector('[aria-label="Xem trước câu 2"]'));
+  assert.match(document.body.textContent,/Trả lời ngắn/); assert.match(document.body.textContent,/Đáp án được chấp nhận/);
+  assert.match(document.body.textContent,/1\/2/); assert.match(document.body.textContent,/SOLUTION/);
+  const oldConfirm=window.confirm; window.confirm=()=>false;
+  await click(button('Duyệt và nhập 2 câu')); assert.equal(writes.length,0);
+  window.confirm=()=>true;
+  const originalRpc=db.rpc; db.rpc=(name,payload)=>{ writes.push({rpc:name,payload}); return Promise.resolve({data:null,error:{message:'network test'}}); };
+  await click(button('Duyệt và nhập 2 câu')); assert.equal(writes.at(-1).payload.p_questions[1].question_type,'short_answer');
+  assert.equal(document.getElementById('question-json').value,text); assert.match(document.body.textContent,/network test/);
+  db.rpc=originalRpc; writes.length=0;
+  await select('content-target','Tự luyện');
+  await select('import-practice-grade','Lớp 8'); await select('import-practice-chapter','ĐA THỨC'); await select('import-practice-lesson','Bài 1 - Đơn thức');
+  await click(button('Kiểm tra và xem trước')); assert.match(document.body.textContent,/Câu 2.*Thi thử/);
+  assert.equal(writes.length,0); window.confirm=oldConfirm;
+});
+
+await test('ADMIN reads short-answer report snapshots without interpreting answer text as HTML', async () => {
+  const original=fixtures.question_reports[0];
+  fixtures.question_reports[0]={...original,source:'mock_exam',question_snapshot:{question_type:'short_answer',content:'SHORT REPORT',options:[],correct_answer:null,accepted_answers:['1/2','<img src=x onerror=alert(1)>'],solution:'Giải thích'}};
+  try {
+    await mount('question-reports'); await click(document.querySelector('[data-admin-report]'));
+    assert.match(document.body.textContent,/Đáp án được chấp nhận/); assert.match(document.body.textContent,/1\/2/);
+    assert.ok(document.body.textContent.includes('<img src=x onerror=alert(1)>')); assert.equal(document.querySelector('img[src="x"]'),null);
+    assert.match(document.body.textContent,/Phản hồi cho học sinh/);
+  } finally { fixtures.question_reports[0]=original; }
+});
+
 await test('the real JSON workflow previews geometry and cancellation never writes', async () => {
   await mount('import');
   await select('import-practice-grade', 'Lớp 8');
