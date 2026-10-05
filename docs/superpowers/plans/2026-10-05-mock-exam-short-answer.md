@@ -111,4 +111,4 @@
 
 ## Tình trạng kế hoạch
 
-Đã có spec được duyệt; tài liệu này là kế hoạch đề xuất, chưa viết mã ứng dụng hoặc SQL. Sau khi người dùng duyệt kế hoạch và chọn thực hiện trực tiếp hoặc theo từng agent, mới đọc skill thực thi tương ứng và bắt đầu Task 1.
+Người dùng đã duyệt và yêu cầu thực hiện trực tiếp. Sáu nhiệm vụ đã có mã/SQL, mẫu và kiểm thử RED → GREEN; bằng chứng tại `.superpowers/sdd/2026-10-05-mock-exam-short-answer/ledger.md`. Build production, typecheck, kiểm thử UI/database/hồi quy đã qua. Review độc lập phát hiện và đã đóng lỗi P1 trong lịch sử không có snapshot; không còn Critical/Important/Minor hoặc mục bị loại khỏi review. Việc chạy SQL thật và đẩy GitHub vẫn do người dùng thực hiện theo thứ tự trong `docs/mock-exam-short-answer-rollout.md`.

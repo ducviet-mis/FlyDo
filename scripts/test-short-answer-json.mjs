@@ -37,4 +37,5 @@ assert.equal(m.parseQuestionJson(m.buildQuestionJsonSample('practice', 'short_an
 assert.match(m.buildAiPrompt('mock_exam', 'demo', undefined, 'short_answer'), /accepted_answers/);
 assert.equal(m.parseQuestionJson(JSON.stringify({ data: { questions: [ { question:'?', answers:['a','b','c','d'], answer:'B' } ] } })).questions[0].correct_answer, 1);
 assert.equal(parse([{ ...short, diagram: { type:'geometry', points:'bad' } }]).errors.length > 0, true);
+assert.equal(m.parseQuestionJson(readFileSync('question-sets/examples/mock-exam-short-answer.json', 'utf8'), 'mock_exam').errors.length, 0);
 console.log('PASS: mixed exam JSON, practice gating, aliases, limits, variants, geometry and copyable templates.');

@@ -1,6 +1,6 @@
 # FlyDo — câu hỏi trả lời ngắn trong Thi thử
 
-Ngày: 05/10/2026. Trạng thái: người dùng đã duyệt bản thiết kế và yêu cầu triển khai; kế hoạch thực hiện đang chờ duyệt trước khi sửa mã.
+Ngày: 05/10/2026. Trạng thái: đã triển khai trực tiếp và xác minh, kèm SQL/mẫu JSON/hướng dẫn bàn giao. Chưa chạy SQL hoặc deploy thật; chạy SQL mới trước khi đẩy GitHub.
 
 ## 1. Mục tiêu và phạm vi
 

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { ReportQuestionButton } from '@/features/question-reports/report-question-button';
+import { normalizeShortAnswer } from '@/features/mock-exams/question-model';
 
 export default function MockExamResultPage() {
   const params = useParams<{ examId: string }>();
@@ -131,8 +132,9 @@ export default function MockExamResultPage() {
 
           {questions.map((q, idx) => {
             const studentAns = attempt.answers[q.id];
-            const isCorrect = studentAns === q.correct_answer;
-            const isSkipped = studentAns === undefined;
+            const isShort = q.question_type === 'short_answer';
+            const isCorrect = typeof q.is_correct === 'boolean' ? q.is_correct : !isShort && studentAns === q.correct_answer;
+            const isSkipped = studentAns === undefined || (isShort && (typeof studentAns !== 'string' || !normalizeShortAnswer(studentAns)));
 
             return (
               <div key={q.id} className="sol-result-question bg-card rounded-xl p-6 shadow-card border border-border relative overflow-hidden">
@@ -169,7 +171,16 @@ export default function MockExamResultPage() {
 
                   <GeometryDiagram data={q.diagram} />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  {isShort ? <div className="mb-6 grid gap-3 sm:grid-cols-2">
+                    <div className={cn('min-w-0 rounded-xl border p-4', isCorrect ? 'border-success bg-success-soft' : isSkipped ? 'border-border bg-muted/30' : 'border-destructive bg-destructive-soft')}>
+                      <p className="mb-2 text-sm font-semibold text-foreground">Đáp án của bạn</p>
+                      <p className="whitespace-pre-wrap break-words font-mono text-foreground">{isSkipped ? 'Chưa làm' : String(studentAns)}</p>
+                    </div>
+                    <div className="min-w-0 rounded-xl border border-success/40 bg-success-soft p-4">
+                      <p className="mb-2 text-sm font-semibold text-success">Đáp án được chấp nhận</p>
+                      <ul className="space-y-1 font-mono text-foreground">{(Array.isArray(q.accepted_answers) ? q.accepted_answers : []).filter((v: unknown) => typeof v === 'string').map((answer: string, i: number) => <li key={i} className="whitespace-pre-wrap break-words">{answer}</li>)}</ul>
+                    </div>
+                  </div> : <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                     {(q.options as string[]).map((opt, optIdx) => {
                       const isStudentChoice = studentAns === optIdx;
                       const isActualCorrect = q.correct_answer === optIdx;
@@ -198,7 +209,7 @@ export default function MockExamResultPage() {
                         </div>
                       );
                     })}
-                  </div>
+                  </div>}
 
                   {q.solution && (
                     <div className="mt-6 p-5 rounded-2xl bg-primary-soft border border-primary">

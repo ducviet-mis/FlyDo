@@ -249,5 +249,17 @@ rpcHandler = () => Promise.resolve({ data: { exam: fixture().exam, questions: [{
 await React.act(async () => root.render(React.createElement(Result)));
 assert.match(document.body.textContent, /10.00/);
 assert.match(document.body.textContent, /Đáp án chi tiết/);
+await clear();
+const htmlAnswer='<img src=x onerror=alert(1)>';
+rpcHandler = () => Promise.resolve({ data: { exam: fixture().exam, questions: [
+  { id:'q2',question_type:'short_answer',content:'fraction',options:[],correct_answer:null,accepted_answers:['1/2'],is_correct:true,solution:'short solution' },
+  { id:'q3',question_type:'short_answer',content:'blank',options:[],correct_answer:null,accepted_answers:['5'],is_correct:false },
+  { id:'q4',question_type:'short_answer',content:'unsafe text',options:[],correct_answer:null,accepted_answers:[htmlAnswer],is_correct:false }],
+  attempt: { id:'a1',exam_id:'exam',user_id:user.id,score:'3.33',answers:{q2:' 1/2 ',q4:htmlAnswer},correct_count:1,total_questions:3,duration_used:10 } },error:null });
+await React.act(async () => root.render(React.createElement(Result)));
+assert.match(document.body.textContent,/Đáp án của bạn/); assert.match(document.body.textContent,/Đáp án được chấp nhận/);
+assert.match(document.body.textContent,/Chưa làm/); assert.match(document.body.textContent,/short solution/);
+assert.match(document.body.textContent,/Đúng/); assert.equal(document.querySelector('img[src="x"]'),null);
+assert.ok(document.body.textContent.includes(htmlAnswer));
 await React.act(async () => root.unmount()); dom.window.close();
 console.log('PASS: real secure exam hook/pages, queued autosaves, offline drafts/retry, double-submit lock, conflict recovery, account isolation, authoritative deadlines, late draft rejection, autosubmit/manual retry, lost-response result recovery, server result rendering; no direct answer/score queries.');

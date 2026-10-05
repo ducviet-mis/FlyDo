@@ -1,0 +1,25 @@
+{
+  "questions": [
+    {
+      "content": "Giá trị của $2 + 3$ bằng bao nhiêu?",
+      "options": ["3", "4", "5", "6"],
+      "correct_answer": 2,
+      "solution": "$2 + 3 = 5$.",
+      "diagram": null
+    },
+    {
+      "question_type": "short_answer",
+      "content": "Giải phương trình $x + 7 = 12$. Nhập giá trị của x.",
+      "accepted_answers": ["5"],
+      "solution": "Ta có $x = 12 - 7 = 5$.",
+      "diagram": null
+    },
+    {
+      "question_type": "short_answer",
+      "content": "Tính $1 : 2$. Nhập kết quả bằng số thập phân hoặc phân số tối giản.",
+      "accepted_answers": ["0,5", "0.5", "1/2"],
+      "solution": "$1 : 2 = 0{,}5 = \\frac{1}{2}$.",
+      "diagram": null
+    }
+  ]
+}
