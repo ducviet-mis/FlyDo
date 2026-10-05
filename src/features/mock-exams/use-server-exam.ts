@@ -4,27 +4,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { examRpc } from './exam-rpc';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { formatOptionMath } from '@/features/practice/components/math-renderer';
+import { parseExamQuestions, validExamAnswers, isExamAnswerPresent, normalizeShortAnswer, type ExamQuestion, type ExamAnswer, type ExamAnswers } from './question-model';
 
-export type ExamQuestion = { id: string; content: string; options: string[]; diagram: unknown };
+export type { ExamQuestion } from './question-model';
 type Exam = { id: string; title: string; grade: number; duration: number };
-type Answers = Record<string, number>;
+type Answers = ExamAnswers;
 type Session = {
   session_id: string; exam: Exam; questions: ExamQuestion[]; answers: Answers; revision: number;
   deadline_at: string; server_now: string; attempt_id: string | null;
 };
-type Draft = { version: 2; sessionId: string; answers: Answers; currentIndex: number; revision: number };
+type Draft = { version: 2; sessionId: string; answers: Answers; currentIndex: number; revision: number; complete?: true };
 type Context = {
   id: string; userId: string; key: string; revision: number; answers: Answers; saved: Answers;
   submitting: boolean; blocked: boolean; pending: Promise<void> | null; expiresAt: number;
 };
-function validAnswers(questions: ExamQuestion[], input: unknown): Answers {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
-  const byId = new Map(questions.map((q) => [q.id, q]));
-  return Object.fromEntries(Object.entries(input).filter(([id, value]) => {
-    const q = byId.get(id);
-    return q && Number.isInteger(value) && Number(value) >= 0 && Number(value) < q.options.length;
-  }));
-}
 function failureMessage(error: unknown, fallback: string) {
   const detail = error && typeof error === 'object' && 'message' in error ? String(error.message) : '';
   if (detail.startsWith('FLYDO_CONFLICT:')) return detail.slice('FLYDO_CONFLICT:'.length).trim();
@@ -116,18 +109,20 @@ export function useServerExam(examId: string, userId?: string) {
         if (cancelled || useAuthStore.getState().user?.id !== userId) return;
         if (error) throw error;
         const session = data as Session;
-        if (!session?.session_id || session.exam?.id !== examId || !Array.isArray(session.questions) || !session.questions.length
+        const publicQuestions = parseExamQuestions(session?.questions);
+        if (!session?.session_id || session.exam?.id !== examId || !publicQuestions
           || !Number.isInteger(session.revision) || !Number.isFinite(Date.parse(session.deadline_at))
-          || !Number.isFinite(Date.parse(session.server_now)) || session.questions.some((q) => !q.id
-            || !Array.isArray(q.options) || q.options.length < 2 || q.options.some((option) => typeof option !== 'string'))) {
+          || !Number.isFinite(Date.parse(session.server_now))) {
           throw new Error('Invalid exam session');
         }
-        const formatted = session.questions.map((q) => ({ ...q, options: q.options.map(formatOptionMath) }));
-        const serverAnswers = validAnswers(formatted, session.answers);
+        const formatted: ExamQuestion[] = publicQuestions.map((q) => q.question_type === 'short_answer'
+          ? q : { ...q, options: q.options.map(formatOptionMath) });
+        const serverAnswers = validExamAnswers(formatted, session.answers);
         // A local draft can restore unsent choices, never an extra exam deadline.
         const canRestore = draft?.sessionId === session.session_id && draft.revision === session.revision
           && Date.parse(session.deadline_at) > Date.parse(session.server_now) && !session.attempt_id;
-        const restored = canRestore ? { ...serverAnswers, ...validAnswers(formatted, draft!.answers) } : serverAnswers;
+        const localAnswers = canRestore ? validExamAnswers(formatted, draft!.answers) : {};
+        const restored = canRestore ? (draft!.complete === true ? localAnswers : { ...serverAnswers, ...localAnswers }) : serverAnswers;
         const now = performance.now();
         const remainingMs = Math.max(0, Date.parse(session.deadline_at) - Date.parse(session.server_now)
           - (now - requestStartedAt) / 2);
@@ -159,7 +154,7 @@ export function useServerExam(examId: string, userId?: string) {
     if (!ctx || !exam || !active(ctx) || attemptId) return;
     try {
       window.localStorage.setItem(ctx.key, JSON.stringify({ version: 2, sessionId: ctx.id,
-        answers, currentIndex, revision } satisfies Draft));
+        answers, currentIndex, revision, complete: true } satisfies Draft));
     } catch { /* Server-side autosave still works if browser storage is blocked. */ }
   }, [answers, currentIndex, revision, exam, active, attemptId]);
 
@@ -169,12 +164,16 @@ export function useServerExam(examId: string, userId?: string) {
     return () => window.removeEventListener('online', retry);
   }, [save]);
 
-  const chooseAnswer = useCallback((id: string, answer: number) => {
+  const chooseAnswer = useCallback((id: string, answer: ExamAnswer) => {
     const ctx = context.current;
     if (!ctx || !active(ctx) || ctx.submitting || ctx.blocked || remainingSeconds() <= 0) return;
     const question = questions.find((q) => q.id === id);
-    if (!question || !Number.isInteger(answer) || answer < 0 || answer >= question.options.length) return;
-    ctx.answers = { ...ctx.answers, [id]: answer };
+    if (!question) return;
+    const clearShort = question.question_type === 'short_answer' && typeof answer === 'string'
+      && Array.from(answer).length <= 100 && !normalizeShortAnswer(answer);
+    if (!clearShort && !isExamAnswerPresent(question, answer)) return;
+    ctx.answers = { ...ctx.answers };
+    if (clearShort) delete ctx.answers[id]; else ctx.answers[id] = answer;
     setAnswers(ctx.answers);
     void save();
   }, [active, remainingSeconds, questions, save]);

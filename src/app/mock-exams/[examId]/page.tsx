@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useServerExam } from '@/features/mock-exams/use-server-exam';
+import { ShortAnswerInput } from '@/features/mock-exams/components/short-answer-input';
+import { isExamAnswerPresent } from '@/features/mock-exams/question-model';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
@@ -165,7 +167,7 @@ export default function MockExamRoomPage() {
               <div className="p-4 overflow-y-auto flex-1">
                 <div className="grid grid-cols-6 gap-2">
                   {questions.map((q, idx) => {
-                    const isAnswered = answers[q.id] !== undefined;
+                    const isAnswered = isExamAnswerPresent(q, answers[q.id]);
                     const isCurrent = currentIndex === idx;
                     return (
                       <SheetTrigger asChild key={q.id}>
@@ -249,7 +251,9 @@ export default function MockExamRoomPage() {
 
                 <GeometryDiagram data={currentQuestion.diagram} />
 
-                <div className="space-y-4">
+                {currentQuestion.question_type === 'short_answer' ? <ShortAnswerInput
+                  questionId={currentQuestion.id} value={typeof selectedAnswer === 'string' ? selectedAnswer : ''}
+                  disabled={isSubmitting || expired || blocked} onChange={(value) => chooseAnswer(currentQuestion.id, value)} /> : <div className="space-y-4">
                   {(currentQuestion.options as string[]).map((opt, idx) => {
                     const isSelected = selectedAnswer === idx;
                     return (
@@ -282,7 +286,7 @@ export default function MockExamRoomPage() {
                       </button>
                     );
                   })}
-                </div>
+                </div>}
 
                 <div className="mt-8 flex items-center gap-3 border-t border-border pt-8">
                   <Button
@@ -326,7 +330,7 @@ export default function MockExamRoomPage() {
             <div className="p-4 max-h-[40vh] md:max-h-[calc(100vh-360px)] overflow-y-auto">
               <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-5 gap-2">
                 {questions.map((q, idx) => {
-                  const isAnswered = answers[q.id] !== undefined;
+                  const isAnswered = isExamAnswerPresent(q, answers[q.id]);
                   const isCurrent = currentIndex === idx;
 
                   return (

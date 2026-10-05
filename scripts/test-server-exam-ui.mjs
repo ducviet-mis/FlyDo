@@ -185,6 +185,32 @@ await render();
 assert.deepEqual(hook.answers, { q1: 1 });
 await clear(); window.localStorage.clear();
 
+// Mixed sessions, serialized short edits and offline clearing must survive reload.
+const mixed = () => ({ ...fixture(), questions: [...fixture().questions,
+  { id: 'q2', content: 'Nhập phân số', question_type: 'short_answer', options: [], diagram: null }] });
+rpcHandler = () => Promise.resolve({ data: mixed(), error: null });
+await render(); assert.equal(hook.ready, true, 'Mixed session must load');
+const shortSave = deferred(); let shortRevision = 0;
+rpcHandler = () => ++shortRevision === 1 ? shortSave.promise : Promise.resolve({ data: { accepted: true, revision: shortRevision }, error: null });
+await React.act(async () => hook.chooseAnswer('q2', '1/'));
+await React.act(async () => hook.chooseAnswer('q2', '1/2'));
+assert.equal(calls.filter(c => c.name === 'save_mock_exam_answers').length, 1);
+await React.act(async () => shortSave.done({ data: { accepted: true, revision: 1 }, error: null }));
+assert.deepEqual(calls.at(-1).args.p_answers, { q2: '1/2' });
+await React.act(async () => { hook.chooseAnswer('q2', 1); hook.chooseAnswer('q2', '😀'.repeat(101)); });
+assert.equal(hook.answers.q2, '1/2');
+rpcHandler = () => Promise.resolve({ data: null, error: { message: 'offline' } });
+await React.act(async () => hook.chooseAnswer('q2', ' \t'));
+assert.equal(hook.answers.q2, undefined);
+const clearedDraft = JSON.parse(window.localStorage.getItem(key));
+assert.equal(clearedDraft.complete, true);
+await clear();
+rpcHandler = name => Promise.resolve({ data: name === 'start_mock_exam_session'
+  ? { ...mixed(), revision: 2, answers: { q2: '1/2' } } : { accepted: true, revision: 3 }, error: null });
+await render(); assert.equal(hook.answers.q2, undefined, 'Do not resurrect the server answer deleted offline');
+assert.deepEqual(calls.at(-1).args.p_answers, {});
+await clear(); window.localStorage.clear();
+
 // The real room auto-submits once on expiry and offers a visible retry after failure.
 let autoCount = 0;
 rpcHandler = (name) => name === 'start_mock_exam_session' ? Promise.resolve({ data: { ...fixture(), deadline_at: new Date(Date.now() - 5000).toISOString() }, error: null })
@@ -205,6 +231,18 @@ await React.act(async () => root.render(React.createElement(Room)));
 assert.deepEqual(redirects, ['/mock-exams/exam/result?attemptId=existing-attempt']);
 await clear();
 const Result = load(resolve(repo, 'src/app/mock-exams/[examId]/result/page.tsx')).default;
+rpcHandler = name => Promise.resolve({ data: name === 'start_mock_exam_session' ? mixed() : { accepted: true, revision: 1 }, error: null });
+await React.act(async () => root.render(React.createElement(Room)));
+await React.act(async () => [...document.querySelectorAll('button')].find(b => /Câu sau/.test(b.textContent)).click());
+let shortInput = document.querySelector('input[id="exam-answer-q2"]');
+assert.ok(shortInput && document.querySelector('label[for="exam-answer-q2"]'), 'Short answer has a visible label');
+assert.equal(shortInput.type, 'text'); assert.equal(shortInput.hasAttribute('maxlength'), false);
+const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+await React.act(async () => { valueSetter.call(shortInput, '1/2'); shortInput.dispatchEvent(new window.Event('input', { bubbles: true })); });
+assert.equal(calls.at(-1).args.p_answers.q2, '1/2');
+await React.act(async () => { shortInput.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })); });
+assert.ok(document.querySelector('input[id="exam-answer-q2"]'), 'Arrow keys must not navigate while typing');
+await clear(); window.localStorage.clear();
 window.history.replaceState({}, '', '/?attemptId=a1');
 rpcHandler = () => Promise.resolve({ data: { exam: fixture().exam, questions: [{ ...fixture().questions[0], correct_answer: 1, solution: '1+1=2' }],
   attempt: { id: 'a1', exam_id: 'exam', user_id: user.id, score: '10.00', answers: { q1: 1 }, correct_count: 1, total_questions: 1, duration_used: 10 } }, error: null });
