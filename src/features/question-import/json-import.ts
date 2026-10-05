@@ -1,15 +1,18 @@
 import { validateGeometryDiagram } from '@/features/geometry/geometry-validator';
 import type { GeometryDiagram } from '@/features/geometry/types';
+import { normalizeQuestionType, normalizeShortAnswer, type QuestionType } from '@/features/mock-exams/question-model';
 
 export type ImportTarget = 'practice' | 'mock_exam';
 
-export type ImportedQuestion = {
+type ImportedBase = {
   content: string;
-  options: string[];
-  correct_answer: number;
   solution: string;
   diagram?: GeometryDiagram;
 };
+export type ImportedQuestion = ImportedBase & (
+  | { question_type?: 'multiple_choice'; options: string[]; correct_answer: number; accepted_answers?: [] }
+  | { question_type: 'short_answer'; options: []; correct_answer: null; accepted_answers: string[] }
+);
 
 export type ImportParseResult = {
   questions: ImportedQuestion[];
@@ -42,7 +45,7 @@ function normalizeCorrectAnswer(value: unknown, options: string[]) {
   return -1;
 }
 
-export function parseQuestionJson(raw: string): ImportParseResult {
+export function parseQuestionJson(raw: string, target: ImportTarget = 'practice'): ImportParseResult {
   if (!raw.trim()) return { questions: [], errors: ['Hãy dán JSON câu hỏi trước khi xem trước.'] };
 
   let parsed: unknown;
@@ -70,6 +73,8 @@ export function parseQuestionJson(raw: string): ImportParseResult {
     }
 
     const record = item as Record<string, unknown>;
+    const before = errors.length;
+    const type = normalizeQuestionType(record.question_type);
     const content = typeof record.content === 'string'
       ? record.content.trim()
       : typeof record.question === 'string'
@@ -86,44 +91,61 @@ export function parseQuestionJson(raw: string): ImportParseResult {
     const diagramResult = validateGeometryDiagram(record.diagram);
 
     if (!content) errors.push(`Câu ${row}: thiếu nội dung (content).`);
-    if (options.length !== 4 || options.some((option) => !option)) errors.push(`Câu ${row}: cần đúng 4 phương án không để trống.`);
-    if (correctAnswer < 0 || correctAnswer > 3) errors.push(`Câu ${row}: đáp án đúng phải là 0–3, A–D hoặc đúng nguyên văn một phương án.`);
+    if (!type) errors.push(`Câu ${row}: question_type phải là multiple_choice hoặc short_answer.`);
+    let accepted: string[] = [];
+    if (type === 'short_answer') {
+      if (target !== 'mock_exam') errors.push(`Câu ${row}: trả lời ngắn chỉ dùng trong Thi thử.`);
+      if (['options', 'answers'].some((key) => record[key] !== undefined && (!Array.isArray(record[key]) || (record[key] as unknown[]).length !== 0))
+        || ['correct_answer', 'correctAnswer', 'answer'].some((key) => record[key] !== undefined && record[key] !== null)) {
+        errors.push(`Câu ${row}: trả lời ngắn không có phương án hoặc correct_answer; dùng accepted_answers.`);
+      }
+      const list = record.accepted_answers;
+      if (!Array.isArray(list) || list.length < 1 || list.length > 20 || list.some((v) => typeof v !== 'string'
+        || Array.from(v).length > 200 || !normalizeShortAnswer(v) || Array.from(normalizeShortAnswer(v)).length > 100)) {
+        errors.push(`Câu ${row}: accepted_answers cần 1–20 chuỗi, tối đa 200 ký tự thô và 1–100 ký tự sau gộp khoảng trắng.`);
+      } else {
+        const seen = new Set<string>();
+        accepted = list.filter((v: string) => { const key = normalizeShortAnswer(v); if (seen.has(key)) return false; seen.add(key); return true; });
+      }
+    } else if (type === 'multiple_choice') {
+      if (options.length !== 4 || options.some((option) => !option)) errors.push(`Câu ${row}: cần đúng 4 phương án không để trống.`);
+      if (correctAnswer < 0 || correctAnswer > 3) errors.push(`Câu ${row}: đáp án đúng phải là 0–3, A–D hoặc đúng nguyên văn một phương án.`);
+      if (record.accepted_answers !== undefined && (!Array.isArray(record.accepted_answers) || record.accepted_answers.length !== 0)) errors.push(`Câu ${row}: trắc nghiệm không dùng accepted_answers.`);
+    }
     diagramResult.errors.forEach((error) => errors.push(`Câu ${row}: ${error}`));
 
-    if (content && options.length === 4 && options.every(Boolean) && correctAnswer >= 0 && correctAnswer <= 3 && diagramResult.errors.length === 0) {
-      questions.push({
-        content,
-        options,
-        correct_answer: correctAnswer,
-        solution,
-        diagram: diagramResult.diagram,
-      });
+    if (errors.length === before) {
+      const base = { content, solution, diagram: diagramResult.diagram };
+      questions.push(type === 'short_answer'
+        ? { ...base, question_type: type, options: [], correct_answer: null, accepted_answers: accepted }
+        : { ...base, options, correct_answer: correctAnswer });
     }
   });
 
   return { questions, errors };
 }
 
-export function buildAiPrompt(target: ImportTarget, destination: string, level?: string) {
+export function buildQuestionJsonSample(target: ImportTarget, questionType: QuestionType = 'multiple_choice'): string {
+  return JSON.stringify({ questions: [target === 'mock_exam' && questionType === 'short_answer'
+    ? { question_type: 'short_answer', content: 'Giải phương trình $x + 7 = 12$. Nhập giá trị của x.', accepted_answers: ['5'], solution: 'Ta có $x = 12 - 7 = 5$.', diagram: null }
+    : { content: 'Giá trị của $2 + 3$ bằng bao nhiêu?', options: ['3', '4', '5', '6'], correct_answer: 2, solution: '$2 + 3 = 5$.', diagram: null }] }, null, 2);
+}
+
+export function buildAiPrompt(target: ImportTarget, destination: string, level?: string, questionType: QuestionType = 'multiple_choice') {
   const scope = target === 'practice'
     ? `bài tự luyện "${destination}"${level ? `, Level ${level}` : ''}`
     : `đề thi thử "${destination}"`;
 
-  return `Hãy tạo câu hỏi trắc nghiệm Toán THCS cho ${scope}.
+  const short = target === 'mock_exam' && questionType === 'short_answer';
+  const schema = short ? buildQuestionJsonSample(target, questionType) : `{
+  "questions": [{ "content": "Nội dung câu hỏi. Công thức đặt trong $...$ hoặc $$...$$.", "options": ["Phương án A", "Phương án B", "Phương án C", "Phương án D"], "correct_answer": 0, "solution": "Lời giải rõ ràng.", "diagram": null }]
+}`;
+  return `Hãy tạo câu hỏi ${short ? 'trả lời ngắn' : 'trắc nghiệm'} Toán THCS cho ${scope}.
 Chỉ trả về JSON hợp lệ, không markdown, không giải thích bên ngoài JSON.
 Mỗi câu dùng đúng cấu trúc sau:
-{
-  "questions": [
-    {
-      "content": "Nội dung câu hỏi. Công thức đặt trong $...$ hoặc $$...$$.",
-      "options": ["Phương án A", "Phương án B", "Phương án C", "Phương án D"],
-      "correct_answer": 0,
-      "solution": "Lời giải rõ ràng, xuống dòng khi cần. Công thức dài đặt trong $$...$$.",
-      "diagram": null
-    }
-  ]
-}
-Quy ước: correct_answer là vị trí đáp án đúng, A = 0, B = 1, C = 2, D = 3. Mỗi câu phải có đúng 4 phương án và một đáp án đúng.
+${schema}
+${short ? 'accepted_answers là 1–20 CHUỖI đáp án, không phải số JSON. Liệt kê rõ các biến thể được chấp nhận, ví dụ ["0,5", "0.5", "1/2"]. Chỉ gộp khoảng trắng; không tự quy đổi toán học hay chữ hoa/thường. Không options/correct_answer. Mỗi đáp án tối đa 100 ký tự sau gộp khoảng trắng.' : 'Quy ước: correct_answer là vị trí đáp án đúng, A = 0, B = 1, C = 2, D = 3. Mỗi câu phải có đúng 4 phương án và một đáp án đúng.'}
+Lời giải rõ ràng, xuống dòng khi cần. Công thức dài đặt trong $$...$$.
 
 Nếu câu hỏi cần hình, thay diagram bằng đối tượng hình học có cấu trúc dưới đây. Nếu không cần hình, dùng null. Tuyệt đối không chèn SVG, HTML, mã Python hoặc URL ảnh.
 {
