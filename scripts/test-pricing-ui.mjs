@@ -32,13 +32,37 @@ const auth = (selector) => {
   const state = { user, refreshUser: async () => {} };
   return selector ? selector(state) : state;
 };
+auth.getState = () => ({ user, refreshUser: async () => {} });
+let payment;
 const db = {
   from(table) {
     assert.equal(table, 'payment_settings');
     queries.push(table);
     return { select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: bank, error: null }) };
   },
-  rpc() { throw new Error('Pricing selection must not redeem gifts or write payments'); },
+  async rpc(name, args) {
+    assert.ok(['prepare_payment_order','confirm_payment_order'].includes(name));
+    if (name === 'prepare_payment_order') {
+      const fixtures = {
+        flymax_monthly: ['FlyMax 1 tháng', 29000, 30, [29000,29000,29000]],
+        flymax_quarterly: ['FlyMax 3 tháng', 69000, 90, [69000,69000,69000]],
+        flymax_half_yearly: ['FlyMax 6 tháng', 139000, 180, [139000,118150,69500]],
+        flymax_yearly: ['FlyMax 1 năm', 199000, 365, [199000,169150,99500]],
+        flyinfinity: ['FlyInfinity trọn đời', 299000, null, [299000,254150,149500]],
+      };
+      const [label,price,days,amounts] = fixtures[args.p_plan_code];
+      const hasStreak = discountExpiresAt && new Date(discountExpiresAt)>new Date();
+      const eligible = !['flymax_monthly','flymax_quarterly'].includes(args.p_plan_code);
+      const discount = eligible ? hasStreak ? 50 : user.referralDiscountPercent : 0;
+      const amount = amounts[eligible && hasStreak ? 2 : discount === 15 ? 1 : 0];
+      payment = { id:'20000000-0000-4000-8000-000000000001',flow_version:1,order_code:'FD123456789A',plan_code:args.p_plan_code,status:'draft',
+        created_at:'2026-10-06T00:00:00Z',confirmed_at:null,reviewed_at:null,transfer_code:'DANG DUC VIET 0901234567 FD123456789A',amount_vnd:amount,
+        list_price_vnd:price,discount_percent:discount,discount_amount_vnd:price-amount,discount_source:discount===50?'streak':discount?'referral':'none',
+        buyer_snapshot:{name:user.name,email:user.email,phone:user.phone},plan_snapshot:{name:label,account_tier:days===null?'flyinfinity':'flymax',duration_days:days},
+        bank_snapshot:bank,subscription_id:null,result_expires_at:null,admin_note:null };
+    } else payment = {...payment,status:'pending',confirmed_at:'2026-10-06T00:05:00Z'};
+    return {data:{success:true,order:payment,events:[]},error:null};
+  },
 };
 const cache = new Map();
 function load(filename) {
@@ -61,7 +85,7 @@ function load(filename) {
     return require(name);
   };
   mod._compile(ts.transpileModule(readFileSync(filename, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+    compilerOptions: { target: ts.ScriptTarget.ES2017, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText, filename);
   return mod.exports;
 }
@@ -79,7 +103,7 @@ const button = (label, scope = document) => {
 const click = async (element) => { await React.act(async () => element.click()); };
 const mount = async (tier, referral = 0, streak = null) => {
   if (root) await React.act(async () => root.unmount());
-  user = tier ? { id: 'test-student', accountTier: tier, subscriptionExpiresAt: future, referralDiscountPercent: referral } : null;
+  user = tier ? { id: '10000000-0000-4000-8000-000000000002',name:'Đặng Đức Việt',phone:'0901234567',email:'alice@example.test', accountTier: tier, subscriptionExpiresAt: future, referralDiscountPercent: referral } : null;
   discountExpiresAt = streak;
   root = createRoot(container);
   await React.act(async () => root.render(React.createElement(PricingPage)));
@@ -122,19 +146,22 @@ for (const [label, amount] of [['1 tháng', '29.000đ'], ['3 tháng', '69.000đ'
   await click(button('Gia hạn FlyMax'));
   const dialog = document.querySelector('[role="dialog"]');
   assert.ok(text(dialog).includes(`FlyMax · ${label}`));
+  await click(button('Tạo đơn chuyển khoản', dialog));
   assert.ok(text(dialog).includes(amount));
   assert.ok(text(dialog).includes('TEST BANK'));
-  assert.ok(text(dialog).includes('FLYDO TESTSTUD'));
+  assert.ok(text(dialog).includes('DANG DUC VIET 0901234567 FD123456789A'));
   await closeDialog();
 }
 await click(button('Chọn FlyInfinity'));
 let dialog = document.querySelector('[role="dialog"]');
 assert.ok(text(dialog).includes('FlyInfinity · Trọn đời'));
+await click(button('Tạo đơn chuyển khoản', dialog));
 assert.ok(text(dialog).includes('254.150đ'));
 await click(dialog.querySelector('[aria-label="Sao chép số tài khoản"]'));
 assert.equal(clipboardText, '0123456789');
-await click(button('Xác nhận chuyển khoản (demo)', dialog));
-assert.ok(text(dialog.querySelector('[role="status"]')).includes('Chưa có giao dịch hoặc gói tài khoản nào được tạo'));
+await click(button('Tôi đã chuyển tiền', dialog));
+assert.ok(text(dialog).includes('Chờ kiểm tra'));
+assert.ok(dialog.querySelector('a[href*="tab=payments"]'));
 await closeDialog();
 
 await mount('flymax', 20, future);
@@ -143,10 +170,12 @@ for (const [label, amount] of [['1 tháng', '29.000đ'], ['3 tháng', '69.000đ'
   await click(button(label));
   assert.ok(text(document.getElementById('flymax-plan')).includes(amount));
   await click(button('Gia hạn FlyMax'));
+  await click(button('Tạo đơn chuyển khoản'));
   assert.ok(text(document.querySelector('[role="dialog"]')).includes(amount));
   await closeDialog();
 }
 await click(button('Chọn FlyInfinity'));
+await click(button('Tạo đơn chuyển khoản'));
 assert.ok(text(document.querySelector('[role="dialog"]')).includes('149.500đ'));
 await closeDialog();
 await mount('flymax', 20, '2000-01-01T00:00:00Z');
@@ -158,4 +187,4 @@ assert.ok(button('Gói hiện tại').disabled);
 assert.equal(document.querySelector('[role="dialog"]'), null);
 await React.act(async () => root.unmount());
 dom.window.close();
-console.log('PASS: pricing cycles, referral/streak discounts, guest routing, tier actions, shared benefits, payment summary/copy/demo and no live mutations.');
+console.log('PASS: pricing cycles, referral/streak discounts, guest routing, tier actions, shared benefits, server-quoted checkout/copy/confirmation and no live mutations.');

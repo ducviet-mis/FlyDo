@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useRef, useState } from 'react';
 import { translateAuthError, useAuthStore } from '@/features/auth/stores/auth-store';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   User as UserIcon, Shield, Camera, Save, Eye, EyeOff,
   LogOut, Loader2, CheckCircle, AlertCircle, CalendarDays, Phone, Mail,
-  Crown, ArrowRight, Infinity as InfinityIcon, PlaneTakeoff
+  Crown, ArrowRight, Infinity as InfinityIcon, PlaneTakeoff, ReceiptText
 } from 'lucide-react';
 import { AccountTierBadge } from '@/features/subscription/components/account-tier-badge';
 import { GiftCodeForm } from '@/features/subscription/components/gift-code-form';
@@ -22,12 +22,23 @@ import { ACCOUNT_TIER_META } from '@/features/subscription/config';
 import { formatExpiryDate, getEffectiveAccountTier } from '@/features/subscription/utils';
 import { isAdminEmail } from '@/features/auth/lib/is-admin-email';
 import { AccountDevices } from '@/features/auth/components/account-devices';
+import { PaymentHistory } from '@/features/subscription/payments/payment-history';
+import { isPaymentId } from '@/features/subscription/payments/types';
 
-type Tab = 'personal' | 'membership' | 'security';
+type Tab = 'personal' | 'membership' | 'security' | 'payments';
 
 export default function ProfilePage() {
+  return <Suspense fallback={<div className="container py-8 text-muted-foreground">Đang tải tài khoản…</div>}><ProfileSettings /></Suspense>;
+}
+
+function ProfileSettings() {
   const { user, refreshUser, logoutAllDevices } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<Tab>('personal');
+  const query = useSearchParams();
+  const router = useRouter();
+  const requestedTab = query.get('tab');
+  const queryTab: Tab = requestedTab === 'membership' || requestedTab === 'security' || requestedTab === 'payments' ? requestedTab : 'personal';
+  const activeTab = queryTab;
+  const requestedOrder = query.get('order');
 
   if (!user) {
     return (
@@ -41,6 +52,7 @@ export default function ProfilePage() {
     { id: 'personal' as Tab, label: 'Thông tin cá nhân', mobileLabel: 'Cá nhân', icon: UserIcon },
     { id: 'membership' as Tab, label: 'Gói tài khoản', mobileLabel: 'Gói tài khoản', icon: Crown },
     { id: 'security' as Tab, label: 'Bảo mật', mobileLabel: 'Bảo mật', icon: Shield },
+    { id: 'payments' as Tab, label: 'Lịch sử thanh toán', mobileLabel: 'Thanh toán', icon: ReceiptText },
   ];
 
   return (
@@ -56,12 +68,12 @@ export default function ProfilePage() {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <nav aria-label="Cài đặt tài khoản" className="w-full shrink-0 md:sticky md:top-24 md:w-52 md:self-start">
-          <div className="grid grid-cols-3 gap-1 rounded-2xl border bg-card p-1.5 md:flex md:flex-col">
+          <div className="grid grid-cols-2 gap-1 rounded-2xl border bg-card p-1.5 min-[420px]:grid-cols-4 md:flex md:flex-col">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)} aria-pressed={activeTab === tab.id} aria-controls="profile-settings-panel"
+                onClick={() => router.replace(`/profile?tab=${tab.id}`, { scroll: false })} aria-pressed={activeTab === tab.id} aria-controls="profile-settings-panel"
                 className={`sol-profile-tab flex min-h-14 min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:min-h-12 md:flex-row md:justify-start md:gap-2.5 md:px-4 ${
                   activeTab === tab.id
                     ? 'bg-primary-soft text-primary'
@@ -83,6 +95,7 @@ export default function ProfilePage() {
           {activeTab === 'personal' && <PersonalInfoTab key={user.id} user={user} refreshUser={refreshUser} />}
           {activeTab === 'membership' && <MembershipTab user={user} />}
           {activeTab === 'security' && <SecurityTab key={user.id} userId={user.id} logoutAllDevices={logoutAllDevices} />}
+          {activeTab === 'payments' && <PaymentHistory key={user.id} initialOrderId={isPaymentId(requestedOrder) ? requestedOrder : undefined} onOrderIdChange={id => router.replace(`/profile?tab=payments${id ? `&order=${id}` : ''}`, { scroll: false })} />}
         </div>
       </div>
     </div>

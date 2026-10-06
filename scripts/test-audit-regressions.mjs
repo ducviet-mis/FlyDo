@@ -320,6 +320,9 @@ assert.equal(realAuth.getState().user, null);
 
 // Real profile UI keeps edits after failure and releases loading state.
 const Profile = load(resolve(repo, 'src/app/profile/page.tsx')).default;
+// The actual profile now preserves selected tabs in the route. Simulate the
+// Next navigation boundary, including the rerender after search params change.
+router.replace = (path) => { window.history.replaceState({}, '', path); root.render(React.createElement(Profile)); };
 user = { id: 'student-a', name: 'Student A', email: 'student@example.test', avatarUrl: 'original.png' };
 queryHandler = () => { throw new Error('offline'); };
 await React.act(async () => root.render(React.createElement(Profile)));

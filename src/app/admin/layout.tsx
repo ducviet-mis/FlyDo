@@ -4,7 +4,7 @@ import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, BellRing, BookOpen, FileText, Flag, Gift, LibraryBig, ShieldCheck, UploadCloud } from 'lucide-react';
+import { ArrowUpRight, BellRing, BookOpen, FileText, Flag, Gift, LibraryBig, ReceiptText, ShieldCheck, UploadCloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import './admin.css';
 
@@ -18,6 +18,7 @@ const navigationGroups = [
   { label: 'Vận hành', items: [
     { href: '/admin/question-reports', title: 'Báo lỗi câu hỏi', icon: Flag, description: 'Kiểm tra câu hỏi và gửi phản hồi đến học sinh báo lỗi.' },
     { href: '/admin/notifications', title: 'Thông báo', icon: BellRing, description: 'Gửi thông báo cho học sinh và quản lý lịch sử gửi.' },
+    { href: '/admin/payments', title: 'Thanh toán', icon: ReceiptText, description: 'Đối chiếu chuyển khoản, kích hoạt gói và phản hồi yêu cầu mua hàng.' },
     { href: '/admin/gift-codes', title: 'Mã quà tặng', icon: Gift, description: 'Phát hành và quản lý mã FlyTiee, mã kích hoạt FlyMax.' },
   ] },
 ];

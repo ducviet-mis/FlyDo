@@ -1,181 +1,68 @@
 'use client';
-
-import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Clipboard, Landmark, QrCode, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { useEffect,useRef,useState } from 'react';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
-import { useStreak } from '@/features/streak/hooks/use-streak';
-import { calculateSubscriptionDiscount, clampReferralDiscount, createTransferCode, formatCurrency, getStreakDiscountPercent, isReferralDiscountEligible } from '../utils';
-import type { PaidPlan, PaymentSettings } from '../types';
+import { getSupabaseClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter } from '@/components/ui/dialog';
+import { preparePaymentOrder,paymentErrorMessage } from '../payments/api';
+import { PaymentOrderContent } from '../payments/order-detail-dialog';
+import { PaymentStatusBadge } from '../payments/payment-status';
+import { CustomerPaymentActions } from '../payments/customer-payment-actions';
+import type { PaymentDetail } from '../payments/types';
+import type { PaidPlan } from '../types';
+import { usePaymentDialogFocus } from '../payments/use-payment-dialog-focus';
 
-interface PaymentDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  plan: PaidPlan | null;
+interface PaymentDialogProps {open:boolean;onOpenChange:(open:boolean)=>void;plan:PaidPlan|null}
+export function PaymentDialog({open,onOpenChange,plan}:PaymentDialogProps) {
+  const user=useAuthStore(s=>s.user);
+  return <Dialog open={open} onOpenChange={onOpenChange}>{open&&plan&&user&&<Checkout key={`${user.id}:${plan.code}`} plan={plan} onClose={()=>onOpenChange(false)}/>}
+    {open&&(!user||!plan)&&<DialogContent><DialogHeader><DialogTitle>Thanh toán gói</DialogTitle><DialogDescription>Vui lòng đăng nhập và chọn gói để tiếp tục.</DialogDescription></DialogHeader><Button variant="outline" onClick={()=>onOpenChange(false)}>Đóng</Button></DialogContent>}
+  </Dialog>;
 }
-
-const EMPTY_SETTINGS: PaymentSettings = {
-  bankName: 'Chưa cấu hình',
-  accountNumber: 'Chưa cấu hình',
-  accountHolder: 'Chưa cấu hình',
-  qrImageUrl: '',
-};
-
-export function PaymentDialog({ open, onOpenChange, plan }: PaymentDialogProps) {
-  const user = useAuthStore((state) => state.user);
-  const { discountExpiresAt } = useStreak();
-  const [settings, setSettings] = useState<PaymentSettings>(EMPTY_SETTINGS);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [confirmedDemo, setConfirmedDemo] = useState(false);
-  const transferCode = useMemo(() => createTransferCode(user?.id), [user?.id]);
-  const discountPercent = plan && isReferralDiscountEligible(plan.code)
-    ? Math.max(clampReferralDiscount(user?.referralDiscountPercent), getStreakDiscountPercent(plan.code, discountExpiresAt))
-    : 0;
-  const discountAmount = plan ? calculateSubscriptionDiscount(plan.price, discountPercent) : 0;
-  const amountDue = plan ? plan.price - discountAmount : 0;
-
-  useEffect(() => {
-    if (!open) return;
-    setConfirmedDemo(false);
-
-    const loadSettings = async () => {
-      const supabase = getSupabaseClient();
-      const { data } = await supabase
-        .from('payment_settings')
-        .select('bank_name, account_number, account_holder, qr_image_url')
-        .eq('id', 1)
-        .maybeSingle();
-
-      if (data) {
-        setSettings({
-          bankName: data.bank_name || EMPTY_SETTINGS.bankName,
-          accountNumber: data.account_number || EMPTY_SETTINGS.accountNumber,
-          accountHolder: data.account_holder || EMPTY_SETTINGS.accountHolder,
-          qrImageUrl: data.qr_image_url || '',
-        });
+function Checkout({plan,onClose}:{plan:PaidPlan;onClose:()=>void}) {
+  const focus=usePaymentDialogFocus();
+  const user=useAuthStore(s=>s.user)!;const refreshUser=useAuthStore(s=>s.refreshUser);
+  const [name,setName]=useState(user.name??'');const [phone,setPhone]=useState(user.phone??'');
+  const [detail,setDetail]=useState<PaymentDetail|null>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+  const requestId=useRef<string|null>(null);const lock=useRef(false);const mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+  const prepare=async()=>{
+    if(lock.current)return;
+    const uid=user.id;const normalizedName=name.trim().replace(/\s+/g,' ');const normalizedPhone=phone.replace(/[ -]/g,'');
+    if(/[\u0000-\u001f\u007f]/.test(name)||normalizedName.length<2||normalizedName.length>80||!/^\+?\d{8,15}$/.test(normalizedPhone)){setError('Cần họ tên 2–80 ký tự và số điện thoại gồm 8–15 chữ số.');return;}
+    lock.current=true;setBusy(true);setError('');
+    try{
+      if(normalizedName!==user.name||normalizedPhone!==user.phone){
+        const {error:saveError}=await getSupabaseClient().from('profiles').update({name:normalizedName,phone:normalizedPhone}).eq('id',uid);
+        if(saveError)throw Error('profile-save');
+        if(!mounted.current||useAuthStore.getState().user?.id!==uid)return;
+        await refreshUser();
       }
-    };
-
-    void loadSettings();
-  }, [open]);
-
-  const copyText = async (label: string, value: string) => {
-    if (!value || value === 'Chưa cấu hình') return;
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(label);
-      window.setTimeout(() => setCopied(null), 1800);
-    } catch {
-      setCopied(null);
-    }
+      if(!mounted.current||useAuthStore.getState().user?.id!==uid)return;
+      requestId.current??=crypto.randomUUID();
+      const quote=await preparePaymentOrder(plan.code,requestId.current);
+      if(mounted.current&&useAuthStore.getState().user?.id===uid)setDetail(quote);
+    }catch(error){if(mounted.current&&useAuthStore.getState().user?.id===uid)setError(error instanceof Error&&error.message==='profile-save'?'Chưa lưu được họ tên/SĐT. Chưa có đơn mới; hãy kiểm tra kết nối rồi thử lại.':paymentErrorMessage(error));}
+    finally{if(mounted.current){lock.current=false;setBusy(false);}}
   };
-
-  if (!plan) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 motion-reduce:animate-none">
-        <DialogHeader className="border-b border-border py-5 pl-5 pr-14 sm:pl-7">
-          <DialogTitle className="text-xl font-bold">Thanh toán {plan.name}</DialogTitle>
-          <DialogDescription>
-            Giao diện thanh toán chuyển khoản đang ở chế độ demo. FlyDo chưa tự động trừ tiền hoặc kích hoạt gói.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="mx-5 rounded-xl border border-primary/20 bg-primary-soft/50 p-4 sm:mx-7">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm text-muted-foreground">Gói đã chọn</p>
-              <p className="mt-1 font-bold text-foreground">{plan.name} · {plan.billingLabel}</p>
-            </div>
-            <div className="shrink-0">
-              <p className="text-xs text-muted-foreground">Số tiền thanh toán</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-primary">{formatCurrency(amountDue)}</p>
-              {discountPercent > 0 && <p className="mt-0.5 text-xs font-semibold text-success">Đã giảm {discountPercent}%</p>}
-            </div>
-          </div>
-          {discountPercent > 0 && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-sm">
-              <span className="text-muted-foreground">Ưu đãi {discountPercent === 50 ? 'streak' : 'giới thiệu'} ({discountPercent}%)</span>
-              <span className="font-semibold tabular-nums text-success">−{formatCurrency(discountAmount)}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="grid items-start gap-4 px-5 sm:px-7 sm:grid-cols-[minmax(0,1fr)_200px]">
-          <div className="min-w-0 space-y-3">
-            <PaymentRow icon={Landmark} label="Ngân hàng" value={settings.bankName} />
-            <PaymentRow icon={Clipboard} label="Số tài khoản" value={settings.accountNumber} onCopy={() => copyText('account', settings.accountNumber)} copied={copied === 'account'} />
-            <PaymentRow icon={ShieldCheck} label="Chủ tài khoản" value={settings.accountHolder} />
-            <PaymentRow icon={Clipboard} label="Nội dung chuyển khoản" value={transferCode} onCopy={() => copyText('content', transferCode)} copied={copied === 'content'} />
-          </div>
-          <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-xl border border-dashed border-primary/35 bg-primary-soft/50 p-4 sm:min-h-[200px]">
-            {settings.qrImageUrl ? (
-              <img src={settings.qrImageUrl} alt="Mã QR thanh toán FlyDo" width={200} height={200} className="aspect-square w-full max-w-[200px] rounded-lg object-contain" />
-            ) : (
-              <div className="text-center">
-                <QrCode aria-hidden="true" className="mx-auto h-12 w-12 text-primary" />
-                <p className="mt-3 font-bold text-foreground">QR thanh toán</p>
-                <p className="mt-1 text-sm text-muted-foreground">Chưa cấu hình ảnh QR</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mx-5 rounded-xl border border-warning/25 bg-warning-soft p-4 text-sm text-warning sm:mx-7">
-          Không chuyển khoản khi thông tin ngân hàng còn hiển thị “Chưa cấu hình”. Đây chỉ là bản xem trước giao diện thanh toán.
-        </div>
-
-        {confirmedDemo && (
-          <p role="status" className="mx-5 flex items-start gap-2 rounded-xl bg-success-soft px-4 py-3 text-sm font-medium text-success sm:mx-7">
-            <CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-            Đã hoàn tất thao tác demo. Chưa có giao dịch hoặc gói tài khoản nào được tạo.
-          </p>
-        )}
-
-        <DialogFooter className="gap-2 border-t border-border px-5 py-4 sm:space-x-0 sm:px-7">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Đóng</Button>
-          <Button type="button" onClick={() => setConfirmedDemo(true)} className="h-auto min-h-11 w-full whitespace-normal py-3 sm:w-auto">Xác nhận chuyển khoản (demo)</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function PaymentRow({
-  icon: Icon,
-  label,
-  value,
-  onCopy,
-  copied,
-}: {
-  icon: typeof Landmark;
-  label: string;
-  value: string;
-  onCopy?: () => void;
-  copied?: boolean;
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-surface p-3">
-      <Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-primary" />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-0.5 break-words font-semibold text-foreground [overflow-wrap:anywhere]">{value}</p>
-      </div>
-      {onCopy && value !== 'Chưa cấu hình' && (
-        <button type="button" onClick={onCopy} className="flex min-h-11 shrink-0 items-center rounded-md px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none" aria-label={`Sao chép ${label.toLowerCase()}`}>
-          {copied ? 'Đã chép' : 'Sao chép'}
-        </button>
-      )}
+  return <DialogContent {...focus} className="max-w-2xl p-0 motion-reduce:animate-none">
+    <DialogHeader className="border-b px-5 py-5 pr-14 sm:px-6 sm:pr-14"><DialogTitle className="text-xl">{detail?'Đơn chuyển khoản':`Thanh toán ${plan.name} · ${plan.billingLabel}`}</DialogTitle><DialogDescription>{detail?'Thông tin và số tiền đã được chốt cho đơn này.':'Kiểm tra thông tin liên hệ rồi tạo đơn để nhận số tiền và hướng dẫn chuyển khoản chính thức.'}</DialogDescription>{detail&&<div className="pt-2"><PaymentStatusBadge order={detail.order}/></div>}</DialogHeader>
+    <div className="space-y-4 px-5 sm:px-6">
+      {error&&<p role="alert" className="rounded-xl bg-destructive-soft p-3 text-sm text-destructive">{error}</p>}
+      {!detail?<form id="payment-prepare" onSubmit={e=>{e.preventDefault();void prepare();}} className="space-y-4">
+        <div className="rounded-xl border p-4 text-sm"><p className="font-semibold">{plan.name} · {plan.billingLabel}</p><p className="mt-1 text-muted-foreground">Giá và ưu đãi chính thức được máy chủ chốt khi tạo đơn. Nếu đang có đơn chưa kết thúc, bạn sẽ tiếp tục đơn đó.</p></div>
+        <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="payment-name">Họ và tên trên tài khoản</Label><Input id="payment-name" autoComplete="name" value={name} onChange={e=>setName(e.target.value)} maxLength={80} disabled={busy} className="min-h-11"/></div><div className="space-y-2"><Label htmlFor="payment-phone">Số điện thoại liên hệ</Label><Input id="payment-phone" type="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} maxLength={30} disabled={busy} className="min-h-11"/></div></div>
+        <p className="break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">Tài khoản: {user.email}</p><p className="text-xs leading-relaxed text-muted-foreground">Tên và SĐT được lưu vào hồ sơ để tạo nội dung chuyển khoản. SĐT là thông tin liên hệ, chưa xác minh bằng OTP.</p>
+      </form>:<>
+        {detail.order.plan_code!==plan.code&&<p className="rounded-xl bg-warning-soft p-3 text-sm text-warning">Bạn đang có đơn {detail.order.plan_snapshot?.name??detail.order.plan_code} chưa kết thúc. Hãy xử lý đơn này trước khi đổi gói; số tiền bên dưới thuộc đơn đang có.</p>}
+        <PaymentOrderContent detail={detail}/>
+      </>}
     </div>
-  );
+    <DialogFooter className="gap-3 border-t px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-col sm:space-x-0 sm:px-6">
+      {detail?<CustomerPaymentActions key={detail.order.id} detail={detail} onChange={setDetail}/>:<Button type="submit" form="payment-prepare" disabled={busy} className="min-h-11 w-full">Tạo đơn chuyển khoản</Button>}
+      <Button type="button" variant="outline" onClick={onClose} className="min-h-11">Đóng</Button>
+    </DialogFooter>
+  </DialogContent>;
 }

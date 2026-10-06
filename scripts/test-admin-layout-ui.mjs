@@ -150,7 +150,7 @@ await test('admin navigation retains every destination, groups learning/operatio
   await mount('practice');
   const nav = document.querySelector('nav[aria-label="Điều hướng quản trị"]');
   assert.ok(nav, 'ADMIN must have its own named navigation');
-  assert.deepEqual([...nav.querySelectorAll('a')].map(node => node.getAttribute('href')), ['/admin/practice', '/admin/theory', '/admin/mock-exams', '/admin/import', '/admin/question-reports', '/admin/notifications', '/admin/gift-codes']);
+  assert.deepEqual([...nav.querySelectorAll('a')].map(node => node.getAttribute('href')), ['/admin/practice', '/admin/theory', '/admin/mock-exams', '/admin/import', '/admin/question-reports', '/admin/notifications', '/admin/payments', '/admin/gift-codes']);
   assert.equal(nav.querySelectorAll('[aria-current="page"]').length, 1);
   assert.equal(nav.querySelector('[aria-current="page"]').getAttribute('href'), '/admin/practice');
   assert.ok(nav.textContent.includes('Nội dung học tập') && nav.textContent.includes('Vận hành'));
@@ -158,7 +158,7 @@ await test('admin navigation retains every destination, groups learning/operatio
   assert.equal(document.querySelector('h1').textContent, 'Tự luyện');
   const mobile = document.querySelector('select[aria-label="Chọn mục quản trị"]');
   assert.ok(mobile, 'Mobile needs a visible selector, not an overflowing strip');
-  assert.equal(mobile.options.length, 7);
+  assert.equal(mobile.options.length, 8);
   await React.act(async () => { mobile.value = '/admin/theory'; mobile.dispatchEvent(new Event('change', { bubbles: true })); });
   assert.equal(routes.at(-1), '/admin/theory');
 });

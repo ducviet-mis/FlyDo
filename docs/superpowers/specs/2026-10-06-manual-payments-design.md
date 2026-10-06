@@ -1,6 +1,6 @@
 # FlyDo — chuyển khoản, ADMIN kích hoạt gói và lịch sử thanh toán
 
-Ngày: 06/10/2026. Trạng thái: bản thiết kế để người dùng duyệt; chưa triển khai, chưa chạy SQL, chưa đẩy web.
+Ngày: 06/10/2026. Trạng thái: người dùng đã duyệt thiết kế và kế hoạch; đã triển khai tại máy, đang kiểm thử cuối; chưa chạy SQL trên dữ liệu thật và chưa đẩy web.
 
 ## 1. Mục tiêu đã thống nhất
 
@@ -131,7 +131,7 @@ Mở rộng bảng `payment_orders`, không tạo bảng đơn mua trùng chức
 - `confirmed_at`, `reviewed_at`, `reviewed_by`, `subscription_id`, thời hạn kết quả kích hoạt.
 - Giữ `status`, các ID chủ đơn/gói và trường ghi chú đã có.
 
-Thêm `payment_order_events` lưu các mốc xác nhận, phản hồi, duyệt, từ chối, hủy theo đơn. Sự kiện do máy chủ ghi; khách không được tự ghi/chỉnh/xóa. Phản hồi tối đa 1.000 ký tự, văn bản thuần; ADMIN riêng được xem người xử lý, khách chỉ nhận phần được phép hiển thị.
+Thêm `payment_order_events` lưu các mốc xác nhận, phản hồi, duyệt, từ chối, hủy theo đơn. Sự kiện do máy chủ ghi; khách không được tự ghi/chỉnh/xóa. Phản hồi tối đa 1.000 ký tự, văn bản thuần; ADMIN riêng được xem người xử lý, khách chỉ nhận phần được phép hiển thị. Bảng riêng tư `payment_order_requests` gắn các request UUID khi tiếp tục đơn vào đúng đơn đó; retry sau khi đơn kết thúc cũng trả kết quả cũ, không tạo nháp mới.
 
 Các RPC chuyên biệt:
 
@@ -196,4 +196,4 @@ Chạy TypeScript, lint phần sửa, bộ test hồi quy và production build. 
 - Không có đường API cho khách tự sửa đơn/quyền gói hoặc đọc dữ liệu người khác.
 - Lỗi mạng, thay đổi tài khoản, SQL chưa cài và dữ liệu cũ không làm hỏng chức năng học đang chạy.
 
-Người dùng đã duyệt luồng trong hội thoại và yêu cầu thêm lịch sử thanh toán. Bản thiết kế này cần được duyệt trước khi viết kế hoạch triển khai; kế hoạch cần được duyệt và chọn cách thực hiện trước khi sửa code sản phẩm.
+Người dùng đã duyệt bản thiết kế và kế hoạch bằng “ok”, “Nhất trí, thực hiện luôn cho tôi đi” và “OK”, đồng thời chọn thực hiện trực tiếp trong cuộc trò chuyện này. Đã thực hiện tại máy. Bản web vẫn chờ người dùng chạy SQL và kiểm tra cấu hình ngân hàng trước khi đẩy.
