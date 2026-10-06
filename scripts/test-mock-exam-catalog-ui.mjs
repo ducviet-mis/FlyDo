@@ -31,6 +31,7 @@ const exams = [
   { id: 'two', title: 'ĐỀ GIỮA HỌC KÌ 1 - SỐ 02', duration: 75, grade: 8, category: 'midterm_1' },
   { id: 'three', title: 'ĐỀ GIỮA HỌC KÌ 1 - SỐ 01', duration: 90, grade: 8, category: 'midterm_1' },
   { id: 'topic-exam', title: 'ĐỀ CHUYÊN ĐỀ SỐ 01', duration: 60, grade: 8, category: 'topic', topic_id: 'poly' },
+  { id: 'draft', title: 'BẢN NHÁP CHƯA CÔNG BỐ', duration: 60, grade: 8, category: 'midterm_1', scoring_mode: 'sectioned', scoring_ready: false },
 ];
 const attempt = (id, exam_id, score, days) => ({ id, exam_id, score, correct_count: score * 4, total_questions: 40, duration_used: 1501, created_at: new Date(Date.now() - days * 86400000).toISOString(), user_id: user.id });
 const attempts = [attempt('latest', 'one', 8.5, 1), attempt('best', 'one', 9, 2), attempt('older', 'one', 7.5, 3), attempt('other', 'three', 5, 4)];
@@ -94,6 +95,7 @@ await render();
 assert.equal(document.querySelector('h1').textContent, 'Thi thử lớp 8');
 assert.equal(document.querySelector('h2').textContent, 'Giữa HK1');
 assert.equal(cards().length, 3);
+assert.ok(!document.body.textContent.includes('BẢN NHÁP CHƯA CÔNG BỐ'), 'Drafts must never appear as playable student exams');
 assert.equal(queries.filter(item => item.table === 'mock_exam_attempts').length, 1);
 assert.ok(queries.find(item => item.table === 'mock_exam_attempts').filters.some(([key, value]) => key === 'user_id' && value === user.id));
 assert.equal(document.querySelector('a[href="/personal-exams?source=mock-exams"]').textContent, 'Tạo đề cá nhân');

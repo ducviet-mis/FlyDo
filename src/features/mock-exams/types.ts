@@ -3,6 +3,8 @@ export interface MockExamSummary {
   title: string;
   duration: number;
   topic_id?: string | null;
+  scoring_mode?: 'legacy_equal' | 'sectioned';
+  scoring_ready?: boolean;
 }
 
 export interface MockExamAttempt {

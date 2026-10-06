@@ -86,7 +86,9 @@ function MockExamsContent() {
         supabase.from('mock_exam_topics').select('id, name, grade').eq('grade', parseInt(grade)).order('sort_order').order('name'),
       ]);
 
-      const examsData = examsResult.data || [];
+      // Publication is also rechecked on the server when a new session starts.
+      // Missing mode is a legacy exam, not an unpublished new draft.
+      const examsData = (examsResult.data || []).filter((exam: MockExamSummary) => exam.scoring_mode !== 'sectioned' || exam.scoring_ready === true);
       setExams(examsData);
       setTopics((topicsResult.data || []) as MockExamTopic[]);
       if (examsResult.error) console.error('Không thể tải đề thi thử:', examsResult.error);

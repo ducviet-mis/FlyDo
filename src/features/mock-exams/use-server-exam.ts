@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { examRpc } from './exam-rpc';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { formatOptionMath } from '@/features/practice/components/math-renderer';
-import { parseExamQuestions, validExamAnswers, isExamAnswerPresent, normalizeShortAnswer, type ExamQuestion, type ExamAnswer, type ExamAnswers } from './question-model';
+import { parseExamQuestions, validExamAnswers, isExamAnswerPresent, isTrueFalseAnswer, normalizeShortAnswer, type ExamQuestion, type ExamAnswer, type ExamAnswers } from './question-model';
 
 export type { ExamQuestion } from './question-model';
 type Exam = { id: string; title: string; grade: number; duration: number };
@@ -115,8 +115,8 @@ export function useServerExam(examId: string, userId?: string) {
           || !Number.isFinite(Date.parse(session.server_now))) {
           throw new Error('Invalid exam session');
         }
-        const formatted: ExamQuestion[] = publicQuestions.map((q) => q.question_type === 'short_answer'
-          ? q : { ...q, options: q.options.map(formatOptionMath) });
+        const formatted: ExamQuestion[] = publicQuestions.map((q) => q.question_type === 'multiple_choice'
+          ? { ...q, options: q.options.map(formatOptionMath) } : q);
         const serverAnswers = validExamAnswers(formatted, session.answers);
         // A local draft can restore unsent choices, never an extra exam deadline.
         const canRestore = draft?.sessionId === session.session_id && draft.revision === session.revision
@@ -171,9 +171,22 @@ export function useServerExam(examId: string, userId?: string) {
     if (!question) return;
     const clearShort = question.question_type === 'short_answer' && typeof answer === 'string'
       && Array.from(answer).length <= 100 && !normalizeShortAnswer(answer);
-    if (!clearShort && !isExamAnswerPresent(question, answer)) return;
+    const clearTrueFalse = question.question_type === 'true_false' && isTrueFalseAnswer(answer)
+      && answer.every((choice) => choice === null);
+    if (!clearShort && !clearTrueFalse && !isExamAnswerPresent(question, answer)) return;
     ctx.answers = { ...ctx.answers };
-    if (clearShort) delete ctx.answers[id]; else ctx.answers[id] = answer;
+    if (clearShort || clearTrueFalse) delete ctx.answers[id];
+    else ctx.answers[id] = isTrueFalseAnswer(answer) ? [...answer] : answer;
+    setAnswers(ctx.answers);
+    void save();
+  }, [active, remainingSeconds, questions, save]);
+
+  const clearAnswer = useCallback((id: string) => {
+    const ctx = context.current;
+    if (!ctx || !active(ctx) || ctx.submitting || ctx.blocked || remainingSeconds() <= 0
+      || !questions.some((q) => q.id === id) || !Object.hasOwn(ctx.answers, id)) return;
+    ctx.answers = { ...ctx.answers };
+    delete ctx.answers[id];
     setAnswers(ctx.answers);
     void save();
   }, [active, remainingSeconds, questions, save]);
@@ -206,6 +219,6 @@ export function useServerExam(examId: string, userId?: string) {
     }
   }, [active]);
   return { exam, questions, answers, currentIndex, setCurrentIndex, deadlineAt, loadError, saveError,
-    saving, blocked, isSubmitting, attemptId, chooseAnswer, submit, remainingSeconds, retrySave: save,
+    saving, blocked, isSubmitting, attemptId, chooseAnswer, clearAnswer, submit, remainingSeconds, retrySave: save,
     retryLoad: () => setReload((value) => value + 1), ready: !!exam && !!deadlineAt };
 }

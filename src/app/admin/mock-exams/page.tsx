@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { Card, CardContent } from '@/components/ui/card';
 import { AdminCreatePanel } from '@/components/admin/create-panel';
@@ -13,6 +13,8 @@ import { Trash2, Clock, CalendarDays, FileText, FolderTree, AlertCircle, Pencil,
 import { Badge } from '@/components/ui/badge';
 import { MOCK_EXAM_CATEGORIES, type MockExamCategory } from '@/features/mock-exams/exam-categories';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { MockExamScoringPanel } from '@/components/admin/MockExamScoringPanel';
+import { DEFAULT_SECTION_POINTS, formatPoints, parsePointInput, pointUnits, QUESTION_TYPE_LABELS, SECTION_TYPES, type SectionPoints } from '@/features/mock-exams/scoring';
 
 interface MockExamTopic { id: string; name: string; grade: number; }
 interface ExamChapterGroup { id: string; title: string; exams: any[]; topic?: MockExamTopic; }
@@ -49,6 +51,12 @@ export default function MockExamsAdminPage() {
   const [editDuration, setEditDuration] = useState('45');
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingTopicId, setDeletingTopicId] = useState<string | null>(null);
+  const [scoringExamId, setScoringExamId] = useState<string | null>(null);
+  const [createSections, setCreateSections] = useState<Record<keyof SectionPoints, string>>({ multiple_choice: String(DEFAULT_SECTION_POINTS.multiple_choice), true_false: String(DEFAULT_SECTION_POINTS.true_false), short_answer: String(DEFAULT_SECTION_POINTS.short_answer) });
+  const [createPointErrors, setCreatePointErrors] = useState<Partial<Record<keyof SectionPoints, string>>>({});
+  const createErrorSummary = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { if (Object.keys(createPointErrors).length) createErrorSummary.current?.focus(); }, [createPointErrors]);
 
   const topicsForGrade = useMemo(() => topics.filter((topic) => topic.grade === parseInt(grade)), [topics, grade]);
   const examGroups = useMemo(() => MOCK_EXAM_CATEGORIES.map((item) => {
@@ -93,6 +101,15 @@ export default function MockExamsAdminPage() {
   useEffect(() => { setTopicId(''); setNewTopicName(''); }, [grade, category]);
 
   const handleAddExam = async () => {
+    const sectionPoints = {} as SectionPoints;
+    const pointErrors: Partial<Record<keyof SectionPoints, string>> = {};
+    for (const type of SECTION_TYPES) {
+      const value = parsePointInput(createSections[type]);
+      if (value === null) pointErrors[type] = `${QUESTION_TYPE_LABELS[type]}: nhập số từ 0 đến 10, tối đa 4 chữ số thập phân.`;
+      else sectionPoints[type] = value;
+    }
+    setCreatePointErrors(pointErrors);
+    if (Object.keys(pointErrors).length) return;
     if (!title.trim() || !duration) return alert('Vui lòng điền đầy đủ thông tin bắt buộc.');
     if (category === 'topic' && !topicId && !newTopicName.trim()) return alert('Hãy chọn hoặc tạo chuyên đề cho đề này.');
     setSaving(true);
@@ -112,11 +129,12 @@ export default function MockExamsAdminPage() {
       }
     }
 
-    const { error } = await supabase.from('mock_exams').insert({ code: createInternalExamCode(), grade: parseInt(grade), title: title.trim(), duration: parseInt(duration), category, topic_id: resolvedTopicId });
+    const { error } = await supabase.from('mock_exams').insert({ code: createInternalExamCode(), grade: parseInt(grade), title: title.trim(), duration: parseInt(duration), category, topic_id: resolvedTopicId, scoring_mode: 'sectioned', section_points: sectionPoints, scoring_ready: false, scoring_revision: 0 });
     if (error) alert('Không thể tạo đề: ' + error.message);
     else {
-      alert('Đã tạo đề. Vào mục "Nhập đề JSON" trong ADMIN để dán JSON và thêm câu hỏi cho đề này.');
+      alert(`Đã tạo đề nháp: ${SECTION_TYPES.map(type => `${QUESTION_TYPE_LABELS[type]} ${formatPoints(sectionPoints[type])} điểm`).join(', ')}. Nhập câu ở mục "Nhập đề JSON", chỉnh "Điểm & cấu trúc" rồi đưa đề vào sử dụng.`);
       setTitle(''); setTopicId(''); setNewTopicName(''); setListGrade(grade);
+      setCreateSections({ multiple_choice: String(DEFAULT_SECTION_POINTS.multiple_choice), true_false: String(DEFAULT_SECTION_POINTS.true_false), short_answer: String(DEFAULT_SECTION_POINTS.short_answer) });
       setOpenCategories((current) => current.includes(category) ? current : [...current, category]);
       await fetchData();
     }
@@ -190,15 +208,24 @@ export default function MockExamsAdminPage() {
       {!databaseReady && <Card className="border-warning bg-warning-soft"><CardContent className="flex gap-4 p-6"><AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-warning" /><div><h2 className="font-bold text-warning">Chưa khởi tạo cấu trúc Thi thử</h2><p className="mt-1 text-sm text-warning">Hãy chạy tệp SQL đi kèm bản cập nhật này trong Supabase SQL Editor, sau đó tải lại trang.</p></div></CardContent></Card>}
 
       {databaseReady && <>
-        <AdminCreatePanel title="Tạo đề thi" description="Chọn lớp, danh mục và chuyên đề. Thêm câu hỏi ở mục Nhập JSON sau khi tạo đề." actionLabel="Tạo đề">
+        <AdminCreatePanel title="Tạo đề thi" description="Nhập tổng điểm cho ba phần để tạo đề nháp. Thêm câu ở mục Nhập JSON và đưa đề vào sử dụng trong Điểm & cấu trúc." actionLabel="Tạo đề">
           <CardContent className="p-5 sm:p-6"><div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
             <div className="space-y-2 xl:col-span-2"><Label htmlFor="exam-create-grade">Lớp</Label><Select value={grade} onValueChange={setGrade}><SelectTrigger id="exam-create-grade" className="h-11 bg-surface"><SelectValue /></SelectTrigger><SelectContent>{[6, 7, 8, 9].map((value) => <SelectItem key={value} value={String(value)}>Lớp {value}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2 xl:col-span-3"><Label htmlFor="exam-create-category">Danh mục</Label><Select value={category} onValueChange={(value) => setCategory(value as MockExamCategory)}><SelectTrigger id="exam-create-category" className="h-11 bg-surface"><SelectValue /></SelectTrigger><SelectContent>{MOCK_EXAM_CATEGORIES.map((item) => <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2 xl:col-span-5"><Label htmlFor="exam-create-title">Tên đề thi</Label><Input id="exam-create-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="VD: Đề giữa học kì I - Toán 8" className="h-11 bg-surface" /></div>
             {category === 'topic' && <div className="space-y-2 md:col-span-2 xl:col-span-8"><Label htmlFor="exam-create-topic" className="flex items-center gap-2"><FolderTree className="h-4 w-4 text-primary" />Chuyên đề / chương</Label><div className="grid gap-3 sm:grid-cols-2"><Select value={topicId || '__new__'} onValueChange={(value) => { setTopicId(value === '__new__' ? '' : value); if (value !== '__new__') setNewTopicName(''); }}><SelectTrigger id="exam-create-topic" className="h-11 bg-surface"><SelectValue placeholder="Chọn chuyên đề đã có" /></SelectTrigger><SelectContent>{topicsForGrade.map((topic) => <SelectItem key={topic.id} value={topic.id}>{topic.name}</SelectItem>)}<SelectItem value="__new__">＋ Tạo chuyên đề mới</SelectItem></SelectContent></Select>{!topicId && <Input aria-label="Tên chuyên đề mới" value={newTopicName} onChange={(event) => setNewTopicName(event.target.value)} placeholder="VD: Đa thức và các phép toán" className="h-11 bg-surface" />}</div></div>}
             <div className="space-y-2 xl:col-span-2"><Label htmlFor="exam-create-duration">Thời gian (phút)</Label><Input id="exam-create-duration" type="number" min="1" value={duration} onChange={(event) => setDuration(event.target.value)} className="h-11 bg-surface" /></div>
-          </div><Button onClick={handleAddExam} disabled={saving} className="mt-6 h-11 w-full rounded-md bg-primary px-8 font-bold text-primary-foreground md:w-auto">{saving ? 'Đang tạo...' : 'Tạo đề thi'}</Button></CardContent>
+          </div>
+          <fieldset disabled={saving} className="mt-5 space-y-3"><legend className="mb-3 font-semibold text-foreground">Tổng điểm từng phần</legend>
+            {Object.keys(createPointErrors).length > 0 && <div ref={createErrorSummary} tabIndex={-1} role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft p-4 text-sm text-destructive focus:outline-none focus:ring-2 focus:ring-ring"><p className="font-semibold">Kiểm tra điểm trước khi tạo đề</p><ul className="mt-2 list-disc space-y-1 pl-5">{SECTION_TYPES.filter(type => createPointErrors[type]).map(type => <li key={type}><a href={`#exam-create-points-${type}`} className="underline" onClick={event => { event.preventDefault(); document.getElementById(`exam-create-points-${type}`)?.focus(); }}>{createPointErrors[type]}</a></li>)}</ul></div>}
+            <div className="grid min-w-0 gap-4 sm:grid-cols-3">{SECTION_TYPES.map(type => <div key={type} className="min-w-0 space-y-2"><Label htmlFor={`exam-create-points-${type}`}>{QUESTION_TYPE_LABELS[type]} (điểm)</Label><Input id={`exam-create-points-${type}`} value={createSections[type]} disabled={saving} inputMode="decimal" className="h-11 bg-surface text-base tabular-nums" aria-invalid={!!createPointErrors[type]} aria-describedby={createPointErrors[type] ? `exam-create-points-${type}-error` : 'exam-create-points-help'} onChange={event => { setCreatePointErrors({}); setCreateSections(current => ({ ...current, [type]: event.target.value })); }} />{createPointErrors[type] && <p id={`exam-create-points-${type}-error`} className="text-sm text-destructive">{createPointErrors[type]}</p>}</div>)}</div>
+            <p className="text-sm font-semibold text-foreground tabular-nums">Tổng đề: {SECTION_TYPES.some(type => parsePointInput(createSections[type]) === null) ? '—' : formatPoints(SECTION_TYPES.reduce((sum,type) => sum + pointUnits(parsePointInput(createSections[type]))!,0)/10000)} / 10 điểm</p>
+            <p id="exam-create-points-help" className="text-sm text-muted-foreground">Nhận dấu phẩy hoặc dấu chấm, tối đa 4 chữ số thập phân. Có thể tạo nháp khi tổng chưa đủ 10; đề chưa được đưa vào sử dụng.</p>
+          </fieldset>
+          <Button onClick={handleAddExam} disabled={saving} className="mt-6 h-11 w-full rounded-md bg-primary px-8 font-bold text-primary-foreground md:w-auto">{saving ? 'Đang tạo...' : 'Tạo đề thi'}</Button></CardContent>
         </AdminCreatePanel>
+
+        {scoringExamId && <MockExamScoringPanel key={`${user.id}:${scoringExamId}`} examId={scoringExamId} onClose={() => setScoringExamId(null)} onChanged={(updated) => setExams((current) => current.map((exam) => exam.id === updated.id ? updated : exam))} />}
 
         <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
@@ -215,7 +242,7 @@ export default function MockExamsAdminPage() {
                 {group.chapters.map((chapter) => <div key={chapter.id} className="space-y-3">
                   {chapter.title && <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground"><span className="h-4 w-0.5 shrink-0 rounded-full bg-primary" aria-hidden="true" /><span className="break-words">{chapter.title}</span><span className="shrink-0 font-normal text-muted-foreground">({chapter.exams.length} đề)</span></h3>{chapter.topic && chapter.exams.length === 0 && <Button type="button" variant="outline" onClick={() => void handleDeleteTopic(chapter.topic!)} disabled={deletingTopicId !== null} className="min-h-10 border-destructive/30 text-destructive hover:border-destructive hover:bg-destructive-soft hover:text-destructive" aria-label={`Xóa chuyên đề trống ${chapter.title}`}><Trash2 className="h-4 w-4" aria-hidden="true" />{deletingTopicId === chapter.topic.id ? 'Đang xóa...' : 'Xóa chuyên đề trống'}</Button>}</div>}
                   {chapter.exams.length === 0 && <p className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">Chuyên đề này chưa có đề thi.</p>}
-                  <div className="admin-record-list">{chapter.exams.map((exam) => <article key={exam.id} className="admin-record flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 flex-1 space-y-2"><h4 className="break-words font-bold text-foreground">{exam.title}</h4><div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{exam.duration} phút</span>{exam.created_at && <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{formatCreatedDate(exam.created_at)}</span>}</div></div><div className="flex shrink-0 gap-2"><Button variant="outline" size="icon" onClick={() => openEditExam(exam)} className="h-11 w-11 border-border text-muted-foreground hover:border-primary hover:bg-primary-soft hover:text-primary" aria-label={`Sửa đề ${exam.title}`}><Pencil className="h-4 w-4" /></Button><Button variant="destructive" size="icon" onClick={() => handleDelete(exam.id)} className="h-11 w-11 bg-destructive-soft text-destructive hover:bg-destructive-soft" aria-label={`Xóa đề ${exam.title}`}><Trash2 className="h-4 w-4" /></Button></div></article>)}</div>
+                  <div className="admin-record-list">{chapter.exams.map((exam) => <article key={exam.id} className="admin-record flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 flex-1 space-y-2"><h4 className="break-words font-bold text-foreground">{exam.title}</h4><div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{exam.duration} phút</span>{exam.created_at && <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{formatCreatedDate(exam.created_at)}</span>}<Badge variant="outline">{exam.scoring_mode === 'sectioned' ? exam.scoring_ready ? 'Đang sử dụng' : 'Bản nháp' : 'Chế độ cũ'}</Badge></div></div><div className="flex flex-wrap gap-2"><Button type="button" variant="outline" className="min-h-11" aria-expanded={scoringExamId === exam.id} onClick={() => setScoringExamId(exam.id)}>Điểm & cấu trúc</Button><Button variant="outline" size="icon" onClick={() => openEditExam(exam)} className="h-11 w-11 border-border text-muted-foreground hover:border-primary hover:bg-primary-soft hover:text-primary" aria-label={`Sửa đề ${exam.title}`}><Pencil className="h-4 w-4" /></Button><Button variant="destructive" size="icon" onClick={() => handleDelete(exam.id)} className="h-11 w-11 bg-destructive-soft text-destructive hover:bg-destructive-soft" aria-label={`Xóa đề ${exam.title}`}><Trash2 className="h-4 w-4" /></Button></div></article>)}</div>
                 </div>)}
               </div>
             </details>

@@ -1,0 +1,36 @@
+{
+  "questions": [
+    { "question_type": "multiple_choice", "content": "$2 + 3$ bằng bao nhiêu?", "options": ["3", "4", "5", "6"], "correct_answer": 2, "solution": "$2 + 3 = 5$." },
+    { "question_type": "multiple_choice", "content": "Hệ số của đơn thức $-3x^2y$ là:", "options": ["3", "-3", "2", "-2"], "correct_answer": 1, "solution": "Hệ số là số nhân với phần biến, tức $-3$." },
+    { "question_type": "multiple_choice", "content": "Bậc của đơn thức $4x^2y^3$ là:", "options": ["2", "3", "4", "5"], "correct_answer": 3, "solution": "Bậc là tổng các số mũ: $2 + 3 = 5$." },
+    { "question_type": "multiple_choice", "content": "Thu gọn $2x + 3x$ được:", "options": ["$5x$", "$5x^2$", "$6x$", "$x$"], "correct_answer": 0, "solution": "$2x + 3x = (2 + 3)x = 5x$." },
+    { "question_type": "multiple_choice", "content": "Khai triển $(x + 1)^2$ được:", "options": ["$x^2 + 1$", "$x^2 + 2x + 1$", "$x^2 + x + 1$", "$2x + 1$"], "correct_answer": 1, "solution": "Áp dụng $(a + b)^2 = a^2 + 2ab + b^2$." },
+    { "question_type": "multiple_choice", "content": "Tổng bốn góc trong của một tứ giác bằng:", "options": ["$180^\\circ$", "$270^\\circ$", "$360^\\circ$", "$540^\\circ$"], "correct_answer": 2, "solution": "Tổng các góc trong của một tứ giác bằng $360^\\circ$." },
+    { "question_type": "multiple_choice", "content": "Hình chữ nhật có chiều dài $8$ cm, chiều rộng $3$ cm. Diện tích bằng:", "options": ["$11$ cm²", "$22$ cm²", "$24$ cm²", "$48$ cm²"], "correct_answer": 2, "solution": "Diện tích bằng $8 \\cdot 3 = 24$ cm²." },
+    { "question_type": "multiple_choice", "content": "Nghiệm của phương trình $2x = 10$ là:", "options": ["$x = 2$", "$x = 5$", "$x = 8$", "$x = 20$"], "correct_answer": 1, "solution": "Chia hai vế cho $2$ được $x = 5$." },
+    {
+      "question_type": "true_false",
+      "content": "Cho hình chữ nhật $ABCD$. Xét tính đúng/sai của từng khẳng định.",
+      "statements": [
+        { "content": "$AB = CD$.", "correct_answer": true, "solution": "Hai cạnh đối của hình chữ nhật bằng nhau." },
+        { "content": "$AC = BD$.", "correct_answer": true, "solution": "Hai đường chéo của hình chữ nhật bằng nhau." },
+        { "content": "Mọi hình chữ nhật đều có $AB = BC$.", "correct_answer": false, "solution": "Hình chữ nhật có thể có hai cạnh kề dài khác nhau." },
+        { "content": "Hình chữ nhật có bốn góc vuông.", "correct_answer": true, "solution": "Theo định nghĩa hình chữ nhật." }
+      ],
+      "solution": "Đối chiếu từng ý với định nghĩa và tính chất hình chữ nhật."
+    },
+    {
+      "question_type": "true_false",
+      "content": "Xét đa thức $P(x) = x^2 + 2x + 1$.",
+      "statements": [
+        { "content": "$P(x) = (x + 1)^2$.", "correct_answer": true, "solution": "Theo hằng đẳng thức bình phương của một tổng." },
+        { "content": "$P(0) = 0$.", "correct_answer": false, "solution": "$P(0) = 1$." },
+        { "content": "$P(-1) = 0$.", "correct_answer": true, "solution": "$(-1 + 1)^2 = 0$." },
+        { "content": "Bậc của $P(x)$ là $3$.", "correct_answer": false, "solution": "Số mũ lớn nhất là $2$, nên bậc là $2$." }
+      ],
+      "solution": "Có thể dùng dạng $(x + 1)^2$ để kiểm tra các giá trị."
+    },
+    { "question_type": "short_answer", "content": "Giải $x + 7 = 12$. Nhập giá trị của $x$.", "accepted_answers": ["5"], "solution": "$x = 12 - 7 = 5$." },
+    { "question_type": "short_answer", "content": "Một hình vuông có cạnh $6$ cm. Nhập diện tích theo đơn vị cm² (chỉ nhập số).", "accepted_answers": ["36"], "solution": "Diện tích là $6^2 = 36$ cm²." }
+  ]
+}

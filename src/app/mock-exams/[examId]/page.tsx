@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useServerExam } from '@/features/mock-exams/use-server-exam';
 import { ShortAnswerInput } from '@/features/mock-exams/components/short-answer-input';
-import { isExamAnswerPresent } from '@/features/mock-exams/question-model';
+import { isExamAnswerPresent, isExamAnswerComplete, getAnsweredStatementCount } from '@/features/mock-exams/question-model';
+import { TrueFalseQuestion } from '@/components/mock-exams/TrueFalseQuestion';
+import { formatPoints } from '@/features/mock-exams/scoring';
 import { useAuthStore } from '@/features/auth/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
@@ -131,6 +133,12 @@ export default function MockExamRoomPage() {
 
   const currentQuestion = questions[currentIndex];
   const selectedAnswer = currentQuestion ? answers[currentQuestion.id] : null;
+  const answeredCount = questions.filter((q) => isExamAnswerPresent(q, answers[q.id])).length;
+  const completeCount = questions.filter((q) => isExamAnswerComplete(q, answers[q.id])).length;
+  const partialQuestions = questions.filter((q) => q.question_type === 'true_false'
+    && isExamAnswerPresent(q, answers[q.id]) && !isExamAnswerComplete(q, answers[q.id]));
+  const missingStatements = partialQuestions.reduce((total, q) => total + 4 - getAnsweredStatementCount(answers[q.id]), 0);
+  const blankCount = questions.length - answeredCount;
 
   return (
     <div className="w-full flex flex-col">
@@ -159,7 +167,7 @@ export default function MockExamRoomPage() {
                 <SheetTitle className="text-lg font-bold flex justify-between items-center">
                   Danh sách câu
                   <span className="text-sm font-bold text-primary bg-primary-soft px-3 py-1 rounded-full">
-                    Đã làm: {Object.keys(answers).length} / {questions.length}
+                    Đã đủ: {completeCount} / {questions.length}
                   </span>
                 </SheetTitle>
                 <SheetDescription className="hidden">Question list</SheetDescription>
@@ -168,24 +176,27 @@ export default function MockExamRoomPage() {
                 <div className="grid grid-cols-6 gap-2">
                   {questions.map((q, idx) => {
                     const isAnswered = isExamAnswerPresent(q, answers[q.id]);
+                    const isPartial = isAnswered && !isExamAnswerComplete(q, answers[q.id]);
+                    const statementCount = getAnsweredStatementCount(answers[q.id]);
                     const isCurrent = currentIndex === idx;
                     return (
                       <SheetTrigger asChild key={q.id}>
                         <button
                           onClick={() => setCurrentIndex(idx)}
                           aria-current={isCurrent ? 'step' : undefined}
-                          aria-label={`Đi tới câu ${idx + 1}${isAnswered ? ', đã trả lời' : ', chưa trả lời'}`}
+                          aria-label={`Đi tới câu ${idx + 1}${isPartial ? `, đã chọn ${statementCount}/4 ý` : isAnswered ? ', đã trả lời' : ', chưa trả lời'}`}
                           className={cn(
-                            "aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all",
+                            "min-h-11 min-w-11 rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             isCurrent
                               ? "ring-2 ring-primary ring-offset-2"
                               : "hover:bg-muted",
-                            isAnswered
+                            isPartial ? "bg-warning-soft text-warning border border-warning" : isAnswered
                               ? "bg-primary text-primary-foreground shadow-card"
                               : "bg-muted text-muted-foreground border border-border"
                           )}
                         >
                           {idx + 1}
+                          {isPartial && <span className="text-xs font-medium">{statementCount}/4 ý</span>}
                         </button>
                       </SheetTrigger>
                     );
@@ -242,7 +253,10 @@ export default function MockExamRoomPage() {
             {currentQuestion && (
               <div className="study-question bg-card rounded-none md:rounded-xl p-5 md:p-8 shadow-none md:shadow-card border-y md:border border-border">
                 <div className="mb-6 flex items-center justify-between gap-3 border-b border-border pb-4">
-                  <h2 className="text-base font-semibold text-primary">Câu {currentIndex + 1}<span className="ml-1 font-normal text-muted-foreground">/ {questions.length}</span></h2>
+                  <div className="flex min-w-0 flex-wrap items-center gap-2"><h2 className="text-base font-semibold text-primary">Câu {currentIndex + 1}<span className="ml-1 font-normal text-muted-foreground">/ {questions.length}</span></h2>
+                    {typeof currentQuestion.max_points === 'number' && <span className="text-sm tabular-nums text-muted-foreground">Tối đa {formatPoints(currentQuestion.max_points)} điểm</span>}
+                    {currentQuestion.question_type === 'true_false' && <span role="status" className={cn('rounded-md px-2 py-1 text-sm tabular-nums', isExamAnswerComplete(currentQuestion, selectedAnswer) ? 'bg-primary-soft text-primary' : 'bg-warning-soft text-warning')}>{getAnsweredStatementCount(selectedAnswer)}/4 ý đã chọn</span>}
+                  </div>
                   <ReportQuestionButton key={currentQuestion.id} source="mock_exam" questionId={currentQuestion.id} />
                 </div>
                 <div className="prose vivux-prose max-w-none mb-8 text-lg text-foreground">
@@ -251,7 +265,10 @@ export default function MockExamRoomPage() {
 
                 <GeometryDiagram data={currentQuestion.diagram} />
 
-                {currentQuestion.question_type === 'short_answer' ? <ShortAnswerInput
+                {currentQuestion.question_type === 'true_false' ? <TrueFalseQuestion
+                  questionId={currentQuestion.id} statements={currentQuestion.statements} value={selectedAnswer}
+                  disabled={isSubmitting || expired || blocked} onChange={(value) => chooseAnswer(currentQuestion.id, value)}
+                /> : currentQuestion.question_type === 'short_answer' ? <ShortAnswerInput
                   questionId={currentQuestion.id} value={typeof selectedAnswer === 'string' ? selectedAnswer : ''}
                   disabled={isSubmitting || expired || blocked} onChange={(value) => chooseAnswer(currentQuestion.id, value)} /> : <div className="space-y-4">
                   {(currentQuestion.options as string[]).map((opt, idx) => {
@@ -320,17 +337,20 @@ export default function MockExamRoomPage() {
             <div className="p-4 border-b border-border font-bold text-foreground flex justify-between items-center bg-muted/50">
               <span>Danh sách câu</span>
               <span className="text-sm font-bold text-primary bg-primary-soft px-3 py-1 rounded-full">
-                {Object.keys(answers).length} / {questions.length}
+                Đã đủ: {completeCount} / {questions.length}
               </span>
             </div>
             <div className="px-4 pt-4">
-              <div role="progressbar" aria-label="Số câu đã trả lời" aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={Object.keys(answers).length} className="h-1.5 overflow-hidden rounded-full bg-track"><div className="h-full rounded-full bg-primary" style={{ width: `${questions.length ? Object.keys(answers).length / questions.length * 100 : 0}%` }} /></div>
-              <p className="mt-3 text-xs text-muted-foreground">Còn {questions.length - Object.keys(answers).length} câu chưa trả lời</p>
+              <div role="progressbar" aria-label="Số câu đã trả lời đầy đủ" aria-valuemin={0} aria-valuemax={questions.length} aria-valuenow={completeCount} className="h-1.5 overflow-hidden rounded-full bg-track"><div className="h-full rounded-full bg-primary" style={{ width: `${questions.length ? completeCount / questions.length * 100 : 0}%` }} /></div>
+              <p className="mt-3 text-xs text-muted-foreground">Đã chọn: {answeredCount}/{questions.length} câu · {blankCount} câu chưa làm</p>
+              {partialQuestions.length > 0 && <p className="mt-2 text-xs text-warning">{partialQuestions.length} câu đúng/sai còn {missingStatements} ý chưa chọn</p>}
             </div>
             <div className="p-4 max-h-[40vh] md:max-h-[calc(100vh-360px)] overflow-y-auto">
-              <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-5 gap-2">
+              <div className="grid grid-cols-4 xl:grid-cols-5 gap-2">
                 {questions.map((q, idx) => {
                   const isAnswered = isExamAnswerPresent(q, answers[q.id]);
+                  const isPartial = isAnswered && !isExamAnswerComplete(q, answers[q.id]);
+                  const statementCount = getAnsweredStatementCount(answers[q.id]);
                   const isCurrent = currentIndex === idx;
 
                   return (
@@ -338,18 +358,19 @@ export default function MockExamRoomPage() {
                       key={q.id}
                       onClick={() => setCurrentIndex(idx)}
                       aria-current={isCurrent ? 'step' : undefined}
-                      aria-label={`Đi tới câu ${idx + 1}${isAnswered ? ', đã trả lời' : ', chưa trả lời'}`}
+                      aria-label={`Đi tới câu ${idx + 1}${isPartial ? `, đã chọn ${statementCount}/4 ý` : isAnswered ? ', đã trả lời' : ', chưa trả lời'}`}
                       className={cn(
-                        "aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all",
+                        "min-h-11 min-w-11 rounded-xl flex flex-col items-center justify-center text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         isCurrent
                           ? "ring-2 ring-primary ring-offset-2"
                           : "hover:bg-muted",
-                        isAnswered
+                        isPartial ? "bg-warning-soft text-warning border border-warning" : isAnswered
                           ? "bg-primary text-primary-foreground shadow-card"
                           : "bg-muted text-muted-foreground border border-border"
                       )}
                   >
                     {idx + 1}
+                    {isPartial && <span className="text-xs font-medium">{statementCount}/4 ý</span>}
                   </button>
                 );
               })}
@@ -364,12 +385,15 @@ export default function MockExamRoomPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl">Xác nhận nộp bài?</AlertDialogTitle>
             <AlertDialogDescription className="text-base text-muted-foreground">
-              Bạn đã làm {Object.keys(answers).length} / {questions.length} câu. Bạn có chắc chắn muốn nộp bài ngay bây giờ? Thời gian còn lại sẽ không được bảo lưu.
+              Bạn đã chọn đáp án ở {answeredCount} / {questions.length} câu; {completeCount} câu đã trả lời đầy đủ.
+              {blankCount > 0 && <span className="mt-2 block">Còn {blankCount} câu chưa làm.</span>}
+              {partialQuestions.length > 0 && <span className="mt-2 block text-warning">{partialQuestions.length} câu đúng/sai còn {missingStatements} ý chưa chọn.</span>}
+              <span className="mt-2 block">Bạn có chắc chắn muốn nộp bài ngay bây giờ? Thời gian còn lại sẽ không được bảo lưu.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6">
             <AlertDialogCancel className="rounded-md border-border">Tiếp tục làm bài</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmit} className="rounded-md bg-primary hover:bg-primary-hover text-primary-foreground">
+            <AlertDialogAction disabled={isSubmitting} onClick={handleSubmit} className="rounded-md bg-primary hover:bg-primary-hover text-primary-foreground">
               Nộp bài ngay
             </AlertDialogAction>
           </AlertDialogFooter>

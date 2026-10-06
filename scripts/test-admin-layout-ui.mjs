@@ -351,5 +351,41 @@ await test('FlyMax payload stays unchanged and validation feedback remains visib
   assert.equal(document.querySelector('[role="status"]').closest('[hidden]'), null);
 });
 
+await test('sectioned JSON preview shows existing and incoming points, retains manual points and uses a revision', async () => {
+  const originalExam = fixtures.mock_exams[0], originalRpc = db.rpc;
+  fixtures.mock_exams[0] = { ...originalExam, scoring_mode: 'sectioned', scoring_revision: 7 };
+  const statements = [true,true,false,true].map((correct_answer,i) => ({ content: `Ý ${i+1}`, correct_answer }));
+  const incoming = { question_type:'true_false', content:'TF IMPORT', statements, points:4 };
+  const fullExam = { ...fixtures.mock_exams[0], section_points:{ multiple_choice:6,true_false:4,short_answer:0 }, scoring_ready:false };
+  const current = { id:'existing', content:'MC EXISTING', question_type:'multiple_choice', order_index:0, options:['A','B','C','D'], correct_answer:0, max_points:6, points_override:null };
+  const preview = { exam:fullExam, questions:[current, { ...incoming,id:'preview-0',order_index:1,options:[],points_override:4,max_points:4 }], revision:7,errors:[] };
+  let calls=[];
+  db.rpc = (name,payload) => {
+    calls.push({name,payload});
+    if(name==='admin_get_mock_exam_scoring') return Promise.resolve({data:{...preview,questions:[current]},error:null});
+    if(name==='admin_preview_mock_exam_import') return Promise.resolve({data:preview,error:null});
+    if(name==='admin_import_mock_exam_questions') return Promise.resolve({data:null,error:{message:'FLYDO_CONFLICT: đề đã thay đổi'}});
+    throw new Error(`Unexpected RPC ${name}`);
+  };
+  try {
+    writes.length=0; await mount('import'); await select('content-target','Thi thử'); await select('exam-grade','Lớp 8');
+    await select('exam-category','Giữa HK1'); await select('exam-target',fullExam.title);
+    await select('sample-question-type','Đúng / Sai');
+    const text=JSON.stringify([incoming]); await input(document.getElementById('question-json'),text);
+    await click(button('Kiểm tra và xem trước'));
+    assert.match(document.body.textContent,/TF IMPORT/); assert.match(document.body.textContent,/Ý 4/);
+    assert.match(document.body.textContent,/MC EXISTING/); assert.match(document.body.textContent,/Điểm sau khi nhập/);
+    assert.equal(calls.find(c=>c.name==='admin_preview_mock_exam_import').payload.p_expected_revision,7);
+    assert.equal(writes.length,0);
+    window.confirm=()=>true; await click(button('Duyệt và nhập 1 câu'));
+    const imported=calls.find(c=>c.name==='admin_import_mock_exam_questions');
+    assert.equal(imported.payload.p_expected_revision,7); assert.equal(imported.payload.p_questions[0].points,4);
+    assert.equal(document.getElementById('question-json').value,text);
+    assert.match(document.body.textContent,/đề đã thay đổi/);
+    await input(document.getElementById('question-json'),JSON.stringify([{...incoming,content:'Changed JSON'}]));
+    assert.equal(document.querySelector('[data-import-scoring-preview]'),null,'Changed input invalidates the score preview');
+  } finally { fixtures.mock_exams[0]=originalExam; db.rpc=originalRpc; }
+});
+
 await React.act(async () => root.unmount());
 dom.window.close();

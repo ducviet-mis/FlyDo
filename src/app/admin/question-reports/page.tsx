@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { MathRenderer, formatOptionMath } from '@/features/practice/components/math-renderer';
 import { GeometryDiagram } from '@/features/geometry/components/geometry-diagram';
-import { REPORT_REASONS, REPORT_STATUSES, reportError, type QuestionReport, type ReportResponse, type ReportStatus } from '@/features/question-reports/report-model';
+import { REPORT_REASONS, REPORT_STATUSES, reportError, parseQuestionSnapshot, type QuestionReport, type ReportResponse, type ReportStatus } from '@/features/question-reports/report-model';
+import { TrueFalseReview } from '@/components/mock-exams/TrueFalseReview';
+import { formatPoints } from '@/features/mock-exams/scoring';
 
 const PAGE_SIZE = 20;
 const fieldClass = 'min-h-11 rounded-xl border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -90,7 +92,7 @@ function ReportDetail({ initialReport, onClose, onUpdated }: { initialReport: Qu
   const [historyLoading, setHistoryLoading] = useState(true);
   const lock = useRef(false);
   const request = useRef<{ id: string; status: ReportStatus; response: string } | null>(null);
-  const question = report.question_snapshot;
+  const question = parseQuestionSnapshot(report.question_snapshot);
 
   const refreshDetail = useCallback(async () => {
     const client = getSupabaseClient();
@@ -139,11 +141,14 @@ function ReportDetail({ initialReport, onClose, onUpdated }: { initialReport: Qu
       <div className="flex flex-wrap items-center gap-2"><StatusBadge status={report.status} /><span className="text-xs text-muted-foreground">{formatDate(report.created_at)}</span></div>
       <div className="space-y-2 rounded-xl bg-muted p-4 text-sm"><p className="break-words font-semibold">{report.reporter_name} · {report.reporter_email}</p><p>{REPORT_REASONS[report.reason]}</p><p className="whitespace-pre-wrap break-words">{report.details || 'Không có mô tả thêm'}</p>{report.chapter && <p className="text-muted-foreground">Chương: {report.chapter}</p>}</div>
       <section className="min-w-0 space-y-4 rounded-xl border border-border p-4">
+        {question ? <>
         <h3 className="font-semibold">Câu hỏi tại thời điểm báo lỗi</h3><p className="break-all text-xs text-muted-foreground">ID: {report.question_id}{question.difficulty_level ? ` · Level ${question.difficulty_level}` : ''}</p>
         <MathRenderer content={question.content} /><GeometryDiagram data={question.diagram} />
-        {question.question_type === 'short_answer' ? <div className="rounded-lg border border-success/40 bg-success-soft p-4"><h4 className="mb-2 text-sm font-semibold text-success">Đáp án được chấp nhận</h4><ul className="space-y-1 font-mono text-sm text-foreground">{question.accepted_answers.map((answer, index) => <li key={index} className="whitespace-pre-wrap break-words">{answer}</li>)}</ul></div> : <div className="grid gap-2 sm:grid-cols-2">{question.options.map((option, index) => <div key={index} className={`min-w-0 rounded-lg border p-3 text-sm ${index === question.correct_answer ? 'border-success bg-success-soft' : 'border-border'}`}><p className="mb-1 font-semibold">{String.fromCharCode(65 + index)}{index === question.correct_answer ? ' · Đáp án hệ thống' : ''}</p><MathRenderer content={formatOptionMath(option)} /></div>)}</div>}
+        {typeof question.max_points === 'number' && <p className="text-sm tabular-nums text-muted-foreground">Điểm tối đa: {formatPoints(question.max_points)}</p>}
+        {question.question_type === 'true_false' ? <TrueFalseReview statements={question.statements} /> : question.question_type === 'short_answer' ? <div className="rounded-lg border border-success/40 bg-success-soft p-4"><h4 className="mb-2 text-sm font-semibold text-success">Đáp án được chấp nhận</h4><ul className="space-y-1 font-mono text-sm text-foreground">{question.accepted_answers.map((answer, index) => <li key={index} className="whitespace-pre-wrap break-words">{answer}</li>)}</ul></div> : <div className="grid gap-2 sm:grid-cols-2">{question.options.map((option, index) => <div key={index} className={`min-w-0 rounded-lg border p-3 text-sm ${index === question.correct_answer ? 'border-success bg-success-soft' : 'border-border'}`}><p className="mb-1 font-semibold">{String.fromCharCode(65 + index)}{index === question.correct_answer ? ' · Đáp án hệ thống' : ''}</p><MathRenderer content={formatOptionMath(option)} /></div>)}</div>}
         <h4 className="text-sm font-semibold">Lời giải hệ thống</h4>{question.solution ? <MathRenderer content={question.solution} variant="solution" /> : <p className="text-sm text-muted-foreground">Chưa có lời giải.</p>}
         <p className="text-xs text-muted-foreground">Bản lưu này giữ nguyên dù câu hỏi gốc được sửa hoặc xóa. Xử lý báo lỗi không tự thay đổi đáp án hay điểm thi.</p>
+        </> : <p role="alert" className="text-sm text-destructive">Bản lưu câu hỏi không hợp lệ hoặc chưa đủ dữ liệu. Vẫn có thể xem và phản hồi báo lỗi.</p>}
       </section>
       <section className="space-y-3"><h3 className="font-semibold">Lịch sử phản hồi</h3>{historyLoading && <p role="status" className="text-sm text-muted-foreground">Đang tải…</p>}{historyError && <p role="alert" className="text-sm text-destructive">{historyError}</p>}
         {!historyLoading && !history.length && !historyError && <p className="text-sm text-muted-foreground">Chưa có phản hồi.</p>}{history.map((item) => <div key={item.id} className="rounded-xl bg-primary-soft p-3"><p className="mb-2 text-xs text-muted-foreground">{formatDate(item.created_at)} · {REPORT_STATUSES[item.status]}</p><p className="whitespace-pre-wrap break-words text-sm">{item.body}</p></div>)}

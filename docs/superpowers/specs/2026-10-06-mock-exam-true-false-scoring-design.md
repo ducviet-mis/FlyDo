@@ -1,6 +1,6 @@
 # FlyDo — câu đúng/sai và phân điểm theo phần trong Thi thử
 
-Ngày: 06/10/2026. Trạng thái: người dùng đã duyệt phương án trong hội thoại và chọn giữ tổng điểm phần khi chỉnh điểm từng câu. Đặc tả này chờ người dùng duyệt; chưa triển khai code, SQL hay đưa lên web.
+Ngày: 06/10/2026. Người dùng đã duyệt phương án, chọn giữ tổng điểm phần khi chỉnh điểm từng câu và yêu cầu triển khai trực tiếp, không lập thêm kế hoạch. Code và SQL đang được triển khai; giữ bản web tại máy chờ SQL trước khi phát hành.
 
 ## 1. Mục tiêu và phạm vi đã thống nhất
 
@@ -169,4 +169,4 @@ Bàn giao một tệp SQL, mẫu JSON trộn ba loại có hình hợp lệ khi 
 
 ## 10. Bước tiếp theo
 
-Đã tự rà đặc tả về phạm vi, quy tắc phân điểm, JSON, phiên thi cũ và các nhánh lỗi. Người dùng cần duyệt văn bản này trước khi lập kế hoạch triển khai. Sau khi duyệt đặc tả, dùng Superpowers writing-plans lập kế hoạch với test-first và chọn cách thực hiện; không coi duyệt phương án hội thoại là đã duyệt kế hoạch chưa tồn tại.
+Thực hiện trực tiếp theo yêu cầu mới nhất của người dùng, kiểm thử trước và kiểm tra hồi quy. Hướng dẫn sử dụng, mẫu JSON và bước SQL trước/web sau nằm trong `docs/mock-exam-true-false-scoring.md`.
