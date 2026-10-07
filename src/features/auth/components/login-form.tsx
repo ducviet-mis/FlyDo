@@ -28,6 +28,7 @@ import {
   type RememberedAccount,
 } from "../lib/remembered-accounts";
 import { useAuthStore } from "../stores/auth-store";
+import { clearDeviceLinkIntent, getDeviceLinkIntent, setDeviceLinkIntent } from "@/lib/auth/device-link";
 
 const loginSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
@@ -64,6 +65,11 @@ export function LoginForm({
   const [accounts, setAccounts] = useState<RememberedAccount[] | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<RememberedAccount | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkCode, setLinkCode] = useState('');
+  const [linkConfirmed, setLinkConfirmed] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const displayedError = linkError || error;
 
   const {
     register,
@@ -81,6 +87,8 @@ export function LoginForm({
     const remembered = getRememberedAccounts();
     setAccounts(remembered);
     if (remembered.length === 0) setMode("other");
+    const intent = getDeviceLinkIntent();
+    if (intent) { setLinkMode(true); setLinkCode(intent.code); }
   }, []);
 
   useEffect(() => {
@@ -90,14 +98,39 @@ export function LoginForm({
   }, [user]);
 
   const onSubmit = async (data: LoginFormData) => {
+    if (!prepareLogin(data.email)) return;
     clearError();
     const success = await login(data.email, data.password);
     if (success) router.push("/home");
   };
 
+  function normalLogin() {
+    clearDeviceLinkIntent();
+    setLinkMode(false); setLinkCode(''); setLinkConfirmed(false); setLinkError(null);
+  }
+
+  function prepareLogin(email?: string): boolean {
+    if (!linkMode) { clearDeviceLinkIntent(); return true; }
+    if (!linkCode.trim() || !linkConfirmed) {
+      setLinkError(!linkCode.trim() ? 'Hãy nhập mã liên kết.' : 'Hãy xác nhận hai trình duyệt ở trên cùng máy trước khi đăng nhập.');
+      document.getElementById(!linkCode.trim() ? 'device-link-code' : 'device-link-confirm')?.focus();
+      return false;
+    }
+    const previous = getDeviceLinkIntent();
+    if (!setDeviceLinkIntent(linkCode, previous?.code === linkCode.trim() ? previous.accountId : undefined, email)) {
+      setLinkError('Không thể lưu mã trong tab này. Hãy bật bộ nhớ trình duyệt rồi thử lại.');
+      return false;
+    }
+    setLinkError(null);
+    return true;
+  }
+
   const chooseAccount = (account: RememberedAccount) => {
     if (!initialized) return;
     clearError();
+
+    const intent = getDeviceLinkIntent();
+    if (intent && ((intent.accountId && intent.accountId !== account.id) || (intent.email && intent.email !== account.email.toLowerCase()))) normalLogin();
 
     if (user?.id === account.id || user?.email === account.email) {
       router.push("/home");
@@ -113,6 +146,7 @@ export function LoginForm({
   };
 
   const useAnotherAccount = () => {
+    normalLogin();
     clearError();
     setSelectedAccount(null);
     reset({ email: "", password: "" });
@@ -121,6 +155,7 @@ export function LoginForm({
   };
 
   const showRememberedAccounts = () => {
+    normalLogin();
     clearError();
     setSelectedAccount(null);
     reset({ email: "", password: "" });
@@ -176,13 +211,13 @@ export function LoginForm({
 
   return (
     <div className="space-y-5">
-      {oauthError && (
+      {oauthError && !displayedError && (
         <div role="alert" className="rounded-lg bg-destructive-soft p-4 text-sm font-medium text-destructive">
           Không thể hoàn tất đăng nhập Google. Vui lòng thử lại hoặc sử dụng email.
         </div>
       )}
 
-      {sessionReplaced && (
+      {sessionReplaced && !displayedError && (
         <div
           role="alert"
           aria-live="assertive"
@@ -198,23 +233,58 @@ export function LoginForm({
         </div>
       )}
 
-      {deviceLimit && (
+      {deviceLimit && !displayedError && (
         <div role="alert" className="rounded-lg border border-warning/35 bg-warning/10 p-4 text-sm text-foreground">
-          Loại thiết bị này đã đủ 2 máy. Hãy dùng một thiết bị đang đăng nhập để vào Thông tin tài khoản → Bảo mật và xóa thiết bị cũ trước khi thay thế.
+          Loại thiết bị này đã đủ 2 nhóm. Nếu đây là trình duyệt khác trên cùng máy, hãy lấy mã liên kết từ trình duyệt đang đăng nhập. Khi thay máy, vào Thông tin tài khoản → Bảo mật và xóa nhóm cũ trước khi thay thế.
         </div>
       )}
 
-      {deviceSetup && (
+      {deviceSetup && !displayedError && (
         <div role="alert" className="rounded-lg bg-destructive-soft p-4 text-sm text-destructive">
           Không thể xác nhận thiết bị. Hãy bật bộ nhớ trình duyệt và kiểm tra bản cập nhật cơ sở dữ liệu quản lý thiết bị.
         </div>
       )}
 
-      {error && (
+      {displayedError && !linkMode && (
         <div role="alert" className="rounded-lg bg-destructive-soft p-4 text-sm font-medium text-destructive">
-          {error}
+          {displayedError}
         </div>
       )}
+
+      <div className="space-y-3">
+        <Button type="button" variant="outline" disabled={isLoading} aria-expanded={linkMode}
+          onClick={() => { if (linkMode) normalLogin(); else { clearError(); setLinkMode(true); } }}
+          className="min-h-12 w-full whitespace-normal rounded-md">
+          {linkMode ? 'Đăng nhập thông thường' : 'Liên kết trình duyệt trên cùng máy'}
+        </Button>
+        {linkMode && (
+          <fieldset className="space-y-3 rounded-lg border border-control bg-card p-4" disabled={isLoading}>
+            <legend className="px-1 text-sm font-semibold text-foreground">Liên kết tự nguyện</legend>
+            <p id="device-link-help" className="text-sm leading-relaxed text-muted-foreground">
+              Lấy mã từ Thông tin tài khoản → Bảo mật của trình duyệt đang đăng nhập trên cùng máy, cùng tài khoản FlyDo. Mã dùng một lần trong 5 phút.
+              {' '}Chỉ xác nhận khi hai trình duyệt ở trên cùng máy. Liên kết không chứng minh hay bảo đảm cùng phần cứng.
+            </p>
+            <Label htmlFor="device-link-code" className="block font-bold text-foreground">Mã liên kết</Label>
+            <Input id="device-link-code" value={linkCode} autoComplete="one-time-code" spellCheck={false}
+              autoCapitalize="none" className="h-12 rounded-md border-control bg-card"
+              aria-invalid={!!linkError} aria-describedby={`device-link-help${displayedError ? ' device-link-error' : ''}`}
+              onChange={event => {
+                setLinkCode(event.target.value); setLinkConfirmed(false); setLinkError(null); clearDeviceLinkIntent();
+              }} />
+            <label htmlFor="device-link-confirm" className="flex min-h-11 cursor-pointer items-start gap-3 py-2 text-sm leading-relaxed text-foreground">
+              <input id="device-link-confirm" type="checkbox" className="mt-1 h-5 w-5 shrink-0 accent-primary"
+                checked={linkConfirmed} onChange={event => {
+                  setLinkConfirmed(event.target.checked); setLinkError(null);
+                  const previous = getDeviceLinkIntent();
+                  if (event.target.checked) setDeviceLinkIntent(linkCode, previous?.code === linkCode.trim() ? previous.accountId : undefined, previous?.email);
+                  else clearDeviceLinkIntent();
+                }} />
+              Tôi xác nhận đây là trình duyệt khác trên cùng máy của tôi.
+            </label>
+            {displayedError && <p id="device-link-error" role="alert" className="text-sm text-destructive">{displayedError}</p>}
+          </fieldset>
+        )}
+      </div>
 
       {accounts === null ? (
         <div className="space-y-3" aria-label="Đang tải tài khoản đã lưu">
@@ -329,7 +399,13 @@ export function LoginForm({
             </button>
           )}
 
-          <GoogleAuthOption mode="login" />
+          <div onClickCapture={event => {
+            if ((event.target as HTMLElement).closest('button') && !prepareLogin()) {
+              event.preventDefault(); event.stopPropagation();
+            }
+          }}>
+            <GoogleAuthOption mode="login" />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="email" className="ml-1 font-bold text-foreground">
@@ -343,7 +419,10 @@ export function LoginForm({
               aria-describedby={errors.email ? "login-email-error" : undefined}
               placeholder="email@example.com"
               className="h-12 rounded-md border-control bg-card px-5"
-              {...register("email")}
+              {...register("email", { onChange: event => {
+                const intent = getDeviceLinkIntent();
+                if (intent?.email && intent.email !== event.target.value.trim().toLowerCase()) normalLogin();
+              } })}
             />
             {errors.email && (
               <p id="login-email-error" role="alert" className="ml-1 text-sm text-destructive">

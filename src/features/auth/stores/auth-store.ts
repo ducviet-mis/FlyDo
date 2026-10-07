@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { getSessionIdFromAccessToken, SESSION_REPLACED_QUERY, DEVICE_LIMIT_QUERY, DEVICE_SETUP_QUERY } from "@/lib/auth/single-session";
 import { getBrowserDeviceInfo, getBrowserDeviceKey } from "@/lib/auth/device-identity";
+import { clearDeviceLinkIntent, deviceLinkError, getDeviceLinkIntent, setDeviceLinkIntent } from "@/lib/auth/device-link";
 import { rememberAccount } from "../lib/remembered-accounts";
 import type { User } from "../types";
 
@@ -81,19 +82,93 @@ function mapProfile(profile: any, authUser: { id: string; email?: string }): Use
   };
 }
 
-type DeviceRegistrationStatus = "active" | "legacy" | "limit" | "removed" | "unavailable";
+type DeviceRegistrationStatus = "active" | "legacy" | "limit" | "removed" | "unavailable"
+  | `link_${'invalid' | 'expired' | 'removed' | 'type' | 'used' | 'capacity' | 'unavailable'}`;
 type SetAuthState = (state: Partial<AuthState>) => void;
+const deviceLinkUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 let forcedLogoutInProgress = false;
 let authInitialization: Promise<void> | null = null;
+let authInitializationGeneration: number | null = null;
 let authListenerInstalled = false;
 let authGeneration = 0;
+let authIdentity: string | null = null;
+type ExplicitAuthAttempt = { generation: number; email: string; accountId?: string; sessionId?: string | null };
+let explicitAuthAttempt: ExplicitAuthAttempt | null = null;
+const deviceRegistrations = new Map<string, Promise<DeviceRegistrationStatus>>();
+let successfulRegistration: { key: string; status: DeviceRegistrationStatus } | null = null;
 
-async function registerCurrentDevice(accessToken: string | null | undefined, replaceLegacy = false): Promise<DeviceRegistrationStatus> {
+function observeIdentity(accountId: string) {
+  if (authIdentity && authIdentity !== accountId) {
+    authGeneration += 1;
+    clearDeviceLinkIntent();
+  }
+  authIdentity = accountId;
+}
+
+async function isCurrentAuthSession(accessToken: string | null | undefined, accountId: string, generation: number): Promise<boolean> {
+  if (generation !== authGeneration) return false;
+  try {
+    const { data: { session }, error } = await getSupabaseClient().auth.getSession();
+    const sessionId = getSessionIdFromAccessToken(accessToken);
+    return !error && generation === authGeneration && session?.user.id === accountId
+      && (sessionId ? getSessionIdFromAccessToken(session.access_token) === sessionId : session.access_token === accessToken);
+  } catch { return false; }
+}
+
+async function registerCurrentDevice(accessToken: string | null | undefined, replaceLegacy = false, accountId?: string, generation = authGeneration): Promise<DeviceRegistrationStatus> {
+  const key = `${generation}:${accountId}:${getSessionIdFromAccessToken(accessToken)}`;
+  if (!getDeviceLinkIntent() && successfulRegistration?.key === key) return successfulRegistration.status;
+  const pending = deviceRegistrations.get(key);
+  if (pending) return pending;
+  const registration = performDeviceRegistration(accessToken, replaceLegacy, accountId, generation);
+  deviceRegistrations.set(key, registration);
+  try {
+    const status = await registration;
+    if (generation === authGeneration && (status === 'active' || status === 'legacy')) successfulRegistration = { key, status };
+    return status;
+  } finally { if (deviceRegistrations.get(key) === registration) deviceRegistrations.delete(key); }
+}
+
+async function performDeviceRegistration(accessToken: string | null | undefined, replaceLegacy: boolean, accountId: string | undefined, generation: number): Promise<DeviceRegistrationStatus> {
+  const intent = getDeviceLinkIntent();
   const sessionId = getSessionIdFromAccessToken(accessToken);
   const deviceKey = getBrowserDeviceKey();
-  if (!sessionId || !deviceKey) return "unavailable";
+  if (generation !== authGeneration) return intent ? 'link_unavailable' : 'unavailable';
+  if (!sessionId || !deviceKey) return intent ? 'link_unavailable' : 'unavailable';
   const device = getBrowserDeviceInfo();
+
+  if (intent) {
+    if (!accountId || (intent.accountId && intent.accountId !== accountId)) {
+      clearDeviceLinkIntent(intent);
+      return 'link_invalid';
+    }
+    if (!deviceLinkUuidPattern.test(intent.code)) return 'link_invalid';
+    if (!setDeviceLinkIntent(intent.code, accountId, intent.email)) return 'link_unavailable';
+    const bound = getDeviceLinkIntent()!;
+    try {
+      const { data, error } = await getSupabaseClient().rpc('redeem_account_device_link', {
+        p_link_code: intent.code,
+        p_device_key: deviceKey,
+        p_device_type: device.type,
+        p_device_name: device.name,
+        p_session_id: sessionId,
+      });
+      if (!await isCurrentAuthSession(accessToken, accountId, generation)) return 'link_unavailable';
+      if (error) return 'link_unavailable';
+      if (data?.active === true && data.linked === true
+        && typeof data.device_id === 'string' && deviceLinkUuidPattern.test(data.device_id)
+        && typeof data.merged_device === 'boolean') {
+        clearDeviceLinkIntent(bound);
+        // The server's group id is never the browser profile's local key.
+        return 'active';
+      }
+      if (data?.active === false && ['invalid', 'expired', 'removed', 'type', 'used', 'capacity'].includes(data.reason)) {
+        return `link_${data.reason}` as DeviceRegistrationStatus;
+      }
+      return 'link_unavailable';
+    } catch { return 'link_unavailable'; }
+  }
 
   const { data, error } = await getSupabaseClient().rpc("register_login_device", {
     p_device_key: deviceKey,
@@ -123,12 +198,18 @@ async function registerCurrentDevice(accessToken: string | null | undefined, rep
 }
 
 function deviceError(status: DeviceRegistrationStatus): string {
-  if (status === "limit") return "Loại thiết bị này đã đủ 2 máy. Hãy đăng nhập từ một thiết bị đang dùng và xóa thiết bị cũ trong Bảo mật trước khi thay thế.";
+  if (status.startsWith('link_')) return deviceLinkError(status.slice(5));
+  if (status === "limit") return "Loại thiết bị này đã đủ 2 nhóm. Hãy dùng trình duyệt đang đăng nhập trên cùng máy để tạo mã liên kết, hoặc xóa nhóm cũ trong Bảo mật trước khi thay thế.";
   if (status === "removed") return "Thiết bị này đã bị xóa khỏi tài khoản. Vui lòng dùng thiết bị khác hoặc liên hệ quản trị viên.";
   return "Không thể xác nhận thiết bị. Hãy bật bộ nhớ trình duyệt và kiểm tra cấu hình quản lý thiết bị, rồi thử lại.";
 }
 
 async function endInactiveSession(set: SetAuthState, reason: DeviceRegistrationStatus) {
+  if (reason.startsWith('link_')) {
+    set({ user: null, error: deviceError(reason), initialized: true, isLoading: false });
+    try { await getSupabaseClient().auth.signOut({ scope: 'local' }); } catch { /* Keep retry intent and error. */ }
+    return;
+  }
   if (forcedLogoutInProgress) return;
   forcedLogoutInProgress = true;
 
@@ -159,6 +240,7 @@ export const useAuthStore = create<AuthState>()(
       initAuth: () => {
         if (get().initialized) return Promise.resolve();
         if (authInitialization) return authInitialization;
+        authInitializationGeneration = authGeneration;
         authInitialization = (async () => {
         const generation = authGeneration;
         try {
@@ -169,34 +251,54 @@ export const useAuthStore = create<AuthState>()(
           supabase.auth.onAuthStateChange((event: string, session: any) => {
             if (event === 'SIGNED_OUT') {
               authGeneration += 1;
+              authIdentity = null;
               set({ user: null });
             } else if (event === 'SIGNED_IN' && session?.user) {
+              if (get().isLoading) {
+                const attempt = explicitAuthAttempt;
+                const ownEvent = attempt?.generation === authGeneration && (attempt.accountId
+                  ? attempt.accountId === session.user.id && attempt.sessionId === getSessionIdFromAccessToken(session.access_token)
+                  : attempt.email === session.user.email?.trim().toLowerCase());
+                if (ownEvent) return;
+                // An external identity/session supersedes the loading attempt immediately.
+                authGeneration += 1;
+                explicitAuthAttempt = null;
+                clearDeviceLinkIntent();
+                authIdentity = session.user.id;
+                set({ user: null, error: null, isLoading: false });
+              }
+              observeIdentity(session.user.id);
+              const eventGeneration = authGeneration;
               // Supabase auth callbacks must not await another Supabase request.
               window.setTimeout(async () => {
-                const eventGeneration = authGeneration;
                 try {
                 const current = await supabase.auth.getSession();
-                if (current.data.session?.user.id !== session.user.id) return;
+                if (eventGeneration !== authGeneration || current.data.session?.access_token !== session.access_token) return;
                 if (get().isLoading) return; // password login/register handles its own registration
-                const status = await registerCurrentDevice(session.access_token, true);
-                if (eventGeneration !== authGeneration) return;
+                const status = await registerCurrentDevice(session.access_token, true, session.user.id, eventGeneration);
+                if (!await isCurrentAuthSession(session.access_token, session.user.id, eventGeneration)) return;
                 if (status === 'legacy') await supabase.auth.signOut({ scope: 'others' });
+                if (!await isCurrentAuthSession(session.access_token, session.user.id, eventGeneration)) return;
                 if (status !== "active" && status !== 'legacy') {
                   await endInactiveSession(set, status);
                   return;
                 }
                 await get().refreshUser();
+                if (eventGeneration === authGeneration) set({ initialized: true });
                 } catch { if (eventGeneration === authGeneration) set({ error: 'Chưa thể xác nhận phiên đăng nhập. Vui lòng thử lại.' }); }
               }, 0);
             }
           });
           }
           const { data: { session } } = await supabase.auth.getSession();
+          if (generation !== authGeneration) return;
 
           if (session?.user) {
-            const oauthReturn = new URLSearchParams(window.location.search).has('device_oauth');
-            const sessionStatus = await registerCurrentDevice(session.access_token, oauthReturn);
+            observeIdentity(session.user.id);
             if (generation !== authGeneration) return;
+            const oauthReturn = new URLSearchParams(window.location.search).has('device_oauth');
+            const sessionStatus = await registerCurrentDevice(session.access_token, oauthReturn, session.user.id, generation);
+            if (!await isCurrentAuthSession(session.access_token, session.user.id, generation)) return;
             if (oauthReturn) {
               const url = new URL(window.location.href);
               url.searchParams.delete('device_oauth');
@@ -205,12 +307,14 @@ export const useAuthStore = create<AuthState>()(
             if (sessionStatus === 'legacy' && oauthReturn) {
               await supabase.auth.signOut({ scope: 'others' });
             }
+            if (!await isCurrentAuthSession(session.access_token, session.user.id, generation)) return;
             if (sessionStatus !== "active" && sessionStatus !== 'legacy') {
               await endInactiveSession(set, sessionStatus);
               return;
             }
 
             await supabase.rpc('sync_my_membership_status');
+            if (generation !== authGeneration) return;
             const { data: profile } = await supabase
               .from("profiles")
               .select("*")
@@ -219,7 +323,7 @@ export const useAuthStore = create<AuthState>()(
 
             if (profile) {
               const mappedUser = mapProfile(profile, session.user);
-              if (generation === authGeneration) { rememberAccount(mappedUser); set({ user: mappedUser, initialized: true }); }
+              if (await isCurrentAuthSession(session.access_token, session.user.id, generation)) { rememberAccount(mappedUser); set({ user: mappedUser, initialized: true }); }
             } else {
               if (generation === authGeneration) set({ user: null, initialized: true, error: 'Chưa thể tải thông tin tài khoản. Vui lòng đăng nhập lại.' });
             }
@@ -232,16 +336,25 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           if (generation === authGeneration) set({ user: null, initialized: true, error: 'Chưa thể xác thực phiên đăng nhập. Vui lòng thử lại.' });
         }
-        })().finally(() => { authInitialization = null; });
+        })().finally(() => { authInitialization = null; authInitializationGeneration = null; });
         return authInitialization;
       },
 
       login: async (email: string, password: string) => {
         const generation = ++authGeneration;
+        const intent = getDeviceLinkIntent();
+        if (intent?.email && intent.email !== email.trim().toLowerCase()) {
+          clearDeviceLinkIntent(intent);
+          set({ error: deviceLinkError('invalid'), isLoading: false });
+          return false;
+        }
+        const attempt: ExplicitAuthAttempt = { generation, email: email.trim().toLowerCase() };
+        explicitAuthAttempt = attempt;
         set({ isLoading: true, error: null });
         try {
           const supabase = getSupabaseClient();
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (generation !== authGeneration) return false;
 
           if (error) {
             set({
@@ -252,17 +365,26 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (data.user) {
+            attempt.accountId = data.user.id;
+            attempt.sessionId = getSessionIdFromAccessToken(data.session?.access_token);
+            authIdentity = data.user.id;
             if (data.session) {
-              const status = await registerCurrentDevice(data.session.access_token, true);
+              const status = await registerCurrentDevice(data.session.access_token, true, data.user.id, generation);
+              if (!await isCurrentAuthSession(data.session.access_token, data.user.id, generation)) return false;
               if (status === 'legacy') await supabase.auth.signOut({ scope: 'others' });
+              if (!await isCurrentAuthSession(data.session.access_token, data.user.id, generation)) return false;
               if (status !== "active" && status !== 'legacy') {
-                await supabase.auth.signOut({ scope: "local" });
                 set({ user: null, error: deviceError(status), isLoading: false });
+                await supabase.auth.signOut({ scope: "local" });
                 return false;
               }
+            } else if (getDeviceLinkIntent()) {
+              set({ user: null, error: deviceLinkError('unavailable'), isLoading: false });
+              return false;
             }
 
             await supabase.rpc('sync_my_membership_status');
+            if (generation !== authGeneration) return false;
             const { data: profile } = await supabase
               .from("profiles")
               .select("*")
@@ -271,22 +393,27 @@ export const useAuthStore = create<AuthState>()(
 
             if (profile) {
               const mappedUser = mapProfile(profile, data.user);
-              rememberAccount(mappedUser);
               if (generation !== authGeneration) return false;
+              if (data.session && !await isCurrentAuthSession(data.session.access_token, data.user.id, generation)) return false;
+              rememberAccount(mappedUser);
               set({ user: mappedUser, isLoading: false, initialized: true });
               return true;
             }
           }
 
-          set({ user: null, isLoading: false, error: 'Chưa thể tải thông tin tài khoản. Vui lòng thử lại.' });
+          if (generation === authGeneration) set({ user: null, isLoading: false, error: 'Chưa thể tải thông tin tài khoản. Vui lòng thử lại.' });
           return false;
         } catch {
-          set({ error: "Đã xảy ra lỗi khi đăng nhập", isLoading: false });
+          if (generation === authGeneration) set({ error: "Đã xảy ra lỗi khi đăng nhập", isLoading: false });
           return false;
+        } finally {
+          if (explicitAuthAttempt === attempt) explicitAuthAttempt = null;
+          if (generation === authGeneration) set({ isLoading: false });
         }
       },
 
       loginWithGoogle: async () => {
+        const generation = ++authGeneration;
         set({ isLoading: true, error: null });
         try {
           const redirectTo = getOAuthRedirectUrl();
@@ -303,6 +430,7 @@ export const useAuthStore = create<AuthState>()(
               queryParams: { prompt: 'select_account' },
             },
           });
+          if (generation !== authGeneration) return false;
 
           if (error || !data.url) {
             set({ error: translateAuthError(error?.message), isLoading: false });
@@ -312,12 +440,15 @@ export const useAuthStore = create<AuthState>()(
           window.location.assign(data.url);
           return true;
         } catch {
-          set({ error: 'Không thể kết nối với Google. Vui lòng thử lại.', isLoading: false });
+          if (generation === authGeneration) set({ error: 'Không thể kết nối với Google. Vui lòng thử lại.', isLoading: false });
           return false;
         }
       },
 
       register: async (name: string, email: string, password: string) => {
+        clearDeviceLinkIntent();
+        const attempt = { generation: authGeneration, email: email.trim().toLowerCase() };
+        explicitAuthAttempt = attempt;
         set({ isLoading: true, error: null });
         try {
           const supabase = getSupabaseClient();
@@ -378,6 +509,8 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           set({ error: "Đã xảy ra lỗi khi đăng ký", isLoading: false });
           return { success: false, requiresEmailConfirmation: false };
+        } finally {
+          if (explicitAuthAttempt === attempt) explicitAuthAttempt = null;
         }
       },
 
@@ -396,27 +529,36 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        authGeneration += 1;
+        const generation = ++authGeneration;
+        clearDeviceLinkIntent();
+        authIdentity = null;
+        set({ user: null, error: null, isLoading: false });
         try {
           const supabase = getSupabaseClient();
           const { data: { session } } = await supabase.auth.getSession();
+          if (generation !== authGeneration) return;
           const sessionId = getSessionIdFromAccessToken(session?.access_token);
           const deviceKey = getBrowserDeviceKey();
           if (sessionId && deviceKey) {
             const { error } = await supabase.rpc("release_device_session", { p_device_key: deviceKey, p_session_id: sessionId });
+            if (generation !== authGeneration) return;
             if (error?.code === 'PGRST202') await supabase.rpc('release_current_session', { p_session_id: sessionId });
           }
           await supabase.auth.signOut({ scope: 'local' });
         } catch { /* ignore */ }
-        set({ user: null, error: null });
+        if (generation === authGeneration) set({ user: null, error: null });
       },
 
       logoutAllDevices: async () => {
-        authGeneration += 1;
+        const generation = ++authGeneration;
+        clearDeviceLinkIntent();
+        authIdentity = null;
         try {
           const supabase = getSupabaseClient();
           let { error } = await supabase.rpc("clear_my_device_sessions");
+          if (generation !== authGeneration) return;
           if (error?.code === 'PGRST202') ({ error } = await supabase.rpc('clear_my_active_session'));
+          if (generation !== authGeneration) return;
           if (error) throw error;
           const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' });
           if (signOutError) throw signOutError;
@@ -428,9 +570,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkActiveSession: async () => {
+        const generation = authGeneration;
         try {
           const supabase = getSupabaseClient();
           const { data: { session } } = await supabase.auth.getSession();
+          if (generation !== authGeneration) return true;
 
           if (!session?.user) {
             set({ user: null });
@@ -440,6 +584,7 @@ export const useAuthStore = create<AuthState>()(
           const sessionId = getSessionIdFromAccessToken(session.access_token);
           const deviceKey = getBrowserDeviceKey();
           if (!sessionId || !deviceKey) {
+            if (!await isCurrentAuthSession(session.access_token, session.user.id, generation)) return true;
             await endInactiveSession(set, 'unavailable');
             return false;
           }
@@ -447,8 +592,10 @@ export const useAuthStore = create<AuthState>()(
             p_device_key: deviceKey,
             p_session_id: sessionId,
           });
+          if (!await isCurrentAuthSession(session.access_token, session.user.id, generation)) return true;
           if (error?.code === 'PGRST202') {
             const legacy = await supabase.rpc('register_current_session', { p_session_id: sessionId, p_replace: false });
+            if (!await isCurrentAuthSession(session.access_token, session.user.id, generation)) return true;
             if (!legacy.error && legacy.data?.active === false) {
               await endInactiveSession(set, 'removed');
               return false;
@@ -469,6 +616,9 @@ export const useAuthStore = create<AuthState>()(
 
       refreshUser: async () => {
         const generation = authGeneration;
+        // Profile reads must not expose an account before its device link is accepted.
+        if (authInitialization && authInitializationGeneration === generation) await authInitialization;
+        if (generation !== authGeneration || get().isLoading || getDeviceLinkIntent()) return;
         try {
           const supabase = getSupabaseClient();
           const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
@@ -483,6 +633,7 @@ export const useAuthStore = create<AuthState>()(
               .single();
             if (profile) {
               const mappedUser = mapProfile(profile, authUser);
+              if (generation !== authGeneration) return;
               rememberAccount(mappedUser);
               if (generation === authGeneration) set({ user: mappedUser });
             }

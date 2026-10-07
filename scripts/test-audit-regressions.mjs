@@ -11,9 +11,11 @@ const require = createRequire(resolve(repo, 'package.json'));
 const dom = new jsdom.JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
   url: 'http://localhost:3500', pretendToBeVisual: true,
 });
-for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Node', 'NodeFilter', 'MutationObserver', 'Event', 'CustomEvent', 'DocumentFragment', 'FileReader']) {
+for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'HTMLInputElement', 'HTMLTextAreaElement', 'Node', 'NodeFilter', 'MutationObserver', 'Event', 'CustomEvent', 'MouseEvent', 'KeyboardEvent', 'DocumentFragment', 'FileReader']) {
   Object.defineProperty(globalThis, key, { value: dom.window[key], configurable: true });
 }
+globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const React = require('react');
 const { createRoot } = require('react-dom/client');
@@ -278,13 +280,18 @@ await clear();
 // Real Zustand auth store: concurrent startup, missing profile, offline refresh,
 // and a delayed profile arriving after SIGNED_OUT.
 Object.defineProperty(globalThis, 'localStorage', { value: window.localStorage, configurable: true });
-let authCallback;
+const authListeners = new Set();
+const authCallback = (event, session) => { for (const callback of authListeners) callback(event, session); };
 let sessionReads = 0;
 let listeners = 0;
 const authSession = deferred();
 db.auth = {
   getSession: () => { sessionReads++; return authSession.promise; },
-  onAuthStateChange: (callback) => { listeners++; authCallback = callback; },
+  onAuthStateChange: (callback) => {
+    listeners++;
+    authListeners.add(callback);
+    return { data: { subscription: { id: `test-auth-listener-${listeners}`, callback, unsubscribe: () => authListeners.delete(callback) } } };
+  },
   getUser: async () => ({ data: { user: null }, error: new Error('offline') }),
 };
 rpcHandler = () => ({ data: { active: true }, error: null });
@@ -294,10 +301,11 @@ realAuth.setState({ user: { id: 'persisted-stale' }, initialized: false });
 const firstInit = realAuth.getState().initAuth();
 const secondInit = realAuth.getState().initAuth();
 assert.equal(firstInit, secondInit);
+assert.equal(sessionReads, 1, 'Concurrent startup must share its initial session read');
 authSession.resolve({ data: { session: { user: { id: 'student-a' }, access_token: 'token' } }, error: null });
 await Promise.all([firstInit, secondInit]);
 assert.equal(listeners, 1);
-assert.equal(sessionReads, 1);
+assert.equal(sessionReads, 3, 'Initial read plus two live-session checks before acting on registration');
 assert.equal(realAuth.getState().user, null);
 
 // Global logout must surface RPC/auth failures, not report false success.
@@ -351,18 +359,73 @@ assert.equal(imageInput.disabled, false);
 user = { id: 'student-b', name: 'Student B', email: 'b@example.test' };
 await React.act(async () => root.render(React.createElement(Profile)));
 assert.equal(document.querySelector('#profile-name').value, 'Student B');
-db.auth.getSession = async () => ({ data: { session: null }, error: null });
+// Security UI now reads a session-owned logical-group RPC. Keep the session
+// valid so load failures exercise the network boundary rather than sign-out.
+const securitySession = {
+  access_token: 'test-only-access-token', refresh_token: 'test-only-refresh-token',
+  token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600,
+  user: { id: 'student-b', email: 'b@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-01-01T00:00:00Z' },
+};
+db.auth.getSession = async () => ({ data: { session: securitySession }, error: null });
+rpcHandler = (name, args) => {
+  assert.equal(name, 'get_my_account_devices');
+  assert.deepEqual(args, { p_device_key: 'device-key' });
+  return { data: null, error: { code: 'NETWORK', message: 'offline' } };
+};
 await React.act(async () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Bảo mật').click());
-assert.match(document.body.textContent, /Không thể tải danh sách thiết bị/);
-queryHandler = () => { throw new Error('offline'); };
+assert.match(document.body.textContent, /Chưa thể tải thiết bị/);
+rpcHandler = (name, args) => {
+  assert.equal(name, 'get_my_account_devices');
+  assert.deepEqual(args, { p_device_key: 'device-key' });
+  throw new Error('offline');
+};
 await React.act(async () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent.includes('Làm mới')).click());
 assert.match(document.body.textContent, /Chưa thể tải thiết bị/);
 assert.doesNotMatch(document.body.textContent, /Đang tải thiết bị/);
+assert.equal(requests.some((query) => query.table === 'account_devices' || query.table === 'account_device_quota'), false);
+
+// A failed removal must stay visible after the successful list reload. Do not
+// let realistic list fixtures turn the original failure regression into success.
+const removableDeviceId = '50000000-0000-4000-8000-000000000002';
+const securityDevices = [
+  { id: '50000000-0000-4000-8000-000000000001', device_key: '60000000-0000-4000-8000-000000000001', device_type: 'computer', device_name: 'Current linked group', session_id: 'root-session', first_seen_at: '2026-10-01T00:00:00Z', last_login_at: '2026-10-07T00:00:00Z', is_current: true, profile_count: 2 },
+  { id: removableDeviceId, device_key: '60000000-0000-4000-8000-000000000002', device_type: 'computer', device_name: 'Other linked group', session_id: 'other-session', first_seen_at: '2026-10-01T00:00:00Z', last_login_at: '2026-10-06T00:00:00Z', is_current: false, profile_count: 3 },
+];
+let deviceListReads = 0;
+let deviceRemovalCalls = 0;
+rpcHandler = (name, args) => {
+  if (name === 'get_my_account_devices') {
+    assert.deepEqual(args, { p_device_key: 'device-key' });
+    deviceListReads++;
+    return { data: { devices: securityDevices, remaining: 2, server_now: '2026-10-07T00:00:00Z' }, error: null };
+  }
+  assert.equal(name, 'remove_account_device');
+  assert.deepEqual(args, { p_device_id: removableDeviceId });
+  deviceRemovalCalls++;
+  return { data: null, error: { code: 'NETWORK', message: 'offline' } };
+};
+await React.act(async () => document.querySelector('[aria-label="Làm mới danh sách thiết bị"]').click());
+assert.equal(deviceListReads, 1);
+assert.match(document.body.textContent, /3 profile trong nhóm/);
+assert.equal(document.querySelector('[aria-label="Xóa thiết bị Current linked group"]'), null);
+await React.act(async () => document.querySelector('[aria-label="Xóa thiết bị Other linked group"]').click());
+assert.match(document.querySelector('[role="alertdialog"]').textContent, /Tất cả profile.*đăng xuất/);
+await React.act(async () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent.includes('Xác nhận xóa')).click());
+assert.equal(deviceRemovalCalls, 1);
+assert.equal(deviceListReads, 2);
+assert.match(document.body.textContent, /Không thể xóa thiết bị\. Vui lòng tải lại và thử lại\./);
+assert.doesNotMatch(document.body.textContent, /Đã xóa/);
+assert.match(document.body.textContent, /Other linked group/);
+assert.match(document.body.textContent, /2\/2 lượt/);
+assert.equal(document.querySelector('[role="alertdialog"]'), null);
 profileLogout = async () => { throw new Error('offline'); };
 await React.act(async () => Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Đăng xuất tất cả thiết bị').click());
 assert.match(document.querySelector('[role="alert"]').textContent, /Chưa thể đăng xuất/);
 assert.equal(Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Đăng xuất tất cả thiết bị').disabled, false);
 await clear();
+// Restore the normal RPC boundary before the independent real-auth refresh
+// checks, including sync_my_membership_status.
+rpcHandler = () => ({ data: null, error: null });
 user = null;
 window.history.replaceState({}, '', '/offline');
 const AuthGuard = load(resolve(repo, 'src/components/layout/auth-guard.tsx')).AuthGuard;
@@ -389,4 +452,4 @@ await refreshing;
 assert.equal(realAuth.getState().user, null);
 await React.act(async () => root.unmount());
 dom.window.close();
-console.log('PASS: safe navigation/HTML, corrupt drafts, >1000 rows, saved-question rollback/locking, account isolation, double-answer lock, real online-time stats, notification network recovery/channel isolation, missing/empty exams and result ownership.');
+console.log('PASS: safe navigation/HTML, corrupt drafts, >1000 rows, saved-question rollback/locking, account isolation, double-answer lock, real online-time stats, notification network recovery/channel isolation, missing/empty exams, result ownership, session-owned device RPC and persistent removal failure.');
