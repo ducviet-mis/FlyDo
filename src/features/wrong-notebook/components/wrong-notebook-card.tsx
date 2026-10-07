@@ -7,8 +7,24 @@ import { useWrongNotebook } from '../hooks/use-wrong-notebook';
 import Link from 'next/link';
 import { MathRenderer } from '@/features/practice/components/math-renderer';
 
-export function WrongNotebookCard() {
+export function WrongNotebookCard({ compact = false }: { compact?: boolean }) {
   const { wrongQuestions, totalCount, loading, error } = useWrongNotebook();
+
+  if (compact) return (
+    <Card level="compact" className="h-full">
+      <CardContent className="flex h-full flex-col items-start gap-3 p-4">
+        <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"><BookX aria-hidden="true" className="h-4 w-4 text-special" />Việc nên làm tiếp</h2>
+        {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : <p className="text-sm leading-6 text-muted-foreground">
+          {loading ? 'Đang xem lại buổi học của bạn…' : totalCount > 0 ? <><strong className="font-semibold text-foreground">{totalCount} câu sai</strong> cần ôn lại. Làm chắc kiến thức trước khi học bài mới.</> : 'Bạn không còn câu sai cần ôn. Chọn một bài tự luyện để tiếp tục.'}
+        </p>}
+        <Button asChild={!loading && !error} disabled={loading || Boolean(error)} variant="outline" className="mt-auto min-h-11 gap-2">
+          {!loading && !error ? totalCount > 0 ? <Link href="/practice/wrong">Luyện lại ngay<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
+            : <a href="#practice-heading">Chọn bài để luyện<ArrowRight aria-hidden="true" className="h-4 w-4" /></a>
+            : <span>{loading ? 'Đang tải…' : 'Chưa thể tải gợi ý'}</span>}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <Card level="compact">

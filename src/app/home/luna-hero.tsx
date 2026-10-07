@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowDownRight, BookMarked, BookOpen, FileText, Moon, Pause, PenLine, Play, Sparkles } from 'lucide-react';
+import { BookMarked, BookOpen, FileText, Moon, Pause, PenLine, Play } from 'lucide-react';
 import styles from './luna-home.module.css';
 
 const destinations = [
@@ -19,7 +19,7 @@ function getGreeting() {
   return 'Chào buổi tối';
 }
 
-export function LunaHero({ name }: { name?: string }) {
+export function LunaHero({ name, children }: { name?: string; children: ReactNode }) {
   const [motionPaused, setMotionPaused] = useState(false);
 
   useEffect(() => {
@@ -39,17 +39,10 @@ export function LunaHero({ name }: { name?: string }) {
     <section className={styles.hero} aria-labelledby="luna-heading" data-motion={motionPaused ? 'paused' : 'playing'}>
       <div className={styles.heroAtmosphere} aria-hidden="true" />
       <div className={styles.aurora} aria-hidden="true" />
-      <div className={styles.meteorField} aria-hidden="true"><span /><span /></div>
       <div className={styles.heroCopy}>
         <div className={styles.heroIndex}><Moon className="h-4 w-4" aria-hidden="true" /> ĐÀI QUAN SÁT LUNA <span aria-hidden="true">/</span> 01</div>
-        <p className={styles.greeting}>{getGreeting()}, {name || 'bạn'}.</p>
-        <h1 id="luna-heading">Dưới ánh trăng,<br /><span>mở lối tri thức.</span></h1>
-        <p className={styles.heroDescription}>Một hành trình Toán học đang chờ bạn khám phá. Tiếp tục bài học gần nhất hoặc chọn điểm đến trên quỹ đạo Luna.</p>
-        <div className={styles.heroActions}>
-          <a href="#continue-learning" className={styles.primaryAction}>Tiếp tục hành trình <ArrowDownRight className="h-4 w-4" aria-hidden="true" /></a>
-          <a href="#luna-orbits" className={styles.secondaryAction}>Khám phá hệ Luna</a>
-        </div>
-        <div className={styles.heroFootnote}><Sparkles className="h-4 w-4" aria-hidden="true" /> Từng bước học nhỏ sẽ mở ra một bầu trời rộng hơn.</div>
+        <h1 id="luna-heading" className={styles.greeting}>{getGreeting()}, {name || 'bạn'}.</h1>
+        {children}
       </div>
 
       <div id="luna-orbits" className={styles.chart} aria-label="Bốn điểm đến học tập trong hệ Luna">
@@ -61,17 +54,17 @@ export function LunaHero({ name }: { name?: string }) {
             <filter id="luna-glow"><feGaussianBlur stdDeviation="4" /></filter>
           </defs>
           <circle className={styles.moonHalo} cx="300" cy="220" r="182" fill="url(#luna-halo)" />
-          <circle className={styles.moonCorona} cx="300" cy="220" r="78" fill="none" stroke="#cfe7ff" strokeOpacity=".2" strokeWidth="1" />
-          <circle className={styles.orbitOuter} cx="300" cy="210" r="176" fill="none" stroke="#a8c8ff" strokeOpacity=".17" strokeWidth="1" strokeDasharray="3 9" />
-          <circle className={styles.orbitInner} cx="300" cy="210" r="127" fill="none" stroke="#a8c8ff" strokeOpacity=".22" strokeWidth="1" />
+          <circle cx="300" cy="220" r="78" fill="none" stroke="#cfe7ff" strokeOpacity=".2" strokeWidth="1" />
+          <circle cx="300" cy="210" r="176" fill="none" stroke="#a8c8ff" strokeOpacity=".17" strokeWidth="1" strokeDasharray="3 9" />
+          <circle cx="300" cy="210" r="127" fill="none" stroke="#a8c8ff" strokeOpacity=".22" strokeWidth="1" />
           <ellipse cx="300" cy="210" rx="226" ry="88" fill="none" stroke="#8dc0ff" strokeOpacity=".15" transform="rotate(-28 300 210)" />
           <path d="M300 46v26M300 348v26M120 210h26M454 210h26" stroke="#a9c9ec" strokeOpacity=".25" strokeWidth="1" />
-          <path d="M110 270 245 160 390 190 500 90" fill="none" stroke="#9ec9ff" strokeOpacity=".28" strokeWidth="12" filter="url(#luna-glow)" />
-          <path className={styles.constellationLine} d="M110 270 245 160 390 190 500 90" fill="none" stroke="url(#luna-route)" strokeWidth="1.5" strokeDasharray="4 7" strokeLinecap="round" />
-          <g className={styles.orbitSparkNear}><circle cx="427" cy="210" r="3.5" fill="#c9f1ff" /><circle cx="427" cy="210" r="8" fill="#c9f1ff" fillOpacity=".12" /></g>
-          <g className={styles.orbitSparkFar}><circle cx="300" cy="34" r="2.7" fill="#ffe7b8" /><circle cx="300" cy="34" r="7" fill="#ffe7b8" fillOpacity=".1" /></g>
+          <path d="M110 270 204 97 450 101 498 307" fill="none" stroke="#9ec9ff" strokeOpacity=".28" strokeWidth="12" filter="url(#luna-glow)" />
+          <path d="M110 270 204 97 450 101 498 307" fill="none" stroke="url(#luna-route)" strokeWidth="1.5" strokeDasharray="4 7" strokeLinecap="round" />
+          <g><circle cx="427" cy="210" r="3.5" fill="#c9f1ff" /><circle cx="427" cy="210" r="8" fill="#c9f1ff" fillOpacity=".12" /></g>
+          <g><circle cx="300" cy="34" r="2.7" fill="#ffe7b8" /><circle cx="300" cy="34" r="7" fill="#ffe7b8" fillOpacity=".1" /></g>
           <path d="M160 85 204 105 232 70M387 300 427 278 466 323M95 140l34-24 28 12" fill="none" stroke="#a9c9ec" strokeOpacity=".25" strokeWidth="1" />
-          <g className={styles.moonBody}>
+          <g>
             <circle cx="300" cy="220" r="53" fill="#B8D4F4" fillOpacity=".14" filter="url(#luna-glow)" />
             <circle cx="300" cy="220" r="46" fill="url(#luna-disc)" stroke="#E9F3FA" strokeOpacity=".82" strokeWidth="1.3" />
             <circle cx="300" cy="220" r="52" fill="none" stroke="#D4E8F7" strokeOpacity=".27" />

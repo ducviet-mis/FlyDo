@@ -10,9 +10,9 @@
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, .83fr) minmax(0, 1.17fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   align-items: center;
-  min-height: 438px;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid rgb(var(--sol-line) / .76);
   border-radius: 28px;
@@ -30,60 +30,43 @@
   background: radial-gradient(circle at 11% 13%, rgb(var(--sol-amber)) 0 1px, transparent 1.5px), radial-gradient(circle at 39% 77%, rgb(var(--color-primary)) 0 1px, transparent 1.5px), radial-gradient(circle at 79% 84%, rgb(var(--sol-amber)) 0 1px, transparent 1.5px);
   background-size: 137px 123px, 231px 183px, 281px 227px;
 }
-.heroCopy { position: relative; z-index: 2; padding: 52px 0 54px 54px; }
+.heroCopy { position: relative; z-index: 2; min-width: 0; padding: 28px 20px 28px 32px; }
 .heroIndex { display: inline-flex; align-items: center; gap: 10px; margin: 0; color: rgb(var(--sol-amber-ink)); font-size: 11px; font-weight: 750; letter-spacing: .19em; }
 .heroIndex span { color: rgb(var(--sol-line)); }
-.greeting { margin-top: 39px; color: rgb(var(--color-text-secondary)); font-size: 14px; font-weight: 550; }
-.heroCopy h1 { margin-top: 10px; color: rgb(var(--color-text-primary)); font-size: clamp(34px, 4vw, 58px); font-weight: 780; letter-spacing: -.055em; line-height: 1.08; text-wrap: balance; }
-.heroCopy h1 span { color: rgb(var(--sol-amber-ink)); text-shadow: 0 9px 22px rgb(var(--sol-daylight) / .28); }
-.heroDescription { max-width: 370px; margin-top: 22px; color: rgb(var(--color-text-secondary)); font-size: 14px; line-height: 1.75; }
-.heroActions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 27px; }
-.primaryAction, .secondaryAction { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 9px; border-radius: 11px; padding: 0 16px; font-size: 13px; font-weight: 750; text-decoration: none; transition: background-color var(--motion-normal) var(--ease-out), border-color var(--motion-normal) var(--ease-out), transform var(--motion-normal) var(--ease-out), box-shadow var(--motion-normal) var(--ease-out); }
-.primaryAction { background: rgb(var(--color-primary)); color: rgb(var(--color-on-primary)); box-shadow: 0 7px 22px rgb(var(--color-primary) / .18); }
-.primaryAction:hover { background: rgb(var(--color-primary-hover)); color: rgb(var(--color-on-primary)); transform: translateY(-2px); box-shadow: 0 12px 26px rgb(var(--color-primary) / .25); }
-.secondaryAction { border: 1px solid rgb(var(--sol-line) / .82); background: rgb(255 255 255 / .72); color: rgb(var(--color-primary)); }
-.secondaryAction:hover { border-color: rgb(var(--sol-amber-ink) / .55); background: rgb(var(--sol-amber-soft)); transform: translateY(-2px); }
-.heroFootnote { display: flex; align-items: center; gap: 9px; margin-top: 28px; color: rgb(var(--sol-amber-ink)); font-size: 11px; letter-spacing: .02em; }
-.heroFootnote svg { flex: none; color: rgb(var(--sol-amber-ink)); }
+.greeting { margin: 12px 0 18px; color: rgb(var(--color-text-primary)); font-size: clamp(20px, 2vw, 26px); font-weight: 650; letter-spacing: -.025em; line-height: 1.4; overflow-wrap: anywhere; }
 
-.chart { position: relative; min-width: 0; width: 100%; aspect-ratio: 600 / 420; align-self: center; scroll-margin-top: 95px; }
+.chart { position: relative; min-width: 0; width: 100%; max-width: 440px; aspect-ratio: 600 / 420; align-self: center; justify-self: center; scroll-margin-top: 95px; }
 .chart::before { content: ''; position: absolute; top: 21%; left: 24%; width: 53%; height: 57%; border-radius: 50%; background: radial-gradient(circle, rgb(var(--sol-daylight) / .45), transparent 70%); filter: blur(23px); pointer-events: none; }
 .chartArt { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
-.sunHalo { transform-origin: 300px 216px; animation: solBreathe 8s ease-in-out infinite; }
-.sunBody { transform-origin: 300px 216px; animation: solReveal 850ms var(--ease-out) both; }
-.solarRays { transform-origin: 300px 216px; animation: solTurn 95s linear infinite; }
-.orbitOuter { transform-origin: 300px 210px; animation: solTurn 110s linear infinite reverse; }
-.satelliteNear { transform-origin: 300px 216px; animation: solTurn 26s linear infinite; }
-.satelliteFar { transform-origin: 300px 210px; animation: solTurn 43s linear infinite reverse; }
+.sunHalo { animation: solBreathe 18s ease-in-out infinite; }
 .chartCoordinate, .chartLabel { position: absolute; pointer-events: none; color: rgb(var(--sol-amber-ink) / .73); font-size: 9px; font-weight: 750; letter-spacing: .17em; }
 .chartCoordinate { right: 7%; top: 6%; }
 .chartLabel { left: 7%; bottom: 8%; }
 .chartLabel span { color: rgb(var(--color-primary)); }
 
-.planet { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 94px; height: 100px; margin: -49px 0 0 -47px; padding-top: 6px; border-radius: 28px; color: rgb(var(--color-text-primary)); text-decoration: none; cursor: pointer; }
-.planetDisc { position: relative; display: grid; flex: none; width: 49px; height: 49px; place-items: center; border: 2px solid rgb(255 255 255 / .82); border-radius: 50%; color: rgb(var(--color-text-primary)); background: var(--planet-fill); box-shadow: inset -7px -9px 13px rgb(86 72 57 / .17), inset 5px 5px 9px rgb(255 255 255 / .55), 0 0 0 5px rgb(var(--sol-amber) / .07), 0 9px 24px rgb(118 83 43 / .19); animation: planetDrift 7s ease-in-out infinite; transition: box-shadow var(--motion-normal) var(--ease-out), scale var(--motion-normal) var(--ease-out); }
+.planet { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 94px; height: 90px; margin: -45px 0 0 -47px; padding-top: 6px; border-radius: 28px; color: rgb(var(--color-text-primary)); text-decoration: none; cursor: pointer; touch-action: manipulation; }
+.planetDisc { position: relative; display: grid; flex: none; width: 49px; height: 49px; place-items: center; border: 2px solid rgb(255 255 255 / .82); border-radius: 50%; color: rgb(var(--color-text-primary)); background: var(--planet-fill); box-shadow: inset -7px -9px 13px rgb(86 72 57 / .17), inset 5px 5px 9px rgb(255 255 255 / .55), 0 0 0 5px rgb(var(--sol-amber) / .07), 0 9px 24px rgb(118 83 43 / .19); transition: box-shadow var(--motion-normal) var(--ease-out); }
 .planetDisc::after { content: ''; position: absolute; inset: -9px -13px; border: 1px solid rgb(var(--sol-amber-ink) / .28); border-radius: 50%; transform: rotate(-24deg) scaleY(.48); pointer-events: none; }
 .planetLabel { position: relative; z-index: 1; border: 1px solid rgb(var(--sol-line) / .74); border-radius: 99px; background: rgb(255 253 247 / .94); padding: 4px 7px; white-space: nowrap; color: rgb(var(--color-text-primary)); font-size: 10px; font-weight: 800; letter-spacing: .045em; box-shadow: 0 4px 12px rgb(121 91 47 / .12); }
-.planet:hover .planetDisc, .planet:focus-visible .planetDisc { animation-play-state: paused; scale: 1.13; box-shadow: inset -7px -9px 13px rgb(86 72 57 / .14), inset 5px 5px 9px rgb(255 255 255 / .7), 0 0 0 7px rgb(var(--sol-amber) / .16), 0 14px 26px rgb(118 83 43 / .26); }
+.planet:hover .planetDisc, .planet:focus-visible .planetDisc { box-shadow: inset -7px -9px 13px rgb(86 72 57 / .14), inset 5px 5px 9px rgb(255 255 255 / .7), 0 0 0 7px rgb(var(--sol-amber) / .16), 0 14px 26px rgb(118 83 43 / .26); }
 .planet:focus-visible { outline: 2px solid rgb(var(--color-primary)); outline-offset: 3px; }
 .planetTheory { left: 18%; top: 65%; --planet-fill: linear-gradient(140deg, #c7e8f2, #72b6d4); }
 .planetPractice { left: 34%; top: 23%; --planet-fill: linear-gradient(140deg, #ffe9a4, #f4b45d); }
 .planetExams { left: 75%; top: 24%; --planet-fill: linear-gradient(140deg, #d9d7ff, #9c9de2); }
 .planetHandbook { left: 83%; top: 73%; --planet-fill: linear-gradient(140deg, #caeac5, #82bd8d); }
-.planetPractice .planetDisc { animation-delay: -2s; }
-.planetExams .planetDisc { animation-delay: -4s; }
-.planetHandbook .planetDisc { animation-delay: -6s; }
-.motionButton { position: absolute; right: 7%; bottom: 5%; z-index: 3; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid rgb(var(--sol-line) / .82); border-radius: 12px; background: rgb(255 252 244 / .88); color: rgb(var(--color-text-primary)); box-shadow: 0 8px 20px rgb(116 89 51 / .11); }
+.motionButton { position: absolute; left: 2%; top: 6%; z-index: 3; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid rgb(var(--sol-line) / .82); border-radius: 12px; background: rgb(255 252 244 / .88); color: rgb(var(--color-text-primary)); box-shadow: 0 8px 20px rgb(116 89 51 / .11); }
 .motionButton:hover { background: rgb(var(--sol-amber-soft)); }
-.hero[data-motion='paused'] .sunHalo, .hero[data-motion='paused'] .solarRays, .hero[data-motion='paused'] .orbitOuter, .hero[data-motion='paused'] .satelliteNear, .hero[data-motion='paused'] .satelliteFar, .hero[data-motion='paused'] .planetDisc, .chart:focus-within .planetDisc { animation-play-state: paused; }
+.hero[data-motion='paused'] .sunHalo, .hero:focus-within .sunHalo, .hero:hover .sunHalo { animation-play-state: paused; }
+.motionButton:focus-visible { outline: 2px solid rgb(var(--color-primary)); outline-offset: 3px; }
 
 .companionRow { display: grid; grid-template-columns: minmax(0, 1fr) 164px; gap: 14px; align-items: stretch; }
 .companionRow > * { min-width: 0; }
 .companionRow > :first-child { border-color: rgb(var(--sol-line) / .72); background-image: linear-gradient(115deg, rgb(var(--sol-daylight) / .17), transparent 58%); }
 .contentGrid { padding-top: 3px; }
 .resumeWrap { scroll-margin-top: 100px; }
-.resumeWrap :global(.study-resume) { min-height: 270px; border-color: rgb(var(--sol-line) / .74); border-radius: 22px; background-image: radial-gradient(circle at 86% 19%, rgb(var(--sol-daylight) / .31), transparent 39%), linear-gradient(120deg, #fffdf9, #fff8e9 72%); box-shadow: inset 0 1px rgb(255 255 255 / .95), 0 20px 42px -35px rgb(140 101 49 / .29); }
-.resumeWrap :global(.study-resume::after) { content: ''; position: absolute; top: 24px; right: 30px; width: 92px; height: 92px; border: 1px solid rgb(var(--sol-amber) / .21); border-radius: 50%; box-shadow: 0 0 0 20px rgb(var(--sol-amber) / .034), 0 0 0 44px rgb(var(--sol-amber) / .019); pointer-events: none; }
+.hero .resumeWrap :global(.study-resume) { min-height: 204px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.resumeWrap :global(.study-eyebrow) { color: rgb(var(--color-text-secondary)); font-size: 11px; letter-spacing: .08em; }
+.resumeWrap :global(h2) { overflow-wrap: anywhere; }
 .goalWrap > [data-vivux-card], .statsWrap > [data-vivux-card], .aside > * { border-color: rgb(var(--sol-line) / .6); border-radius: 20px; box-shadow: inset 0 1px rgb(255 255 255 / .85), 0 13px 33px -28px rgb(126 91 44 / .25); }
 .goalWrap > [data-vivux-card] { background: linear-gradient(150deg, #fffefa, #fff8e9); }
 .statsWrap > [data-vivux-card] { background: linear-gradient(150deg, #fffdf8, #f9f1e5); }
@@ -99,48 +82,37 @@
 .gradeCard > * { position: relative; }
 .aside { align-content: start; }
 
-@keyframes solBreathe { 0%, 100% { opacity: .7; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.04); } }
-@keyframes solReveal { from { opacity: .3; transform: scale(.87); } to { opacity: 1; transform: scale(1); } }
-@keyframes solTurn { to { transform: rotate(360deg); } }
-@keyframes planetDrift { 0%, 100% { transform: translate(0, 2px); } 25% { transform: translate(3px, 0); } 50% { transform: translate(0, -3px); } 75% { transform: translate(-3px, 0); } }
+@keyframes solBreathe { 0%, 100% { opacity: .7; } 50% { opacity: .85; } }
 
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .hero { grid-template-columns: 1fr; }
-  .heroCopy { padding: 45px 40px 8px; }
-  .heroDescription { max-width: 520px; }
-  .chart { max-width: 680px; justify-self: center; }
+  .heroCopy { padding: 24px 24px 16px; }
+  .chart { height: 130px; max-width: 440px; aspect-ratio: auto; margin-bottom: 12px; }
+  .chartCoordinate, .chartLabel { display: none; }
+  .planet { width: 78px; height: 58px; margin: -29px 0 0 -39px; padding-top: 2px; gap: 4px; }
+  .planetDisc { width: 32px; height: 32px; }
+  .planetDisc svg { width: 16px; height: 16px; }
+  .planetLabel { font-size: 10px; padding: 1px 5px; }
+  .planetTheory { top: 75%; }
+  .planetHandbook { top: 75%; }
+  .motionButton { top: 7%; left: 5%; }
 }
 @media (max-width: 640px) {
   .page { padding-top: 2px; }
   .hero { border-radius: 20px; }
   .hero::before { inset: 8px; border-radius: 14px; }
-  .heroCopy { padding: 30px 25px 5px; }
+  .heroCopy { padding: 22px 20px 12px; }
   .heroIndex { font-size: 10px; }
-  .greeting { margin-top: 27px; }
-  .heroCopy h1 { font-size: clamp(34px, 10vw, 48px); }
-  .heroDescription { margin-top: 16px; font-size: 15px; }
-  .heroFootnote { margin-top: 20px; }
-  .chart { margin-top: 4px; }
-  .chartCoordinate { right: 10%; top: 3%; font-size: 7px; }
-  .chartLabel { left: 8%; bottom: 4%; font-size: 7px; }
-  .planet { width: 78px; height: 87px; margin: -43px 0 0 -39px; }
-  .planetDisc { width: 42px; height: 42px; }
-  .planetDisc svg { width: 17px; height: 17px; }
-  .planetLabel { font-size: 8px; padding: 3px 5px; }
-  .motionButton { top: 2%; right: auto; bottom: auto; left: 5%; }
+  .greeting { font-size: 20px; }
   .companionRow { grid-template-columns: 1fr; }
-  .resumeWrap :global(.study-resume) { min-height: 0; }
-  .resumeWrap :global(.study-resume::after) { opacity: .45; }
 }
 @media (max-width: 360px) {
   .heroCopy { padding-inline: 20px; }
-  .heroCopy h1 { font-size: 33px; }
   .heroIndex { letter-spacing: .1em; }
   .planetTheory { left: 19%; }
   .planetHandbook { left: 81%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sunHalo, .sunBody, .solarRays, .orbitOuter, .satelliteNear, .satelliteFar, .planetDisc { animation: none !important; }
-  .motionButton { display: none; }
-  .primaryAction:hover, .secondaryAction:hover, .gradeLink:hover .gradeCard { transform: none; }
+  .sunHalo { animation: none !important; }
+  .gradeLink:hover .gradeCard { transform: none; }
 }

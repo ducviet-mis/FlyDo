@@ -44,47 +44,50 @@ export default function HomePage() {
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
   const sol = resolvedTheme === 'light';
+  const styles = sol ? solStyles : lunaStyles;
+  const recentLesson = <div id="continue-learning" className={styles.resumeWrap}><ContinueLearning compact /></div>;
 
   return (
     <>
-      <div className={`study-page space-y-7 ${sol ? solStyles.page : lunaStyles.page}`}>
-        {sol && <SolHero name={user?.name} greeting={getGreeting()} />}
-        {!sol && <LunaHero name={user?.name} />}
-        {user && SHOW_FLYTIEE_ON_HOME && <div className={`grid min-w-0 grid-cols-1 items-stretch gap-3 sm:gap-4 ${sol ? solStyles.companionRow : lunaStyles.companionRow}`}><FlytieeWidget variant="hero" /><StreakCard /></div>}
-        <div className={`grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] ${sol ? solStyles.contentGrid : lunaStyles.contentGrid}`}>
-          <div className="min-w-0 space-y-6">
-            <div id="continue-learning" className={sol ? solStyles.resumeWrap : lunaStyles.resumeWrap}><ContinueLearning /></div>
-            <div className={sol ? solStyles.goalWrap : lunaStyles.goalWrap}><GoalRing /></div>
-            <section aria-labelledby="practice-heading" className={sol ? solStyles.practiceSection : lunaStyles.practiceSection}>
-              <div className={`mb-4 ${sol ? solStyles.sectionHeading : lunaStyles.sectionHeading}`}>
-                <p className={sol ? solStyles.sectionIndex : lunaStyles.sectionIndex}>02 / CHỌN ĐIỂM ĐẾN</p>
-                <h2 id="practice-heading" className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">Tự luyện theo chuyên đề</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Chọn lớp để tiếp tục hành trình học Toán.</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {grades.map(grade => (
-                  <Link key={grade.id} href={`/practice?grade=${grade.id}`} className={`group block rounded-lg ${sol ? solStyles.gradeLink : lunaStyles.gradeLink}`}>
-                    <Card level="compact" className={`h-full rounded-lg hover:border-primary/40 hover:shadow-card ${sol ? solStyles.gradeCard : lunaStyles.gradeCard}`}>
-                      <CardContent className="flex items-center gap-4 p-5">
-                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md ${grade.tone}`}><BookOpen aria-hidden="true" className="h-5 w-5" /></div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-lg font-semibold text-foreground">{grade.title}</h3>
-                          <p className="mt-0.5 text-sm text-muted-foreground">Khám phá các chuyên đề</p>
-                        </div>
-                        <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </section>
-            <div className={sol ? solStyles.statsWrap : lunaStyles.statsWrap}><StatsOverviewCard /></div>
+      <div className={`study-page space-y-7 ${styles.page}`}>
+        {sol ? <SolHero name={user?.name} greeting={getGreeting()}>{recentLesson}</SolHero>
+          : <LunaHero name={user?.name}>{recentLesson}</LunaHero>}
+        <div className="grid min-w-0 items-stretch gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <div className={styles.goalWrap}><GoalRing compact /></div>
+          <div className={styles.goalWrap}><WrongNotebookCard compact /></div>
+        </div>
+        {user && SHOW_FLYTIEE_ON_HOME && <div className={`grid min-w-0 grid-cols-1 items-stretch gap-3 sm:gap-4 ${styles.companionRow}`}><FlytieeWidget variant="hero" /><StreakCard /></div>}
+        <section aria-labelledby="practice-heading" className={styles.practiceSection}>
+          <div className={`mb-4 ${styles.sectionHeading}`}>
+            <p className={styles.sectionIndex}>02 / CHỌN ĐIỂM ĐẾN</p>
+            <h2 id="practice-heading" className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">Tự luyện theo chuyên đề</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Chọn lớp để tiếp tục hành trình học Toán.</p>
           </div>
-          <aside aria-label="Thông tin học tập bổ trợ" className={`grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-1 ${sol ? solStyles.aside : lunaStyles.aside}`}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {grades.map(grade => (
+              <Link key={grade.id} href={`/practice?grade=${grade.id}`} className={`group block rounded-lg ${styles.gradeLink}`}>
+                <Card level="compact" className={`h-full rounded-lg hover:border-primary/40 hover:shadow-card ${styles.gradeCard}`}>
+                  <CardContent className="flex items-center gap-4 p-5">
+                    <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md ${grade.tone}`}><BookOpen aria-hidden="true" className="h-5 w-5" /></div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold text-foreground">{grade.title}</h3>
+                      <p className="mt-0.5 text-sm text-muted-foreground">Khám phá các chuyên đề</p>
+                    </div>
+                    <ArrowUpRight aria-hidden="true" className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+        <div className={`grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px] ${styles.contentGrid}`}>
+          <div className="min-w-0">
+            <div className={styles.statsWrap}><StatsOverviewCard /></div>
+          </div>
+          <aside aria-label="Thông tin học tập bổ trợ" className={`grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-1 ${styles.aside}`}>
             {user && !SHOW_FLYTIEE_ON_HOME && <StreakCard />}
             <CountdownCard />
             <QuoteCarousel />
-            <WrongNotebookCard />
           </aside>
         </div>
       </div>
