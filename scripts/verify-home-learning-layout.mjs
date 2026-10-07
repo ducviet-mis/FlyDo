@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 const runtime = createRequire(resolve(process.env.FLYDO_QA_RUNTIME_PACKAGE || 'C:/Users/Admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/package.json'));
 const { chromium } = runtime('playwright');
 const directory = resolve(process.argv[2] || 'tmp/home-learning-visual');
-const snapshots = readdirSync(directory).filter(f => f.endsWith('.html'));
+const snapshots = readdirSync(directory).filter(f => f.endsWith('.html') && !f.endsWith('-exams.html'));
 for (const scenario of ['dark-long-title', 'dark-recent', 'light-anonymous', 'light-complete', 'light-long-title', 'light-new', 'light-no-wrong', 'light-recent']) {
   assert.ok(snapshots.includes(`${scenario}.html`), `Missing snapshot ${scenario}; run node scripts/test-home-learning-ui.mjs --snapshots ${directory} first`);
 }

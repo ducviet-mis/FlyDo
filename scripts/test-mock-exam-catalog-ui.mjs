@@ -1,7 +1,7 @@
 // Actual catalog components with controlled read-only data. No real exams or accounts.
 import jsdom from '../tmp/question-report-db-test/node_modules/jsdom/lib/api.js';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
 import { resolve, dirname } from 'node:path';
 
@@ -34,7 +34,7 @@ const exams = [
   { id: 'draft', title: 'BẢN NHÁP CHƯA CÔNG BỐ', duration: 60, grade: 8, category: 'midterm_1', scoring_mode: 'sectioned', scoring_ready: false },
 ];
 const attempt = (id, exam_id, score, days) => ({ id, exam_id, score, correct_count: score * 4, total_questions: 40, duration_used: 1501, created_at: new Date(Date.now() - days * 86400000).toISOString(), user_id: user.id });
-const attempts = [attempt('latest', 'one', 8.5, 1), attempt('best', 'one', 9, 2), attempt('older', 'one', 7.5, 3), attempt('other', 'three', 5, 4)];
+const attempts = [attempt('latest', 'one', 8.5, 1), attempt('best', 'one', 9, 2), attempt('older', 'one', 7.5, 3), attempt('other', 'three', 0, 4)];
 const db = {
   from(table) {
     assert.ok(['mock_exams', 'mock_exam_topics', 'mock_exam_attempts'].includes(table));
@@ -102,11 +102,32 @@ assert.equal(document.querySelector('a[href="/personal-exams?source=mock-exams"]
 const first = cards()[0];
 assert.ok(first.textContent.includes('9.00'));
 assert.ok(first.textContent.includes('Đã thi 3 lần'));
+assert.ok(first.textContent.includes('Đã làm'));
+const latestMetric = [...first.querySelectorAll('dt')].find(node => node.textContent === 'Điểm gần nhất');
+assert.ok(latestMetric, 'Show the latest score separately from best score');
+assert.equal(latestMetric.nextElementSibling.textContent.replace(/\s+/g, ''), '8.50/10');
+assert.ok(first.textContent.indexOf('Điểm gần nhất') < first.textContent.indexOf('Điểm cao nhất'));
+assert.equal([...cards()[2].querySelectorAll('dt')].find(node => node.textContent === 'Điểm gần nhất').nextElementSibling.textContent.replace(/\s+/g, ''), '0.00/10', 'A submitted zero score is still a real result');
+assert.ok(cards()[1].textContent.includes('Chưa làm'));
+assert.ok(cards()[1].textContent.includes('Chưa có kết quả'));
+assert.ok(!cards()[1].textContent.includes('0.00'), 'No attempts is not a zero score');
 assert.equal(first.querySelector('a[aria-label^="Xem kết quả gần nhất"]').getAttribute('href'), '/mock-exams/one/result?attemptId=latest');
+assert.equal(first.querySelector('a[aria-label^="Xem kết quả gần nhất"]').textContent.trim(), 'Kết quả');
 const historyButton = first.querySelector('[aria-label^="Lịch sử 3 lần thi"]');
-assert.equal(historyButton.querySelector('span[aria-hidden="true"]').textContent, '3');
+assert.match(historyButton.textContent, /Lịch sử\s*\(3\)/, 'History must be discoverable without hover');
 assert.equal(cards()[1].querySelector('[aria-label^="Lịch sử"]'), null);
 assert.equal(document.querySelector('[aria-label="Tùy chọn đề thi"]'), null, 'Results/history should no longer be hidden in a menu');
+const snapshotFlag = process.argv.indexOf('--snapshots');
+if (snapshotFlag >= 0) {
+  const directory = resolve(process.argv[snapshotFlag + 1]);
+  mkdirSync(directory, { recursive: true });
+  for (const theme of ['light', 'dark']) {
+    const copy = document.getElementById('root').cloneNode(true);
+    // Long real card titles for the browser's text wrapping checks, no live data.
+    copy.querySelector('article h3').textContent = 'ĐỀ ÔN TẬP GIỮA HỌC KÌ 1 — ĐA THỨC, TỨ GIÁC VÀ CÁC BÀI TOÁN VẬN DỤNG';
+    writeFileSync(resolve(directory, `${theme}-exams.html`), `<!doctype html><html lang="vi" class="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>${copy.outerHTML}</body></html>`);
+  }
+}
 
 await click(historyButton);
 const dialog = document.querySelector('[role="dialog"]');

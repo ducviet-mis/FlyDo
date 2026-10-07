@@ -78,6 +78,10 @@
 .gradeCard > * { position: relative; }
 .aside { align-content: start; }
 
+/* Keep wrapped greetings and long lesson titles compact on tablet. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .heroCopy { padding-block: 20px; }
+}
 @media (max-width: 767px) {
   .hero { grid-template-columns: 1fr; }
   .heroCopy { padding: 24px 24px 16px; }

@@ -46,14 +46,24 @@ globalThis.fetch = async (input, init = {}) => {
     if ((init.method || '').toUpperCase() === 'HEAD') return new Response(null, { headers: { 'Content-Range': `0-${fixture.answered - 1}/${fixture.answered}` } });
     // Retain actual SDK retry/error behavior without long synthetic backoff delays.
     if (url.searchParams.get('is_correct') === 'eq.false') return fixture.wrongError ? response({ message: 'Test offline' }, 503, { 'Retry-After': '0' }) : response(fixture.wrong ? [{ id: 'wrong-1', user_id: uid, question_id: 'question-1', lesson_id: lessonId, difficulty_level: 2, selected_answer: 1, is_correct: false, answered_at: '2026-10-07T02:00:00Z' }] : []);
-    return response([{ question_id: 'question-1', is_correct: false }, { question_id: 'question-2', is_correct: true }]);
+    if (fixture.emptyStats) return response([]);
+    const count = fixture.historyStats && !url.searchParams.has('answered_at') ? 8 : 2;
+    return response(Array.from({ length: count }, (_, i) => ({ question_id: `question-${i + 1}`, is_correct: count === 8 ? i < 6 : i === 1 })));
   }
   if (table === 'practice_lessons') return response({ title: fixture.title, grade: 8 });
   if (table === 'practice_questions') {
     if ((init.method || '').toUpperCase() === 'HEAD') return new Response(null, { headers: { 'Content-Range': '0-29/30' } });
     return response([{ id: 'question-1', lesson_id: lessonId, content: 'Câu hỏi thử nghiệm', options: ['A', 'B', 'C', 'D'], correct_answer: 0, difficulty_level: 2 }]);
   }
-  if (table === 'user_daily_online_time') return response([]);
+  if (table === 'user_daily_online_time') {
+    if (!fixture.historyStats) return response([]);
+    const rows = [
+      { study_date: localStudyDate(new Date(Date.now() - 86400000)), seconds: 1800 },
+      { study_date: localStudyDate(new Date(Date.now() - 35 * 86400000)), seconds: 7200 },
+    ];
+    const start = url.searchParams.getAll('study_date').find(value => value.startsWith('gte.'))?.slice(4);
+    return response(rows.filter(row => !start || row.study_date >= start));
+  }
   throw Error(`Unexpected HTTP request: ${url}`);
 };
 const cache = new Map(), moduleCss = new Map();
@@ -94,10 +104,11 @@ const HomePage = load(resolve(repo, 'src/app/home/page.tsx')).default;
 const { ContinueLearning } = load(resolve(repo, 'src/features/dashboard/components/continue-learning.tsx'));
 const { useAuthStore } = load(resolve(repo, 'src/features/auth/stores/auth-store.ts'));
 const { useGoalStore } = load(resolve(repo, 'src/features/daily-goal/stores/goal-store.ts'));
+const { localStudyDate } = load(resolve(repo, 'src/features/daily-goal/stores/online-study-store.ts'));
 const { getSupabaseClient } = load(resolve(repo, 'src/lib/supabase/client.ts'));
 const text = (el = document.body) => el.textContent.replace(/\s+/g, ' ').trim();
 const findButton = label => [...document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === label || text(b) === label);
-const findLink = label => [...document.querySelectorAll('a')].find(a => text(a) === label);
+const findLink = (label, scope = document) => [...scope.querySelectorAll('a')].find(a => text(a) === label);
 const before = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 const getHero = () => document.querySelector('section[aria-labelledby="sol-heading"], section[aria-labelledby="luna-heading"]');
 async function mount({ theme = 'light', anonymous = false, component = HomePage, ...overrides } = {}) {
@@ -135,7 +146,7 @@ for (const theme of ['light', 'dark']) {
     assert.equal(document.querySelectorAll('#resume-heading').length, 1, 'Only one recent lesson/query owner');
     const headings = [...document.querySelectorAll('h2')];
     const goals = headings.find(h => /Hôm nay của bạn/.test(text(h))), review = headings.find(h => /Việc nên làm tiếp/.test(text(h)));
-    const stats = headings.find(h => /Tổng quan học tập/.test(text(h))), exam = headings.find(h => /Kỳ thi sắp tới/.test(text(h))), quote = headings.find(h => /Góc cảm hứng/.test(text(h)));
+    const stats = headings.find(h => /Kết quả học tập/.test(text(h))), exam = headings.find(h => /Kỳ thi sắp tới/.test(text(h))), quote = headings.find(h => /Góc cảm hứng/.test(text(h)));
     assert.ok(goals && review && stats && exam && quote);
     assert.ok(before(resume, goals) && before(goals, review));
     for (const support of [stats, exam, quote]) assert.ok(before(review, support));
@@ -165,7 +176,7 @@ for (const anonymous of [true, false]) test(`${anonymous ? 'anonymous' : 'new st
   await mount({ anonymous, recent: false, wrong: false });
   assert.equal(findLink('Chọn lớp để bắt đầu')?.getAttribute('href'), '#practice-heading');
   for (const grade of [6, 7, 8, 9]) assert.ok(document.querySelector(`a[href="/practice?grade=${grade}"]`));
-  assert.equal(findLink('Tiếp tục học'), undefined);
+  assert.equal(Boolean(findLink('Tiếp tục học', getHero())), false, 'No recent lesson means no direct resume link in the hero');
   snapshot(anonymous ? 'light-anonymous' : 'light-new');
 });
 test('recent lesson network failure leaves a usable class picker', async () => {
@@ -197,6 +208,46 @@ test('compact goals retain all live metrics and the editable goal dialog', async
   assert.equal(useGoalStore.getState().goals.questionsCount, 40);
   assert.equal(document.querySelector('[role="dialog"]'), null);
   assert.match(document.querySelector('[aria-label^="Câu hoàn thành:"]').getAttribute('aria-label'), /2\/40/);
+});
+test('daily values precede secondary indicators in question/time/accuracy order', async () => {
+  await mount();
+  const region = [...document.querySelectorAll('h2')].find(h => /Hôm nay của bạn/.test(text(h))).closest('[data-vivux-card]');
+  assert.deepEqual([...region.querySelectorAll('dt')].map(text), ['Câu hoàn thành', 'Thời gian học', 'Chính xác']);
+  assert.deepEqual([...region.querySelectorAll('dd')].map(node => text(node).replace(/\s/g, '')), ['2/30câu', '0/60phút', '50%']);
+  assert.ok(region.textContent.includes('Câu hỏi từ tự luyện'));
+  assert.ok(region.textContent.includes('Thời gian online trên FlyDo'), 'Global online time must not be presented as practice-only time');
+  for (const metric of region.querySelectorAll('dl > div')) assert.ok(before(metric.querySelector('dd'), metric.querySelector('[role="img"]')), 'Values must precede decorative goal indicators');
+});
+for (const theme of ['light', 'dark']) test(`${theme}: longer-term statistics distinguish all-time from daily data and expose useful actions`, async () => {
+  await mount({ theme, historyStats: true });
+  const region = [...document.querySelectorAll('h2')].find(h => /Kết quả học tập/.test(text(h)))?.closest('[data-vivux-card]');
+  assert.ok(region, 'A separately labeled statistics region is required');
+  assert.ok(region.textContent.includes('thời gian online trên toàn FlyDo'), 'Cumulative time also includes other learning pages');
+  const tabs = [...region.querySelectorAll('[role="tab"]')];
+  assert.deepEqual(tabs.map(text), ['Hôm nay', '7 ngày gần nhất', '30 ngày gần nhất', 'Toàn bộ']);
+  const metrics = () => [...region.querySelectorAll('dl > div')].map(node => [text(node.querySelector('dt')), text(node.querySelector('dd')).replace(/\s/g, '')]);
+  assert.deepEqual(metrics(), [['Câu đã làm', '2câu'], ['Thời gian học', '30phút'], ['Chính xác', '50%']]);
+  assert.ok(before(region.querySelector('dl'), region.querySelector('[role="img"]')), 'Chart must follow the key values');
+  await React.act(async () => tabs[3].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })));
+  await React.act(async () => { await new Promise(r => setTimeout(r, 40)); });
+  assert.equal(tabs[3].getAttribute('aria-selected'), 'true');
+  assert.deepEqual(metrics(), [['Câu đã làm', '8câu'], ['Thời gian học', '150phút'], ['Chính xác', '75%']]);
+  assert.ok(region.querySelector('[role="img"][aria-label*="6 câu đúng, 2 câu sai"]'));
+  assert.ok(region.textContent.includes('Tích lũy toàn bộ'));
+  assert.equal(region.querySelector('a[href="/practice/wrong"]').textContent.trim(), 'Ôn câu sai');
+  assert.equal(region.querySelector('a[href="#continue-learning"]').textContent.trim(), 'Tiếp tục học');
+  assert.match(document.querySelector('[aria-label^="Câu hoàn thành:"]').getAttribute('aria-label'), /2\/30/);
+  const allQuery = requests.find(r => r.url.pathname.endsWith('/practice_progress') && r.url.searchParams.get('select') === 'question_id,is_correct' && !r.url.searchParams.has('answered_at'));
+  assert.ok(allQuery && allQuery.url.searchParams.get('user_id') === `eq.${uid}`, 'All-time reads remain account-scoped');
+  assert.ok(requests.filter(r => r.url.pathname.includes('/rest/v1/') && !r.url.pathname.includes('/rpc/')).every(r => ['GET', 'HEAD'].includes(r.method)), 'Presentation must not write learning data');
+  snapshot(`${theme}-progress-all`);
+});
+test('empty statistics explain missing practice results instead of offering nonexistent mistakes', async () => {
+  await mount({ emptyStats: true, wrong: false, recent: false });
+  const region = [...document.querySelectorAll('h2')].find(h => /Kết quả học tập/.test(text(h)))?.closest('[data-vivux-card]');
+  assert.ok(region?.textContent.includes('Chưa có kết quả tự luyện trong khoảng này'));
+  assert.equal(Boolean(region.querySelector('a[href="/practice/wrong"]')), false);
+  assert.ok(region.querySelector('a[href="#practice-heading"]'));
 });
 test('legacy/null difficulty still resumes level 1 through the same data filters', async () => {
   await mount({ component: ContinueLearning, level: null });
