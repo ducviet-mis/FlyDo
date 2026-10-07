@@ -60,3 +60,33 @@ test('repairs fully double-escaped math environments without losing row breaks',
   assert.equal(repaired, '\\begin{aligned}x&=1\\\\y&=2\\end{aligned}');
   assert.doesNotThrow(() => katex.renderToString(normalizeLatexInput(repaired), { displayMode: true, throwOnError: true }));
 });
+
+test('typesets three-point angle names with a hat spanning the complete name', () => {
+  const cases = [
+    ['∠BAC', '\\widehat{BAC}'],
+    ['\\angle BAC', '\\widehat{BAC}'],
+    ['\\angle{ABC}', '\\widehat{ABC}'],
+    ['\\angle { B A C }', '\\widehat{BAC}'],
+    ['\\\\angle BAC', '\\widehat{BAC}'],
+    ['\\angle BAC = \\angle CAD', '\\widehat{BAC} = \\widehat{CAD}'],
+  ];
+  for (const [source, expected] of cases) {
+    const normalized = normalizeLatexInput(source).trim();
+    assert.equal(normalized, expected, source);
+    assert.equal(normalizeLatexInput(normalized), normalized, 'normalization must be idempotent');
+    const mathml = katex.renderToString(normalized, { output: 'mathml', throwOnError: true });
+    assert.match(mathml, /<mover\b[^>]*>/, source);
+    assert.doesNotMatch(mathml, /∠/, source);
+  }
+});
+
+test('does not rewrite existing hats, other angle commands, or non-three-point arguments', () => {
+  for (const source of [
+    '\\widehat{BAC}', '\\hat{A}', '\\angle A', '\\angle ABCD',
+    '\\angle{ABCD}', '\\angle \\alpha', '\\langle BAC \\rangle',
+    '\\measuredangle BAC', '\\text{\\angle BAC}',
+    '\\textbf{literal {\\angle BAC}}',
+  ]) {
+    assert.equal(normalizeLatexInput(source), source, source);
+  }
+});

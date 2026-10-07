@@ -210,6 +210,34 @@ function removeMalformedSizingCommands(latex: string) {
   });
 }
 
+/** Use the Vietnamese textbook convention for complete three-point angle names. */
+function normalizeNamedAngles(source: string) {
+  const tokens = /\\(?:text|textbf|textit|textrm|textsf|texttt|mathrm|operatorname)\s*\{|\\angle(?![A-Za-z])/g;
+  let normalized = '';
+  let lastIndex = 0;
+  let token: RegExpExecArray | null;
+
+  while ((token = tokens.exec(source)) !== null) {
+    if (token[0].endsWith('{')) {
+      // Literal text, including nested groups, is not an angle expression.
+      const close = matchingClose(source, tokens.lastIndex - 1);
+      if (close < 0) break;
+      tokens.lastIndex = close + 1;
+      continue;
+    }
+
+    const name = source.slice(tokens.lastIndex).match(/^\s*(?:\{\s*([A-Z]\s*[A-Z]\s*[A-Z])\s*\}|([A-Z]\s*[A-Z]\s*[A-Z])(?![A-Za-z0-9_']))/);
+    if (!name) continue;
+
+    normalized += source.slice(lastIndex, token.index);
+    normalized += `\\widehat{${(name[1] ?? name[2]).replace(/\s/g, '')}}`;
+    tokens.lastIndex += name[0].length;
+    lastIndex = tokens.lastIndex;
+  }
+
+  return normalized + source.slice(lastIndex);
+}
+
 /** Normalize common AI/JSON LaTeX mistakes before rendering with KaTeX. */
 export function normalizeLatexInput(latex: string) {
   let fixed = latex;
@@ -294,6 +322,7 @@ export function normalizeLatexInput(latex: string) {
     fixed = fixed.replace(pattern, `\\${command}`);
   });
 
+  fixed = normalizeNamedAngles(fixed);
   fixed = removeMalformedSizingCommands(fixed);
   if (fixed.includes('/')) {
     // Sized parentheses are visual only; remove their commands so the grouped

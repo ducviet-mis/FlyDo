@@ -53,3 +53,21 @@ test('preserves an explicit multiline math block and recognizes plain typed opti
   assert.equal(formatOptionMath('90°'), '$90°$');
   assert.equal(formatOptionMath('x² + ½'), '$x² + ½$');
 });
+
+test('renders textbook angle hats in questions, options, and detailed solutions', () => {
+  for (const variant of ['inline', 'solution']) {
+    for (const content of [
+      'AD là tia phân giác của $\\angle BAC$ với $D \\in BC$.',
+      'AD là tia phân giác của ∠BAC với D thuộc BC.',
+      '$\\angle{BAC}=\\angle CAD$',
+      'Góc \\angle BAC là góc ở đỉnh A.',
+    ]) {
+      const html = renderToStaticMarkup(React.createElement(MathRenderer, { content, variant }));
+      assert.match(html, /<mover\b[^>]*>/, content);
+      assert.doesNotMatch(html, /katex-error|∠|\\angle/, content);
+      assert.match(html, /\\widehat\{BAC\}/, content);
+      if (content.includes('CAD')) assert.match(html, /\\widehat\{CAD\}/, content);
+      if (content.includes('là tia phân giác')) assert.match(html, /AD là tia phân giác của /);
+    }
+  }
+});
