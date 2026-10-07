@@ -38,7 +38,7 @@
 .chart { position: relative; min-width: 0; width: 100%; max-width: 440px; aspect-ratio: 600 / 420; align-self: center; justify-self: center; scroll-margin-top: 95px; }
 .chart::before { content: ''; position: absolute; top: 21%; left: 24%; width: 53%; height: 57%; border-radius: 50%; background: radial-gradient(circle, rgb(var(--sol-daylight) / .45), transparent 70%); filter: blur(23px); pointer-events: none; }
 .chartArt { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
-.sunHalo { animation: solBreathe 18s ease-in-out infinite; }
+.sunHalo { opacity: .78; }
 .chartCoordinate, .chartLabel { position: absolute; pointer-events: none; color: rgb(var(--sol-amber-ink) / .73); font-size: 9px; font-weight: 750; letter-spacing: .17em; }
 .chartCoordinate { right: 7%; top: 6%; }
 .chartLabel { left: 7%; bottom: 8%; }
@@ -54,10 +54,6 @@
 .planetPractice { left: 34%; top: 23%; --planet-fill: linear-gradient(140deg, #ffe9a4, #f4b45d); }
 .planetExams { left: 75%; top: 24%; --planet-fill: linear-gradient(140deg, #d9d7ff, #9c9de2); }
 .planetHandbook { left: 83%; top: 73%; --planet-fill: linear-gradient(140deg, #caeac5, #82bd8d); }
-.motionButton { position: absolute; left: 2%; top: 6%; z-index: 3; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid rgb(var(--sol-line) / .82); border-radius: 12px; background: rgb(255 252 244 / .88); color: rgb(var(--color-text-primary)); box-shadow: 0 8px 20px rgb(116 89 51 / .11); }
-.motionButton:hover { background: rgb(var(--sol-amber-soft)); }
-.hero[data-motion='paused'] .sunHalo, .hero:focus-within .sunHalo, .hero:hover .sunHalo { animation-play-state: paused; }
-.motionButton:focus-visible { outline: 2px solid rgb(var(--color-primary)); outline-offset: 3px; }
 
 .companionRow { display: grid; grid-template-columns: minmax(0, 1fr) 164px; gap: 14px; align-items: stretch; }
 .companionRow > * { min-width: 0; }
@@ -82,8 +78,6 @@
 .gradeCard > * { position: relative; }
 .aside { align-content: start; }
 
-@keyframes solBreathe { 0%, 100% { opacity: .7; } 50% { opacity: .85; } }
-
 @media (max-width: 767px) {
   .hero { grid-template-columns: 1fr; }
   .heroCopy { padding: 24px 24px 16px; }
@@ -95,7 +89,6 @@
   .planetLabel { font-size: 10px; padding: 1px 5px; }
   .planetTheory { top: 75%; }
   .planetHandbook { top: 75%; }
-  .motionButton { top: 7%; left: 5%; }
 }
 @media (max-width: 640px) {
   .page { padding-top: 2px; }
@@ -113,6 +106,5 @@
   .planetHandbook { left: 81%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sunHalo { animation: none !important; }
   .gradeLink:hover .gradeCard { transform: none; }
 }

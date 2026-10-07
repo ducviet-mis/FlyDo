@@ -68,7 +68,7 @@
 .chart { position: relative; min-width: 0; width: 100%; max-width: 440px; aspect-ratio: 600 / 420; align-self: center; justify-self: center; scroll-margin-top: 95px; }
 .chart::before { content: ''; position: absolute; top: 20%; left: 22%; width: 55%; height: 55%; border-radius: 50%; background: radial-gradient(circle, rgb(132 198 255 / .19), transparent 70%); filter: blur(24px); pointer-events: none; }
 .chartArt { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
-.moonHalo { animation: breathe 18s ease-in-out infinite; }
+.moonHalo { opacity: .7; }
 .chartCoordinate,
 .chartLabel { position: absolute; pointer-events: none; color: rgb(192 219 247 / .55); font-size: 9px; font-weight: 700; letter-spacing: .17em; }
 .chartCoordinate { right: 7%; top: 6%; }
@@ -87,10 +87,6 @@
 .destinationPractice { left: 34%; top: 23%; --node-tint: 167 204 255; }
 .destinationExams { left: 75%; top: 24%; --node-tint: 205 185 255; }
 .destinationHandbook { left: 83%; top: 73%; --node-tint: 255 218 158; }
-.motionButton { position: absolute; left: 2%; top: 6%; z-index: 3; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid rgb(178 214 255 / .3); border-radius: 12px; background: rgb(13 30 59 / .78); color: #e1f2ff; }
-.motionButton:hover { background: rgb(37 64 102 / .95); }
-.hero[data-motion='paused'] .moonHalo, .hero:focus-within .moonHalo, .hero:hover .moonHalo { animation-play-state: paused; }
-.motionButton:focus-visible { outline: 2px solid rgb(var(--color-primary)); outline-offset: 3px; }
 
 .companionRow { display: grid; grid-template-columns: minmax(0, 1fr) 164px; gap: 14px; align-items: stretch; }
 .companionRow > * { min-width: 0; }
@@ -117,8 +113,6 @@
 .gradeCard > * { position: relative; }
 .aside { align-content: start; }
 
-@keyframes breathe { 0%, 100% { opacity: .6; } 50% { opacity: .78; } }
-
 @media (max-width: 767px) {
   .hero { grid-template-columns: 1fr; }
   .heroCopy { padding: 24px 24px 16px; }
@@ -132,7 +126,6 @@
   .destinationPractice { left: 34%; top: 23%; }
   .destinationExams { left: 75%; top: 24%; }
   .destinationHandbook { left: 83%; top: 75%; }
-  .motionButton { top: 7%; left: 5%; }
 }
 
 @media (max-width: 640px) {
@@ -152,6 +145,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .moonHalo { animation: none !important; }
   .gradeLink:hover .gradeCard { transform: none; }
 }

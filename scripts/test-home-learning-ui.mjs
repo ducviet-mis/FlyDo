@@ -99,6 +99,7 @@ const text = (el = document.body) => el.textContent.replace(/\s+/g, ' ').trim();
 const findButton = label => [...document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === label || text(b) === label);
 const findLink = label => [...document.querySelectorAll('a')].find(a => text(a) === label);
 const before = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+const getHero = () => document.querySelector('section[aria-labelledby="sol-heading"], section[aria-labelledby="luna-heading"]');
 async function mount({ theme = 'light', anonymous = false, component = HomePage, ...overrides } = {}) {
   window.localStorage.clear(); requests = [];
   window.localStorage.setItem('theme', theme);
@@ -125,7 +126,7 @@ after(() => { getSupabaseClient().auth.broadcastChannel?.close(); dom.window.clo
 for (const theme of ['light', 'dark']) {
   test(`${theme}: greeting is followed by the real lesson/action, then goals/review before supporting information`, async () => {
     await mount({ theme });
-    const hero = document.querySelector('[data-motion]'), greeting = hero.querySelector('h1'), resume = document.querySelector('#continue-learning');
+    const hero = getHero(), greeting = hero.querySelector('h1'), resume = document.querySelector('#continue-learning');
     assert.ok(hero.contains(resume), 'Resume must live inside the compact hero, not after the illustration');
     assert.match(text(greeting), /Học sinh thử nghiệm/);
     assert.ok(before(greeting, resume));
@@ -142,23 +143,15 @@ for (const theme of ['light', 'dark']) {
     assert.equal(requests.filter(r => r.url.searchParams.get('select') === 'lesson_id,difficulty_level').length, 1);
     snapshot(`${theme}-recent`);
   });
-  test(`${theme}: effects can be paused and remembered without removing any learning destination`, async () => {
+  test(`${theme}: static hero has no effects toggle or connecting dashed paths and retains every destination`, async () => {
     await mount({ theme });
-    const label = theme === 'light' ? 'Sol' : 'Luna';
-    const control = findButton(`Tạm dừng hiệu ứng ${label}`);
-    assert.ok(control);
-    await React.act(async () => control.click());
-    assert.equal(document.querySelector('[data-motion]').getAttribute('data-motion'), 'paused');
-    assert.equal(control.getAttribute('aria-pressed'), 'true');
-    assert.equal(window.localStorage.getItem(`flydo-${label.toLowerCase()}-motion`), 'paused');
-    for (const href of ['/theory', '/practice', '/mock-exams', '/handbook']) assert.ok(document.querySelector(`[data-motion] a[href="${href}"]`));
-    await React.act(async () => root.unmount());
-    root = createRoot(document.getElementById('root'));
-    await React.act(async () => root.render(React.createElement(ThemeProvider, { defaultTheme: theme, forcedTheme: theme, attribute: 'class', enableSystem: false }, React.createElement(HomePage))));
-    const savedControl = findButton(`Bật hiệu ứng ${label}`);
-    assert.ok(savedControl, 'Pause must persist after leaving and returning');
-    await React.act(async () => savedControl.click());
-    assert.equal(document.querySelector('[data-motion]').getAttribute('data-motion'), 'playing');
+    const hero = getHero();
+    assert.equal(Boolean(hero.querySelector('button')), false, 'A static illustration must not offer a nonfunctional effects control');
+    assert.equal(Boolean(hero.querySelector('svg path[stroke-dasharray]')), false, 'Learning destinations should not be connected by dashed lines');
+    for (const href of ['/theory', '/practice', '/mock-exams', '/handbook']) {
+      const link = hero.querySelector(`a[href="${href}"]`);
+      assert.ok(link?.getAttribute('aria-label'));
+    }
   });
 }
 test('completed lesson retains the next-lesson route and accurate capped progress', async () => {

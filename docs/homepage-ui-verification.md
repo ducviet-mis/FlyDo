@@ -32,6 +32,6 @@ node scripts/test-home-learning-ui.mjs --snapshots tmp/home-learning-visual
 node scripts/verify-home-learning-layout.mjs
 ```
 
-The runner requires all eight exported scenarios; empty or incomplete snapshot folders fail instead of reporting success. It checks five viewport sizes, both themes, long titles, completion and empty-history states, touch targets, overlap, horizontal overflow, pause controls, and reduced motion. Screenshots are written beside the HTML snapshots. These are Chromium viewport checks, not a claim of testing on physical iOS/Safari devices.
+The runner requires all eight exported scenarios; empty or incomplete snapshot folders fail instead of reporting success. It checks five viewport sizes, both themes, long titles, completion and empty-history states, touch targets, overlap, horizontal overflow, static hero artwork without obsolete effects controls or connecting dashed lines, and reduced motion. Screenshots are written beside the HTML snapshots. These are Chromium viewport checks, not a claim of testing on physical iOS/Safari devices.
 
 Builds regenerate `public/sw.js` and may update `tsconfig.tsbuildinfo`. Preserve unrelated local changes before building. Do not stage temporary snapshots or installations.

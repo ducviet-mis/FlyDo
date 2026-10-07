@@ -42,7 +42,7 @@ try {
       try {
         const size = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }));
         assert.ok(size.width <= size.viewport + 1, `${label}: horizontal overflow`);
-        const hero = page.locator('[data-motion]');
+        const hero = page.locator('section[aria-labelledby="sol-heading"], section[aria-labelledby="luna-heading"]');
         const bounds = await hero.boundingBox();
         assert.ok(bounds.height < (viewport.width < 768 ? 560 : 410), `${label}: hero too tall (${bounds.height}px)`);
         const action = page.locator('#continue-learning a').first();
@@ -63,13 +63,12 @@ try {
           assert.ok(x <= 1 || y <= 1, `${label}: overlapping targets ${boxes[a].name} / ${boxes[b].name}`);
         }
         const animations = await hero.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.effect?.getComputedTiming().iterations === Infinity).length);
-        assert.ok(animations <= 1, `${label}: too many continuous effects`);
-        await hero.evaluate(el => el.setAttribute('data-motion', 'paused'));
-        assert.ok(await hero.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.effect?.getComputedTiming().iterations === Infinity).every(a => a.playState === 'paused')), `${label}: pause must stop every continuous hero effect`);
+        assert.equal(animations, 0, `${label}: static hero must not retain continuous effects`);
+        assert.equal(await hero.locator('button').count(), 0, `${label}: remove obsolete effects control`);
+        assert.equal(await hero.locator('svg path[stroke-dasharray]').count(), 0, `${label}: remove connecting dashed lines`);
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         assert.equal(await hero.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a instanceof CSSAnimation).length), 0, `${label}: reduced motion must disable decorative animations`);
-        assert.ok(await hero.locator('button[aria-pressed]').isVisible(), `${label}: retain effects control`);
         console.log(`PASS ${label}: hero ${Math.round(bounds.height)}px, action ${Math.round(actionBounds.y)}px`);
       } catch (error) { failures.push(error.message); console.error(`FAIL ${error.message}`); }
       await page.screenshot({ path: resolve(directory, `${file.slice(0, -5)}-${viewport.width}.png`), fullPage: true });

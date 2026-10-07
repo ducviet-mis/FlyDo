@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { BookMarked, BookOpen, FileText, Pause, PenLine, Play, Sun } from 'lucide-react';
+import { BookMarked, BookOpen, FileText, PenLine, Sun } from 'lucide-react';
 import styles from './sol-home.module.css';
 
 type SolHeroProps = { name?: string | null; greeting: string; children: ReactNode };
@@ -15,22 +15,8 @@ const destinations = [
 ] as const;
 
 export function SolHero({ name, greeting, children }: SolHeroProps) {
-  const [motionPaused, setMotionPaused] = useState(false);
-
-  useEffect(() => {
-    try { setMotionPaused(localStorage.getItem('flydo-sol-motion') === 'paused'); }
-    catch { /* The page remains usable when storage is unavailable. */ }
-  }, []);
-
-  function toggleMotion() {
-    const next = !motionPaused;
-    setMotionPaused(next);
-    try { localStorage.setItem('flydo-sol-motion', next ? 'paused' : 'playing'); }
-    catch { /* Keep the preference for this visit. */ }
-  }
-
   return (
-    <section className={styles.hero} aria-labelledby="sol-heading" data-motion={motionPaused ? 'paused' : 'playing'}>
+    <section className={styles.hero} aria-labelledby="sol-heading">
       <div className={styles.heroAtmosphere} aria-hidden="true" />
       <div className={styles.heroCopy}>
         <p className={styles.heroIndex}><Sun className="h-4 w-4" aria-hidden="true" /> ĐÀI QUAN SÁT SOL <span aria-hidden="true">/</span> 01</p>
@@ -43,7 +29,6 @@ export function SolHero({ name, greeting, children }: SolHeroProps) {
           <defs>
             <radialGradient id="sol-halo"><stop stopColor="#fff0bd" stopOpacity=".96" /><stop offset=".34" stopColor="#f8c66b" stopOpacity=".36" /><stop offset="1" stopColor="#ed9f41" stopOpacity="0" /></radialGradient>
             <radialGradient id="sol-disc" cx=".35" cy=".25" r=".82"><stop stopColor="#fffbe0" /><stop offset=".44" stopColor="#ffdd83" /><stop offset=".82" stopColor="#f5a944" /><stop offset="1" stopColor="#d87c2b" /></radialGradient>
-            <linearGradient id="sol-route" x1="70" y1="290" x2="530" y2="80" gradientUnits="userSpaceOnUse"><stop stopColor="#5298bf" /><stop offset=".52" stopColor="#d6a05c" /><stop offset="1" stopColor="#e09c58" /></linearGradient>
             <filter id="sol-soft-glow"><feGaussianBlur stdDeviation="8" /></filter>
           </defs>
           <circle className={styles.sunHalo} cx="300" cy="216" r="178" fill="url(#sol-halo)" />
@@ -51,7 +36,6 @@ export function SolHero({ name, greeting, children }: SolHeroProps) {
           <circle cx="300" cy="210" r="128" fill="none" stroke="#ae8550" strokeOpacity=".31" strokeWidth="1" />
           <ellipse cx="300" cy="211" rx="238" ry="91" fill="none" stroke="#af814d" strokeOpacity=".29" strokeWidth="1.3" transform="rotate(-26 300 211)" />
           <ellipse cx="300" cy="211" rx="224" ry="93" fill="none" stroke="#b58e61" strokeOpacity=".18" strokeWidth="1" transform="rotate(26 300 211)" />
-          <path d="M75 271 202 97 452 103 492 307" fill="none" stroke="url(#sol-route)" strokeOpacity=".47" strokeWidth="1.4" strokeDasharray="5 9" strokeLinecap="round" />
           <path d="M300 37v26M300 358v25M58 210h24M518 210h24" stroke="#a47a49" strokeOpacity=".39" strokeWidth="1" />
           <g stroke="#e59b42" strokeOpacity=".7" strokeWidth="2" strokeLinecap="round">
             <path d="M300 122v-18M300 309v18M206 216h-18M394 216h18M234 150l-13-13M366 282l13 13M366 150l13-13M234 282l-13 13" />
@@ -75,9 +59,6 @@ export function SolHero({ name, greeting, children }: SolHeroProps) {
             <span className={styles.planetLabel}>{label}</span>
           </Link>
         ))}
-        <button type="button" onClick={toggleMotion} className={styles.motionButton} aria-label={motionPaused ? 'Bật hiệu ứng Sol' : 'Tạm dừng hiệu ứng Sol'} aria-pressed={motionPaused} title={motionPaused ? 'Bật hiệu ứng' : 'Tạm dừng hiệu ứng'}>
-          {motionPaused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
-        </button>
       </div>
     </section>
   );
