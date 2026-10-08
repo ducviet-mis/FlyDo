@@ -80,13 +80,33 @@ test('typesets three-point angle names with a hat spanning the complete name', (
   }
 });
 
-test('does not rewrite existing hats, other angle commands, or non-three-point arguments', () => {
+test('does not rewrite existing hats, other angle commands, or unsupported angle arguments', () => {
   for (const source of [
-    '\\widehat{BAC}', '\\hat{A}', '\\angle A', '\\angle ABCD',
+    '\\widehat{BAC}', '\\hat{A}', '\\angle AB', '\\angle ABCD',
     '\\angle{ABCD}', '\\angle \\alpha', '\\langle BAC \\rangle',
     '\\measuredangle BAC', '\\text{\\angle BAC}',
     '\\textbf{literal {\\angle BAC}}',
   ]) {
     assert.equal(normalizeLatexInput(source), source, source);
+  }
+});
+
+test('typesets a single vertex angle with a hat instead of an angle prefix', () => {
+  for (const [source, expected] of [
+    ['∠A', '\\widehat{A}'],
+    ['∠B', '\\widehat{B}'],
+    ['\\angle A', '\\widehat{A}'],
+    ['\\angle{B}', '\\widehat{B}'],
+    ['\\angle { C }', '\\widehat{C}'],
+    ['\\\\angle D', '\\widehat{D}'],
+    ['\\angle A + \\angle B = 180^\\circ', '\\widehat{A} + \\widehat{B} = 180^\\circ'],
+    ['\\angle A = \\angle BAC', '\\widehat{A} = \\widehat{BAC}'],
+  ]) {
+    const normalized = normalizeLatexInput(source).trim();
+    assert.equal(normalized, expected, source);
+    assert.equal(normalizeLatexInput(normalized), normalized, source);
+    const mathml = katex.renderToString(normalized, { output: 'mathml', throwOnError: true });
+    assert.match(mathml, /<mover\b[^>]*>/, source);
+    assert.doesNotMatch(mathml, /∠/, source);
   }
 });

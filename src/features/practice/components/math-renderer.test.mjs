@@ -39,6 +39,27 @@ test('keeps a geometry solution environment whole and removes source citations',
   assert.match(html, /katex-display/);
 });
 
+test('renders both single-letter angles in the admin short-answer preview example', () => {
+  const content = 'Hình bình hành $ABCD$ có $\\angle A=(2x+18)^\\circ$ và $\\angle B=(3x-8)^\\circ$. Tìm $x$. Chỉ nhập một số, không kèm đơn vị hay ký hiệu.';
+  for (const variant of ['inline', 'solution']) {
+    const html = renderToStaticMarkup(React.createElement(MathRenderer, { content, variant }));
+    assert.match(html, /\\widehat\{A\}=\(2x\+18\)\^\\circ/);
+    assert.match(html, /\\widehat\{B\}=\(3x-8\)\^\\circ/);
+    assert.doesNotMatch(html, /katex-error|∠|\\angle/);
+    assert.match(html, /Chỉ nhập một số, không kèm đơn vị hay ký hiệu/);
+  }
+});
+
+test('keeps a single angle label attached in raw LaTeX and Unicode prose', () => {
+  for (const content of ['Góc \\angle A và góc \\angle B bù nhau.', 'Góc ∠A và góc ∠B bù nhau.']) {
+    const html = renderToStaticMarkup(React.createElement(MathRenderer, { content }));
+    assert.match(html, /\\widehat\{A\}/, content);
+    assert.match(html, /\\widehat\{B\}/, content);
+    assert.doesNotMatch(html, /katex-error|∠|\\angle/, content);
+    assert.match(html, /bù nhau\./, content);
+  }
+});
+
 test('recognizes Unicode math in prose, alternate delimiters, and leaves URLs alone', () => {
   const formatted = formatOptionMath('Góc ∠ABC = 90° và AB ⟂ CD. Xem https://flydo.vn/a/b');
   assert.match(formatted, /\$∠ABC = 90°\$/);

@@ -210,7 +210,7 @@ function removeMalformedSizingCommands(latex: string) {
   });
 }
 
-/** Use the Vietnamese textbook convention for complete three-point angle names. */
+/** Use the Vietnamese textbook convention for single-vertex and three-point angles. */
 function normalizeNamedAngles(source: string) {
   const tokens = /\\(?:text|textbf|textit|textrm|textsf|texttt|mathrm|operatorname)\s*\{|\\angle(?![A-Za-z])/g;
   let normalized = '';
@@ -226,7 +226,7 @@ function normalizeNamedAngles(source: string) {
       continue;
     }
 
-    const name = source.slice(tokens.lastIndex).match(/^\s*(?:\{\s*([A-Z]\s*[A-Z]\s*[A-Z])\s*\}|([A-Z]\s*[A-Z]\s*[A-Z])(?![A-Za-z0-9_']))/);
+    const name = source.slice(tokens.lastIndex).match(/^\s*(?:\{\s*([A-Z](?:\s*[A-Z]\s*[A-Z])?)\s*\}|([A-Z](?:\s*[A-Z]\s*[A-Z])?)(?![A-Za-z0-9_']))/);
     if (!name) continue;
 
     normalized += source.slice(lastIndex, token.index);

@@ -56,8 +56,8 @@ function wrapRawMathAtoms(value: string) {
  * while turning raw LaTex fragments into inline math blocks.
  */
 function formatRawMathInText(value: string) {
-  // Keep all three point labels attached to their command during prose splitting.
-  value = value.replace(/\\angle(?![A-Za-z])\s*([A-Z]\s*[A-Z]\s*[A-Z])(?![A-Za-z0-9_'])/g,
+  // Keep single-vertex and three-point labels attached during prose splitting.
+  value = value.replace(/\\angle(?![A-Za-z])\s*([A-Z](?:\s*[A-Z]\s*[A-Z])?)(?![A-Za-z0-9_'])/g,
     (_match, name: string) => `\\angle{${name.replace(/\s/g, '')}}`);
   const rawLatexExpressionPattern = /[+-]?\s*\\(?:d?frac|tfrac)\s*\{[^{}\n]+\}\s*\{[^{}\n]+\}(?:\s*[A-Za-z](?:\^(?:\{[^{}\n]+\}|[+-]?\d+|\\[A-Za-z]+)|_(?:\{[^{}\n]+\}|[A-Za-z0-9+-]+))?)*|[+-]?\s*\\[A-Za-z]+(?:\s*\{[^{}\n]+\})?(?:\s*(?:=|\+|-|\*|\/)\s*(?:\\[A-Za-z]+(?:\s*\{[^{}\n]+\})?|[0-9A-Za-z]+(?:\^(?:\{[^{}\n]+\}|[+-]?\d+|\\[A-Za-z]+)|_(?:\{[^{}\n]+\}|[A-Za-z0-9+-]+))?))*|[+-]?\d+(?:\^(?:\{[^{}\n]+\}|[+-]?\d+|\\[A-Za-z]+)|_(?:\{[^{}\n]+\}|[A-Za-z0-9+-]+))/g;
   const parts: string[] = [];
