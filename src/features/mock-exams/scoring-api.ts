@@ -69,6 +69,13 @@ export function deleteMockExamQuestion(examId: string, questionId: string, revis
   return scoringRpc('admin_delete_mock_exam_question', { p_exam_id: examId, p_question_id: questionId, p_expected_revision: revision });
 }
 
-export function importMockExamQuestions(examId: string, questions: readonly unknown[], revision: number): Promise<ScoringDetails> {
-  return scoringRpc('admin_import_mock_exam_questions', { p_exam_id: examId, p_questions: questions, p_expected_revision: revision });
+export async function importMockExamQuestions(examId: string, questions: readonly unknown[], revision: number): Promise<ScoringDetails> {
+  try {
+    return await scoringRpc('admin_import_and_publish_mock_exam_questions', { p_exam_id: examId, p_questions: questions, p_expected_revision: revision });
+  } catch (error) {
+    if (error instanceof ScoringRpcError && (error.code === 'PGRST202' || error.code === '42883')) {
+      throw new ScoringRpcError('Chưa bật nhập đề trực tiếp. ADMIN cần chạy mock-exam-auto-publish-import.sql rồi thử lại; bản JSON vẫn được giữ.', error.code);
+    }
+    throw error;
+  }
 }

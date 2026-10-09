@@ -119,6 +119,7 @@ export default function JsonQuestionImportPage() {
   const [previewing, setPreviewing] = useState(false);
   const [scoringPreview, setScoringPreview] = useState<ScoringDetails | null>(null);
   const previewGeneration = useRef(0);
+  const importInFlight = useRef(false);
   const [message, setMessage] = useState('');
   const [showGeometryExample, setShowGeometryExample] = useState(false);
 
@@ -171,7 +172,7 @@ export default function JsonQuestionImportPage() {
     setScoringPreview(null);
     setErrors(result.errors);
     setPreviewIndex(0);
-    setMessage(result.errors.length ? '' : `Đã kiểm tra ${result.questions.length} câu hỏi. Hãy xem trước rồi duyệt nhập.`);
+    setMessage(result.errors.length ? '' : `Đã kiểm tra ${result.questions.length} câu hỏi.${target === 'mock_exam' ? ' Có thể nhập và đưa đề vào sử dụng ngay.' : ' Hãy xem trước rồi duyệt nhập.'}`);
     if (result.errors.length) return;
     if (target === 'mock_exam' && !isSectioned && result.questions.some((q) => q.question_type === 'true_false' || q.points !== undefined)) {
       setErrors(['Đề này đang chấm điểm theo kiểu cũ. Mở “Điểm & cấu trúc” trong Quản lý Thi thử và chuyển sang chia điểm theo phần trước khi nhập đúng/sai hoặc điểm chỉnh riêng.']); return;
@@ -216,6 +217,7 @@ export default function JsonQuestionImportPage() {
   };
 
   const handleImport = async () => {
+    if (importInFlight.current) return;
     if (target === 'practice' && !lessonId) {
       setErrors(['Hãy chọn bài tự luyện trước khi nhập.']);
       return;
@@ -231,17 +233,17 @@ export default function JsonQuestionImportPage() {
     if (target === 'mock_exam' && !isSectioned && result.questions.some((q) => q.question_type === 'true_false' || q.points !== undefined)) {
       setErrors(['Hãy chuyển đề sang chia điểm theo phần tại Quản lý Thi thử trước khi nhập dạng này.']); return;
     }
-    if (isSectioned && !scoringPreview) { setErrors(['Hãy kiểm tra và xem trước điểm của bản JSON hiện tại trước khi nhập.']); return; }
-    if (!window.confirm(`Xác nhận nhập ${result.questions.length} câu vào ${destinationName}? Các câu sẽ được thêm sau những câu đã có.`)) return;
+    if (target === 'practice' && !window.confirm(`Xác nhận nhập ${result.questions.length} câu vào ${destinationName}? Các câu sẽ được thêm sau những câu đã có.`)) return;
 
+    importInFlight.current = true;
     setSaving(true);
-    setMessage('Đang lưu toàn bộ câu hỏi...');
+    setMessage(target === 'mock_exam' ? 'Đang nhập câu hỏi, phân điểm và đưa đề vào sử dụng...' : 'Đang lưu toàn bộ câu hỏi...');
     try {
-    const imported = isSectioned ? await importMockExamQuestions(examId, result.questions, scoringPreview!.revision) : null;
-    const { data, error } = isSectioned ? { data: imported?.count ?? result.questions.length, error: null } : await getSupabaseClient().rpc('import_questions_json', {
+    const imported = target === 'mock_exam' ? await importMockExamQuestions(examId, result.questions, (await getMockExamScoring(examId)).revision) : null;
+    const { data, error } = target === 'mock_exam' ? { data: imported?.count ?? result.questions.length, error: null } : await getSupabaseClient().rpc('import_questions_json', {
       p_target: target,
       p_lesson_id: target === 'practice' ? lessonId : null,
-      p_exam_id: target === 'mock_exam' ? examId : null,
+      p_exam_id: null,
       p_level: target === 'practice' ? Number(level) : null,
       p_questions: result.questions,
     });
@@ -251,7 +253,8 @@ export default function JsonQuestionImportPage() {
       setMessage('');
     } else {
       setErrors([]);
-      setMessage(`Đã nhập thành công ${data ?? result.questions.length} câu vào ${destinationName}.`);
+      setMessage(`Đã nhập thành công ${data ?? result.questions.length} câu vào ${destinationName}.${target === 'mock_exam' ? ' Đề đã được đưa vào sử dụng; không cần duyệt cấu trúc điểm.' : ''}`);
+      if (imported) setExams(current => current.map(exam => exam.id === imported.exam.id ? { ...exam, scoring_mode: imported.exam.scoring_mode, scoring_revision: imported.revision } : exam));
       setJsonText('');
       setQuestions([]);
       setScoringPreview(null);
@@ -260,7 +263,7 @@ export default function JsonQuestionImportPage() {
     } catch (error) {
       setErrors([error instanceof Error ? error.message : 'Không nhập được câu hỏi. Bản JSON vẫn được giữ để kiểm tra lại.']);
       setScoringPreview(null); setMessage('');
-    } finally { setSaving(false); }
+    } finally { importInFlight.current = false; setSaving(false); }
   };
 
   if (!initialized || isLoading || loadingDestinations) return <div className="py-20 text-center animate-pulse">Đang chuẩn bị trình nhập đề...</div>;
@@ -274,7 +277,7 @@ export default function JsonQuestionImportPage() {
       <Card className="overflow-hidden rounded-xl border-border">
         <CardHeader className="border-b border-border bg-muted/50">
           <CardTitle as="h2" className="flex items-center gap-2 text-lg"><UploadCloud className="h-5 w-5 text-primary" />Nhập câu hỏi</CardTitle>
-          <CardDescription>Dán JSON AI tạo, kiểm tra cách hiển thị công thức rồi duyệt để lưu hàng loạt vào đúng nơi đã chọn.</CardDescription>
+          <CardDescription>{target === 'mock_exam' ? 'Chọn đề, dán JSON rồi nhập để đưa đề vào sử dụng ngay. Xem trước là tùy chọn; hệ thống vẫn kiểm tra câu hỏi và cấu trúc điểm khi lưu.' : 'Dán JSON, kiểm tra cách hiển thị công thức rồi duyệt để lưu hàng loạt vào bài đã chọn.'}</CardDescription>
         </CardHeader>
         <CardContent className="p-5 sm:p-6"><fieldset disabled={saving || previewing} className="min-w-0 space-y-6">
           <section data-admin-step aria-labelledby="import-destination-heading">
@@ -310,7 +313,11 @@ export default function JsonQuestionImportPage() {
           </div>
 
           <div className="space-y-2"><Label htmlFor="question-json">Dán JSON câu hỏi</Label><Textarea id="question-json" value={jsonText} onChange={(event) => { setJsonText(event.target.value); clearPreview(); }} placeholder={buildQuestionJsonSample(target, effectiveType)} className="min-h-72 resize-y bg-surface font-mono text-sm leading-6" spellCheck={false} /></div>
-          <div className="flex flex-col gap-3 sm:flex-row"><Button type="button" onClick={handlePreview} disabled={!canPreview || previewing || saving} className="h-11 bg-primary text-primary-foreground"><Code2 className="mr-2 h-4 w-4" />Kiểm tra và xem trước</Button><Button type="button" variant="outline" onClick={() => { setJsonText(''); clearPreview(); }} disabled={!jsonText && !questions.length} className="h-11">Xóa bản nháp</Button></div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            {target === 'mock_exam' && <Button type="button" onClick={handleImport} disabled={!canPreview || previewing || saving} className="min-h-11 h-auto whitespace-normal bg-primary px-6 py-3 text-primary-foreground">{saving ? <><Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />Đang nhập...</> : <><UploadCloud className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />Nhập và đưa đề vào sử dụng</>}</Button>}
+            <Button type="button" variant={target === 'mock_exam' ? 'outline' : 'default'} onClick={handlePreview} disabled={!canPreview || previewing || saving} className="h-11"><Code2 className="mr-2 h-4 w-4" aria-hidden="true" />Kiểm tra và xem trước</Button><Button type="button" variant="outline" onClick={() => { setJsonText(''); clearPreview(); }} disabled={saving || previewing || (!jsonText && !questions.length)} className="h-11">Xóa bản nháp</Button>
+          </div>
+          {target === 'mock_exam' && <p className="text-sm leading-6 text-muted-foreground">Xem trước là tùy chọn. Một lần nhập sẽ thêm câu vào cuối đề, tự chia điểm theo cấu hình đã lưu và đưa đề hợp lệ vào sử dụng. Nếu cấu trúc điểm không hợp lệ, hệ thống không nhập câu nào và giữ lại JSON để bạn sửa.</p>}
           </section>
         </fieldset>
         </CardContent>
@@ -319,19 +326,19 @@ export default function JsonQuestionImportPage() {
       {(message || errors.length > 0) && <div role={errors.length ? 'alert' : 'status'} aria-live="polite" className={`rounded-xl border p-4 ${errors.length ? 'border-destructive/50 bg-destructive-soft text-destructive' : 'border-success/50 bg-success-soft text-success'}`}><div className="flex gap-3">{errors.length ? <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />}<div><p className="font-bold">{errors.length ? 'Cần sửa trước khi nhập' : 'Sẵn sàng'}</p>{errors.length ? <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6">{errors.map((error) => <li key={error}>{error}</li>)}</ul> : <p className="mt-1 text-sm leading-6">{message}</p>}</div></div></div>}
 
       <section data-admin-step aria-labelledby="import-review-heading">
-        <h2 id="import-review-heading" className="admin-step-heading text-lg font-semibold"><span className="admin-step-number" aria-hidden="true">3</span>Kiểm tra và duyệt</h2>
+        <h2 id="import-review-heading" className="admin-step-heading text-lg font-semibold"><span className="admin-step-number" aria-hidden="true">3</span>{target === 'mock_exam' ? 'Xem trước (tùy chọn)' : 'Kiểm tra và duyệt'}</h2>
         {previewing && <p role="status" className="mb-4 text-sm text-muted-foreground">Đang kiểm tra điểm trên máy chủ…</p>}
         {scoringPreview && <div data-import-scoring-preview className="mb-5 rounded-xl border border-border bg-card p-4 sm:p-5"><h3 className="font-semibold">Điểm sau khi nhập</h3><p className="mt-1 text-sm text-muted-foreground">Gồm cả câu đã có và câu mới. Chỉ xem trước, chưa lưu dữ liệu.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">{(['multiple_choice','true_false','short_answer'] as const).map((type) => <div key={type} className="rounded-lg border border-border p-3"><p className="text-sm text-muted-foreground">{QUESTION_TYPE_LABELS[type]}</p><p className="mt-1 font-semibold">{formatPoints(scoringPreview.exam.section_points[type])} điểm <span className="font-normal text-muted-foreground">· {scoringPreview.questions.filter((q) => q.question_type === type).length} câu</span></p></div>)}</div>
           <ol className="mt-4 max-h-72 space-y-2 overflow-y-auto">{scoringPreview.questions.map((q,i) => <li key={q.id} className="flex items-start gap-3 border-b border-border py-2 text-sm"><span className="shrink-0 text-muted-foreground">{i+1}.</span><div className="min-w-0 flex-1"><MathRenderer content={q.content} />{i >= scoringPreview.questions.length - questions.length && <span className="text-xs text-primary">Câu mới</span>}</div><span className="shrink-0 text-right font-semibold">{q.max_points == null ? 'Chưa chia' : `${formatPoints(q.max_points)} đ`}<span className="block text-xs font-normal text-muted-foreground">{q.points_override == null ? 'Tự động' : 'Chỉnh riêng'}</span></span></li>)}</ol>
-          {scoringPreview.errors.length > 0 && <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm"><p className="font-semibold">Đề vẫn là bản nháp sau khi nhập</p><ul className="mt-2 list-disc pl-5">{scoringPreview.errors.map((e) => <li key={e}>{e}</li>)}</ul><p className="mt-2">Bạn có thể nhập nội dung trước, rồi hoàn thiện điểm trong Quản lý Thi thử.</p></div>}
+          {scoringPreview.errors.length > 0 && <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm"><p className="font-semibold">Cần sửa cấu trúc điểm trước khi nhập</p><ul className="mt-2 list-disc pl-5">{scoringPreview.errors.map((e) => <li key={e}>{e}</li>)}</ul><p className="mt-2">Sửa tổng điểm từng phần trong Quản lý Thi thử rồi nhập lại. Không cần bước duyệt riêng.</p></div>}
         </div>}
-        {!currentPreview && <p className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">Chọn nơi lưu, dán JSON rồi bấm “Kiểm tra và xem trước”. Câu hỏi chỉ được lưu sau khi bạn duyệt nhập.</p>}
+        {!currentPreview && <p className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">{target === 'mock_exam' ? 'Bạn có thể nhập JSON ngay bằng nút “Nhập và đưa đề vào sử dụng”, hoặc xem trước công thức và hình vẽ tại đây nếu muốn.' : 'Chọn nơi lưu, dán JSON rồi bấm “Kiểm tra và xem trước”. Câu hỏi chỉ được lưu sau khi bạn duyệt nhập.'}</p>}
       {currentPreview && <Card className="rounded-xl border-border">
         <CardHeader className="flex flex-col gap-4 border-b border-border sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" />Xem trước nội dung</CardTitle><CardDescription className="mt-1">Đáp án đúng hiển thị màu xanh chỉ để Admin kiểm tra, học sinh sẽ không thấy trạng thái này.</CardDescription></div><Badge variant="outline" className="w-fit border-primary bg-primary-soft px-3 py-1 text-primary">{questions.length} câu hợp lệ</Badge></CardHeader>
         <CardContent className="p-5 sm:p-6"><div className="mb-4 flex flex-wrap gap-2">{questions.map((_, index) => <Button key={index} type="button" variant={index === previewIndex ? 'default' : 'outline'} onClick={() => setPreviewIndex(index)} className="h-11 min-w-11 px-3" aria-label={`Xem trước câu ${index + 1}`}>{index + 1}</Button>)}</div>
           <PreviewQuestion question={currentPreview} index={previewIndex} />
-          <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground">Đề sẽ được thêm sau các câu đã có tại <span className="font-semibold text-foreground">{destinationName}</span>.</p><Button type="button" onClick={handleImport} disabled={saving || previewing || errors.length > 0 || (isSectioned && !scoringPreview)} className="h-11 bg-primary px-6 font-bold text-primary-foreground">{saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang nhập...</> : <><UploadCloud className="mr-2 h-4 w-4" />Duyệt và nhập {questions.length} câu</>}</Button></div>
+          <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground">Đề sẽ được thêm sau các câu đã có tại <span className="font-semibold text-foreground">{destinationName}</span>.</p>{target === 'practice' && <Button type="button" onClick={handleImport} disabled={saving || previewing || errors.length > 0} className="h-11 bg-primary px-6 font-bold text-primary-foreground">{saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang nhập...</> : <><UploadCloud className="mr-2 h-4 w-4" />Duyệt và nhập {questions.length} câu</>}</Button>}</div>
         </CardContent>
       </Card>}
       </section>

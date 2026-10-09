@@ -337,5 +337,46 @@ try {
     await assert.rejects(()=>rpc('admin_delete_mock_exam_question',[x,a,s.revision]),/điểm/);
     assert.deepEqual(await get(x),before);
   });
+  const autoMigration = 'mock-exam-auto-publish-import.sql';
+  const hasAutoMigration = existsSync(new URL('../src/lib/supabase/' + autoMigration, import.meta.url));
+  if (hasAutoMigration) { await owner(); await db.exec(sql(autoMigration)); await db.exec(sql(autoMigration)); }
+  // Before the additive migration exists, exercise the old real importer to show the missing automatic activation.
+  const autoImp = (id,qs,rev) => rpc(hasAutoMigration ? 'admin_import_and_publish_mock_exam_questions' : 'admin_import_mock_exam_questions',[id,qs,rev]);
+  await test('JSON import publishes valid allocations atomically without a scoring-panel approval',async()=>{
+    const x=await create('auto publish'); let s=await save(x,points(2,4,4),{},0);
+    s=await autoImp(x,[...Array(8).fill(mc),tf,sa],s.revision);
+    assert.equal(s.exam.scoring_ready,true,'Valid JSON must be immediately usable');
+    assert.equal(s.count,10); assert.equal(s.revision,2);
+    assert.deepEqual(s.questions.slice(0,8).map(q=>q.max_points),Array(8).fill(0.25));
+    assert.deepEqual(s.errors,[]);
+    await as(alice); const room=await rpc('start_mock_exam_session',[x,null]);
+    assert.equal(room.questions.length,10);
+    await as(admin);
+  });
+  await test('failed automatic publication rolls back questions, weights, readiness and revision',async()=>{
+    const x=await create('invalid auto publish'); let s=await save(x,points(2,4,4),{},0);
+    const before=await get(x);
+    await assert.rejects(()=>autoImp(x,[mc],s.revision),/điểm|sẵn sàng|câu|phần/i);
+    assert.deepEqual(await get(x),before);
+    await assert.rejects(()=>autoImp(x,[mc,{...tf,statements:tf.statements.slice(1)},sa],s.revision),/hợp lệ|Câu/);
+    assert.deepEqual(await get(x),before);
+  });
+  await test('auto import retains admin verification, revision locks and existing session snapshots',async()=>{
+    const x=await create('auto snapshot'); let s=await autoImp(x,[mc],0);
+    assert.equal(s.exam.scoring_ready,true);
+    await as(alice); const room=await rpc('start_mock_exam_session',[x,null]);
+    await assert.rejects(()=>autoImp(x,[mc],s.revision),/ADMIN|quyền/);
+    await as(unverified); await assert.rejects(()=>autoImp(x,[mc],s.revision),/ADMIN|quyền/);
+    await as(null,'','anon'); await assert.rejects(()=>autoImp(x,[mc],s.revision),/permission denied/);
+    await as(admin); const revision=s.revision; s=await autoImp(x,[mc],revision);
+    assert.equal(s.revision,revision+1); assert.equal(s.exam.scoring_ready,true);
+    assert.deepEqual(s.questions.map(q=>q.max_points),[5,5]);
+    await assert.rejects(()=>autoImp(x,[mc],revision),/CONFLICT/);
+    const {count: importedCount,...savedState}=s;
+    assert.equal(importedCount,1); assert.deepEqual(await get(x),savedState);
+    await as(alice); const result=await rpc('submit_mock_exam_session',[room.session_id,{[room.questions[0].id]:0},0]);
+    assert.equal((await rpc('get_my_mock_exam_result',[x,result.attempt_id])).attempt.score,10);
+    await as(admin);
+  });
   console.log(`GREEN: ${passed} isolated database behavior groups. Revision races serialized by PGlite; no multi-connection stress claim.`);
 } finally { await db.close(); }

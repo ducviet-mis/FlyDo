@@ -105,7 +105,7 @@ function load(filename) {
     }
     return require(name);
   };
-  mod._compile(ts.transpileModule(readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText, filename);
+  mod._compile(ts.transpileModule(readFileSync(filename, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2017, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText, filename);
   return mod.exports;
 }
 const Layout = load(join(repo, 'src/app/admin/layout.tsx')).default;
@@ -286,11 +286,13 @@ await test('mixed exam JSON uses short templates, previews accepted answers and 
   await click(document.querySelector('[aria-label="Xem trước câu 2"]'));
   assert.match(document.body.textContent,/Trả lời ngắn/); assert.match(document.body.textContent,/Đáp án được chấp nhận/);
   assert.match(document.body.textContent,/1\/2/); assert.match(document.body.textContent,/SOLUTION/);
-  const oldConfirm=window.confirm; window.confirm=()=>false;
-  await click(button('Duyệt và nhập 2 câu')); assert.equal(writes.length,0);
-  window.confirm=()=>true;
-  const originalRpc=db.rpc; db.rpc=(name,payload)=>{ writes.push({rpc:name,payload}); return Promise.resolve({data:null,error:{message:'network test'}}); };
-  await click(button('Duyệt và nhập 2 câu')); assert.equal(writes.at(-1).payload.p_questions[1].question_type,'short_answer');
+  const oldConfirm=window.confirm; window.confirm=()=>{throw new Error('Exam import must not require confirmation');};
+  const originalRpc=db.rpc; db.rpc=(name,payload)=>{
+    writes.push({rpc:name,payload});
+    if(name==='admin_get_mock_exam_scoring') return Promise.resolve({data:{exam:{...fixtures.mock_exams[0],scoring_mode:'legacy_equal'},questions:[],revision:7,errors:[]},error:null});
+    return Promise.resolve({data:null,error:{message:'network test'}});
+  };
+  await click(button('Nhập và đưa đề vào sử dụng')); assert.equal(writes.at(-1).payload.p_questions[1].question_type,'short_answer');
   assert.equal(document.getElementById('question-json').value,text); assert.match(document.body.textContent,/network test/);
   db.rpc=originalRpc; writes.length=0;
   await select('content-target','Tự luyện');
@@ -364,7 +366,7 @@ await test('sectioned JSON preview shows existing and incoming points, retains m
     calls.push({name,payload});
     if(name==='admin_get_mock_exam_scoring') return Promise.resolve({data:{...preview,questions:[current]},error:null});
     if(name==='admin_preview_mock_exam_import') return Promise.resolve({data:preview,error:null});
-    if(name==='admin_import_mock_exam_questions') return Promise.resolve({data:null,error:{message:'FLYDO_CONFLICT: đề đã thay đổi'}});
+    if(name==='admin_import_and_publish_mock_exam_questions') return Promise.resolve({data:null,error:{message:'FLYDO_CONFLICT: đề đã thay đổi'}});
     throw new Error(`Unexpected RPC ${name}`);
   };
   try {
@@ -377,14 +379,65 @@ await test('sectioned JSON preview shows existing and incoming points, retains m
     assert.match(document.body.textContent,/MC EXISTING/); assert.match(document.body.textContent,/Điểm sau khi nhập/);
     assert.equal(calls.find(c=>c.name==='admin_preview_mock_exam_import').payload.p_expected_revision,7);
     assert.equal(writes.length,0);
-    window.confirm=()=>true; await click(button('Duyệt và nhập 1 câu'));
-    const imported=calls.find(c=>c.name==='admin_import_mock_exam_questions');
+    window.confirm=()=>true; await click(button('Nhập và đưa đề vào sử dụng'));
+    const imported=calls.find(c=>c.name==='admin_import_and_publish_mock_exam_questions');
     assert.equal(imported.payload.p_expected_revision,7); assert.equal(imported.payload.p_questions[0].points,4);
     assert.equal(document.getElementById('question-json').value,text);
     assert.match(document.body.textContent,/đề đã thay đổi/);
     await input(document.getElementById('question-json'),JSON.stringify([{...incoming,content:'Changed JSON'}]));
     assert.equal(document.querySelector('[data-import-scoring-preview]'),null,'Changed input invalidates the score preview');
   } finally { fixtures.mock_exams[0]=originalExam; db.rpc=originalRpc; }
+});
+
+await test('exam JSON imports directly with a fresh revision and no preview or confirmation gate', async () => {
+  const originalExam=fixtures.mock_exams[0], originalRpc=db.rpc, originalConfirm=window.confirm;
+  fixtures.mock_exams[0]={...originalExam,scoring_mode:'sectioned',scoring_revision:2};
+  const questions=[{content:'DIRECT JSON',options:['a','b','c','d'],correct_answer:0}];
+  const exam={...fixtures.mock_exams[0],section_points:{multiple_choice:10,true_false:0,short_answer:0},scoring_ready:true};
+  const calls=[];
+  db.rpc=async(name,payload)=>{
+    calls.push({name,payload});
+    if(name==='admin_get_mock_exam_scoring') return {data:{exam,questions:[],revision:9,errors:[]},error:null};
+    if(name==='admin_import_and_publish_mock_exam_questions') return {data:{exam,questions:[],revision:10,errors:[],count:1},error:null};
+    throw new Error(`Unexpected RPC ${name}`);
+  };
+  window.confirm=()=>{throw new Error('Exam import must not require a confirmation');};
+  try {
+    await mount('import'); await select('content-target','Thi thử'); await select('exam-grade','Lớp 8');
+    await select('exam-category','Giữa HK1'); await select('exam-target',exam.title);
+    await input(document.getElementById('question-json'),JSON.stringify(questions));
+    assert.equal(Boolean(button('Nhập và đưa đề vào sử dụng')),true,'Direct action must be available before preview');
+    snapshot('exam-direct-import');
+    await click(button('Nhập và đưa đề vào sử dụng'));
+    assert.deepEqual(calls.map(call=>call.name),['admin_get_mock_exam_scoring','admin_import_and_publish_mock_exam_questions']);
+    assert.equal(calls[1].payload.p_expected_revision,9);
+    assert.equal(calls[1].payload.p_questions[0].content,'DIRECT JSON');
+    assert.equal(document.getElementById('question-json').value,'');
+    assert.match(document.body.textContent,/sử dụng/);
+  } finally {fixtures.mock_exams[0]=originalExam;db.rpc=originalRpc;window.confirm=originalConfirm;}
+});
+
+await test('direct exam import rejects malformed JSON and retains text when SQL is not installed', async () => {
+  const originalExam=fixtures.mock_exams[0], originalRpc=db.rpc;
+  fixtures.mock_exams[0]={...originalExam,scoring_mode:'sectioned',scoring_revision:0};
+  const exam={...fixtures.mock_exams[0],section_points:{multiple_choice:10,true_false:0,short_answer:0},scoring_ready:false};
+  const calls=[];
+  db.rpc=async(name,payload)=>{
+    calls.push({name,payload});
+    if(name==='admin_get_mock_exam_scoring') return {data:{exam,questions:[],revision:0,errors:[]},error:null};
+    return {data:null,error:{code:'PGRST202',message:'Function not in schema cache'}};
+  };
+  try {
+    await mount('import');await select('content-target','Thi thử');await select('exam-grade','Lớp 8');
+    await select('exam-category','Giữa HK1');await select('exam-target',exam.title);
+    await input(document.getElementById('question-json'),'{broken');await click(button('Nhập và đưa đề vào sử dụng'));
+    assert.equal(calls.length,0);assert.equal(document.getElementById('question-json').value,'{broken');
+    const text=JSON.stringify([{content:'VALID JSON',options:['a','b','c','d'],correct_answer:0}]);
+    await input(document.getElementById('question-json'),text);await click(button('Nhập và đưa đề vào sử dụng'));
+    assert.equal(document.getElementById('question-json').value,text);
+    assert.match(document.body.textContent,/mock-exam-auto-publish-import\.sql/);
+    assert.equal(calls.filter(call=>call.name==='admin_import_mock_exam_questions').length,0);
+  } finally {fixtures.mock_exams[0]=originalExam;db.rpc=originalRpc;}
 });
 
 await React.act(async () => root.unmount());

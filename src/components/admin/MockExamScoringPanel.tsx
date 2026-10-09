@@ -120,11 +120,11 @@ function ScoringEditor({ examId, accountId, onChanged, onClose }: Props & { acco
     } catch (error) { if (currentAccount()) fail(error); }
     finally { inFlight.current = false; if (currentAccount()) setBusy(false); }
   };
-  const save = async (publish: boolean) => {
+  const save = async () => {
     if (!details || disabled || legacy) return;
-    const problems = publish ? [...preview.blockingErrors, ...preview.errors.map(message => ({ message }))] : preview.blockingErrors;
+    const problems = preview.blockingErrors;
     if (problems.length) { setErrors(problems); focusErrors.current = true; return; }
-    await mutate(() => saveMockExamScoring(examId, preview.points, preview.locked, details.revision, publish), publish ? 'Đã đưa đề vào sử dụng.' : 'Đã lưu nháp cấu hình điểm.');
+    await mutate(() => saveMockExamScoring(examId, preview.points, preview.locked, details.revision, preview.valid), preview.valid ? 'Đã lưu cấu trúc điểm. Đề đã sẵn sàng sử dụng, không cần duyệt thêm.' : 'Đã lưu cấu trúc điểm chưa hoàn chỉnh. Đề chưa thể sử dụng; nhập đủ câu và sửa các mục được báo lỗi.');
   };
   const reload = async () => {
     if (dirty && !confirm('Tải lại cấu hình sẽ thay các giá trị đang nhập bằng cấu hình mới nhất. Tiếp tục?')) return;
@@ -133,12 +133,12 @@ function ScoringEditor({ examId, accountId, onChanged, onClose }: Props & { acco
   const convert = async () => {
     if (!details || disabled) return;
     if (preview.blockingErrors.length) { setErrors(preview.blockingErrors); focusErrors.current = true; return; }
-    if (!confirm(`Chuyển đề sang phân điểm theo phần ở trạng thái nháp với ${SECTION_TYPES.map(type => `${QUESTION_TYPE_LABELS[type]} ${formatPoints(preview.points[type])} điểm`).join(', ')}? Chỉ áp dụng cho các phiên thi mới. Lịch sử và phiên đang thi giữ cách chấm cũ.`)) return;
-    await mutate(() => saveMockExamScoring(examId, preview.points, {}, details.revision, false), 'Đã chuyển sang phân điểm theo phần. Hãy kiểm tra điểm rồi đưa đề vào sử dụng.');
+    if (!confirm(`Chuyển đề sang phân điểm theo phần với ${SECTION_TYPES.map(type => `${QUESTION_TYPE_LABELS[type]} ${formatPoints(preview.points[type])} điểm`).join(', ')}? Cấu trúc hợp lệ sẽ áp dụng ngay cho các phiên thi mới. Lịch sử và phiên đang thi giữ cách chấm cũ.`)) return;
+    await mutate(() => saveMockExamScoring(examId, preview.points, {}, details.revision, preview.valid), preview.valid ? 'Đã chuyển chế độ và áp dụng cấu trúc điểm.' : 'Đã chuyển sang phân điểm theo phần. Cần hoàn thiện các mục báo lỗi trước khi sử dụng.');
   };
   const remove = async (questionId: string, number: number) => {
     if (!details || disabled) return;
-    if (dirty) { setErrors([{ message: 'Hãy lưu nháp các thay đổi điểm trước khi xóa câu để phân lại điểm theo cấu hình đã lưu.' }]); focusErrors.current = true; return; }
+    if (dirty) { setErrors([{ message: 'Hãy lưu cấu trúc điểm trước khi xóa câu để phân lại điểm theo cấu hình đã lưu.' }]); focusErrors.current = true; return; }
     if (!confirm(`Xóa câu ${number}? Hệ thống sẽ phân lại điểm cho các câu tự chia, giữ điểm cố định của câu còn lại. Lịch sử và phiên đang thi giữ nguyên.`)) return;
     await mutate(() => deleteMockExamQuestion(examId, questionId, details.revision), `Đã xóa câu ${number} và cập nhật phân điểm.`);
   };
@@ -150,7 +150,7 @@ function ScoringEditor({ examId, accountId, onChanged, onClose }: Props & { acco
   return <section aria-labelledby="scoring-panel-title" className="min-w-0 space-y-5 rounded-2xl border border-border bg-card p-4 text-foreground sm:p-6">
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0"><h2 id="scoring-panel-title" ref={heading} tabIndex={-1} className="break-words text-lg font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Điểm & cấu trúc{details ? ` · ${details.exam.title}` : ''}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{legacy ? 'Chế độ cũ' : details?.exam.scoring_ready ? 'Đang sử dụng' : 'Bản nháp'} · Điểm và câu hỏi được máy chủ kiểm tra khi lưu.</p></div>
+        <p className="mt-1 text-sm text-muted-foreground">{legacy ? 'Chế độ cũ' : details?.exam.scoring_ready ? 'Đang sử dụng' : 'Chưa đủ cấu trúc'} · Dùng để chỉnh tổng điểm phần và điểm từng câu. JSON hợp lệ được đưa vào sử dụng ngay khi nhập.</p></div>
       {onClose && <Button type="button" variant="ghost" size="icon" aria-label="Đóng điểm và cấu trúc" disabled={busy} onClick={() => { if (!dirty || confirm('Đóng panel và bỏ các thay đổi điểm chưa lưu?')) onClose(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
     </div>
     {errors.length > 0 && <div ref={errorSummary} tabIndex={-1} role="alert" aria-labelledby="scoring-error-title" className="space-y-2 rounded-lg border border-destructive/30 bg-destructive-soft p-4 text-destructive focus:outline-none focus:ring-2 focus:ring-ring">
@@ -167,7 +167,7 @@ function ScoringEditor({ examId, accountId, onChanged, onClose }: Props & { acco
           })}</div>
           <p id="scoring-decimal-help" className="text-sm text-muted-foreground">Nhận dấu phẩy hoặc dấu chấm, tối đa 4 chữ số thập phân. Điểm cố định giữ nguyên khi đổi tổng phần.</p>
         </fieldset>
-        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4"><p className="font-semibold tabular-nums">{legacy ? 'Tổng dự kiến' : 'Tổng đề'}: {preview.fieldErrors.length ? '—' : formatPoints(preview.total_points)} / 10 điểm</p><p className="text-sm text-muted-foreground">{legacy ? 'Các tổng điểm này chưa áp dụng cho đề cũ. Chuyển chế độ cần xác nhận và lưu thành nháp; lịch sử cùng phiên đang thi giữ cách chấm cũ.' : 'Lưu nháp cho phép tổng chưa bằng 10 hoặc chưa nhập đủ câu. Đưa vào sử dụng cần tổng đúng 10, đủ câu và mọi câu có điểm dương.'}</p>
+        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-4"><p className="font-semibold tabular-nums">{legacy ? 'Tổng dự kiến' : 'Tổng đề'}: {preview.fieldErrors.length ? '—' : formatPoints(preview.total_points)} / 10 điểm</p><p className="text-sm text-muted-foreground">{legacy ? 'Các tổng điểm này chưa áp dụng cho đề cũ. Chuyển chế độ cần xác nhận; lịch sử cùng phiên đang thi giữ cách chấm cũ.' : 'Cấu trúc hợp lệ được áp dụng ngay khi lưu, không cần duyệt. Bạn có thể lưu tổng điểm trước khi nhập câu; đề chỉ dùng được khi tổng đúng 10, đủ câu và mọi câu có điểm dương.'}</p>
           {preview.errors.length > 0 && <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">{preview.errors.map((message,index) => <li key={index}>{message}</li>)}</ul>}
         </div>
       </>
@@ -209,7 +209,7 @@ function ScoringEditor({ examId, accountId, onChanged, onClose }: Props & { acco
       {!legacy && <p id="scoring-override-help" className="text-sm text-muted-foreground">Để trống điểm cố định là tự chia. Nhập điểm để khóa câu đó; các câu còn lại tự chia phần điểm còn dư.</p>}
       <div className="flex flex-wrap gap-3 border-t border-border pt-4">
         <Button type="button" variant="outline" disabled={busy} onClick={() => void reload()}>Tải lại cấu hình</Button>
-        {!legacy && <><Button type="button" variant="outline" disabled={disabled} onClick={() => void save(false)}>{busy ? 'Đang lưu...' : 'Lưu nháp'}</Button><Button type="button" disabled={disabled || !preview.valid || preview.fieldErrors.length > 0} onClick={() => void save(true)}>Đưa vào sử dụng</Button></>}
+        {!legacy && <Button type="button" disabled={disabled} onClick={() => void save()}>{busy ? 'Đang lưu...' : 'Lưu cấu trúc điểm'}</Button>}
       </div>
     </>}
   </section>;

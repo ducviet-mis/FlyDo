@@ -62,7 +62,7 @@ function load(file) {
     }
     return require(name);
   };
-  mod._compile(ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,file);
+  mod._compile(ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2017,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,file);
   return mod.exports;
 }
 let root = createRoot(document.getElementById('root'));
@@ -111,7 +111,7 @@ await test('API maps all five authenticated RPC contracts and preserves draft va
     {name:'admin_preview_mock_exam_import',payload:{p_exam_id:'exam',p_questions:incoming,p_expected_revision:7}},
     {name:'admin_save_mock_exam_scoring',payload:{p_exam_id:'exam',p_section_points:{multiple_choice:2,true_false:4,short_answer:4},p_overrides:{mc1:0.5,mc2:null},p_expected_revision:7,p_publish:false}},
     {name:'admin_delete_mock_exam_question',payload:{p_exam_id:'exam',p_question_id:'mc1',p_expected_revision:7}},
-    {name:'admin_import_mock_exam_questions',payload:{p_exam_id:'exam',p_questions:incoming,p_expected_revision:7}},
+    {name:'admin_import_and_publish_mock_exam_questions',payload:{p_exam_id:'exam',p_questions:incoming,p_expected_revision:7}},
   ]);
   details.errors=['Thiếu câu đúng/sai'];assert.deepEqual((await api.getMockExamScoring('exam')).errors,details.errors);
   rpcHook=()=>({data:null,error:{message:'SCORING_REVISION_CONFLICT',code:'40001'}});
@@ -124,7 +124,7 @@ await test('real panel shows exact remainder distribution grouped without renumb
   assert.deepEqual(['mc1','mc2','mc3'].map(score),['0,6667 điểm','0,6667 điểm','0,6666 điểm']);
   assert.match(document.querySelector('[data-scoring-question="tf"]').textContent,/Câu 4/);
   assert.match(document.body.textContent,/0,0001/);
-  assert.equal(button('Đưa vào sử dụng').disabled,false);
+  assert.equal(button('Lưu cấu trúc điểm').disabled,false);
   assert.equal(saveCalls().length,0);
 });
 
@@ -133,36 +133,36 @@ await test('comma override locks a question, recalculates other points and unloc
   assert.deepEqual(['mc1','mc2','mc3'].map(score),['0,5 điểm','0,75 điểm','0,75 điểm']);
   assert.match(document.querySelector('[data-scoring-question="mc1"]').textContent,/Đã chỉnh/);
   snapshot('mock-exam-scoring');
-  await click(button('Lưu nháp'));
+  await click(button('Lưu cấu trúc điểm'));
   assert.equal(saveCalls().at(-1).payload.p_overrides.mc1,0.5);
-  assert.equal(saveCalls().at(-1).payload.p_publish,false);
+  assert.equal(saveCalls().at(-1).payload.p_publish,true);
   await input(override('mc1'),'0,5');await click(document.querySelector('[aria-label="Về tự chia câu 1"]'));
   assert.equal(override('mc1').value,'');assert.equal(score('mc1'),'0,6667 điểm');
-  await click(button('Lưu nháp'));assert.equal(saveCalls().at(-1).payload.p_overrides.mc1,null);
+  await click(button('Lưu cấu trúc điểm'));assert.equal(saveCalls().at(-1).payload.p_overrides.mc1,null);
 });
 
-await test('incomplete draft saves while publication stays gated; explicit publish updates readiness',async()=>{
+await test('one save retains incomplete configuration but applies a valid configuration immediately',async()=>{
   await mount();await input(section('short_answer'),'3,5');
-  assert.equal(button('Đưa vào sử dụng').disabled,true);await click(button('Lưu nháp'));
+  assert.equal(button('Lưu cấu trúc điểm').disabled,false);await click(button('Lưu cấu trúc điểm'));
   assert.equal(saveCalls().at(-1).payload.p_section_points.short_answer,3.5);
   assert.equal(saveCalls().at(-1).payload.p_publish,false);
-  assert.match(document.body.textContent,/nháp/i);
+  assert.match(document.body.textContent,/chưa/i);
   await input(section('short_answer'),'4');
   rpcHook=(name,payload)=>name==='admin_save_mock_exam_scoring'?{data:{...fixture(),exam:{...details.exam,scoring_ready:true,scoring_revision:8},revision:8},error:null}:null;
-  await click(button('Đưa vào sử dụng'));assert.equal(saveCalls().at(-1).payload.p_publish,true);
+  await click(button('Lưu cấu trúc điểm'));assert.equal(saveCalls().at(-1).payload.p_publish,true);
   assert.equal(changed.at(-1).scoring_ready,true);assert.match(document.body.textContent,/Đang sử dụng/);
 });
 
 await test('syntax and impossible allocations retain values, focus errors and never mutate',async()=>{
-  await mount();await input(section('multiple_choice'),'2,00001');await click(button('Lưu nháp'));
+  await mount();await input(section('multiple_choice'),'2,00001');await click(button('Lưu cấu trúc điểm'));
   assert.equal(saveCalls().length,0);assert.equal(section('multiple_choice').value,'2,00001');
   assert.equal(section('multiple_choice').getAttribute('aria-invalid'),'true');
   assert.equal(document.activeElement.getAttribute('role'),'alert');
   assert.ok(document.querySelector('[role="alert"] a[href="#scoring-section-multiple_choice"]'));
   snapshot('mock-exam-scoring-errors');
-  await input(section('multiple_choice'),'2');await input(override('mc1'),'2,1');await click(button('Lưu nháp'));
+  await input(section('multiple_choice'),'2');await input(override('mc1'),'2,1');await click(button('Lưu cấu trúc điểm'));
   assert.equal(saveCalls().length,0);assert.equal(override('mc1').value,'2,1');
-  assert.equal(button('Đưa vào sử dụng').disabled,true);
+  assert.equal(button('Lưu cấu trúc điểm').disabled,false);
 });
 
 await test('legacy remains unchanged until explicit conversion confirmation',async()=>{
@@ -173,17 +173,17 @@ await test('legacy remains unchanged until explicit conversion confirmation',asy
   confirmation=false;await click(button('Chuyển sang phân điểm theo phần'));assert.equal(saveCalls().length,0);
   confirmation=true;await click(button('Chuyển sang phân điểm theo phần'));
   assert.match(confirmations.at(-1),/phiên.*mới/i);
-  assert.equal(saveCalls().at(-1).payload.p_publish,false);assert.equal(saveCalls().at(-1).payload.p_expected_revision,7);
+  assert.equal(saveCalls().at(-1).payload.p_publish,true);assert.equal(saveCalls().at(-1).payload.p_expected_revision,7);
   assert.deepEqual(saveCalls().at(-1).payload.p_section_points,{multiple_choice:2,true_false:0,short_answer:8});
 });
 
-await test('legacy mixed MCQ and short answer converts using configured totals and remains a draft',async()=>{
+await test('legacy mixed MCQ and short answer applies valid configured totals during conversion',async()=>{
   await mount(true);await input(section('multiple_choice'),'2');await input(section('true_false'),'0');await input(section('short_answer'),'8');
   assert.equal(document.querySelector('[data-max-points]'),null);assert.equal(saveCalls().length,0);
-  rpcHook=name=>name==='admin_save_mock_exam_scoring'?{data:{exam:{...details.exam,scoring_mode:'sectioned',section_points:{multiple_choice:2,true_false:0,short_answer:8},scoring_ready:false,scoring_revision:8},questions:[question('mc1',0,'multiple_choice',null,2),question('sa',1,'short_answer',null,8)],revision:8,errors:[]},error:null}:null;
+  rpcHook=name=>name==='admin_save_mock_exam_scoring'?{data:{exam:{...details.exam,scoring_mode:'sectioned',section_points:{multiple_choice:2,true_false:0,short_answer:8},scoring_ready:true,scoring_revision:8},questions:[question('mc1',0,'multiple_choice',null,2),question('sa',1,'short_answer',null,8)],revision:8,errors:[]},error:null}:null;
   await click(button('Chuyển sang phân điểm theo phần'));
-  assert.deepEqual(saveCalls().at(-1).payload,{p_exam_id:'exam',p_section_points:{multiple_choice:2,true_false:0,short_answer:8},p_overrides:{},p_expected_revision:7,p_publish:false});
-  assert.equal(changed.at(-1).scoring_ready,false);assert.equal(changed.at(-1).scoring_mode,'sectioned');
+  assert.deepEqual(saveCalls().at(-1).payload,{p_exam_id:'exam',p_section_points:{multiple_choice:2,true_false:0,short_answer:8},p_overrides:{},p_expected_revision:7,p_publish:true});
+  assert.equal(changed.at(-1).scoring_ready,true);assert.equal(changed.at(-1).scoring_mode,'sectioned');
   assert.equal(score('mc1'),'2 điểm');assert.equal(score('sa'),'8 điểm');assert.equal(writes.length,0);
 });
 
@@ -200,11 +200,11 @@ await test('question deletion requires rebalance confirmation and current revisi
 await test('revision conflict keeps local edits until explicit reload and does not retry writes',async()=>{
   await mount();await input(override('mc1'),'0,5');
   rpcHook=name=>name==='admin_save_mock_exam_scoring'?{data:null,error:{code:'40001',message:'SCORING_REVISION_CONFLICT'}}:null;
-  await click(button('Lưu nháp'));assert.equal(saveCalls().length,1);assert.equal(override('mc1').value,'0,5');
-  assert.equal(button('Lưu nháp').disabled,true);assert.match(document.body.textContent,/đã.*thay đổi/i);
+  await click(button('Lưu cấu trúc điểm'));assert.equal(saveCalls().length,1);assert.equal(override('mc1').value,'0,5');
+  assert.equal(button('Lưu cấu trúc điểm').disabled,true);assert.match(document.body.textContent,/đã.*thay đổi/i);
   details.revision=9;details.exam.scoring_revision=9;rpcHook=null;await click(button('Tải lại cấu hình'));
-  assert.equal(override('mc1').value,'');assert.equal(button('Lưu nháp').disabled,false);
-  await click(button('Lưu nháp'));assert.equal(saveCalls().at(-1).payload.p_expected_revision,9);
+  assert.equal(override('mc1').value,'');assert.equal(button('Lưu cấu trúc điểm').disabled,false);
+  await click(button('Lưu cấu trúc điểm'));assert.equal(saveCalls().at(-1).payload.p_expected_revision,9);
 });
 
 await test('bulk automatic reset is confirmed and preserves other sections overrides',async()=>{
@@ -216,7 +216,7 @@ await test('bulk automatic reset is confirmed and preserves other sections overr
 
 await test('busy save blocks edits and duplicate publication',async()=>{
   await mount();let finish;rpcHook=name=>name==='admin_save_mock_exam_scoring'?new Promise(resolve=>{finish=resolve;}):null;
-  const saveButton=button('Lưu nháp');await click(saveButton);assert.equal(button('Đưa vào sử dụng').disabled,true);assert.equal(section('multiple_choice').disabled,true);
+  const saveButton=button('Lưu cấu trúc điểm');await click(saveButton);assert.equal(saveButton.disabled,true);assert.equal(section('multiple_choice').disabled,true);
   await click(saveButton);assert.equal(saveCalls().length,1);
   await React.act(async()=>finish({data:fixture(),error:null}));assert.equal(section('multiple_choice').disabled,false);
 });
@@ -245,7 +245,7 @@ await test('discarded StrictMode load cannot overwrite a newer revision',async()
   const latest={...fixture(),revision:9,exam:{...details.exam,scoring_revision:9}};
   await React.act(async()=>pending[1]({data:latest,error:null}));
   await React.act(async()=>pending[0]({data:fixture(),error:null}));
-  rpcHook=null;await click(button('Lưu nháp'));assert.equal(saveCalls().at(-1).payload.p_expected_revision,9);
+  rpcHook=null;await click(button('Lưu cấu trúc điểm'));assert.equal(saveCalls().at(-1).payload.p_expected_revision,9);
 });
 
 await test('creation accepts three decimal section totals even when draft sum is incomplete',async()=>{
@@ -274,6 +274,17 @@ await test('creation rejects malformed totals before creating either topic or ex
     assert.equal(field.value,value);assert.equal(field.getAttribute('aria-invalid'),'true');
     assert.equal(document.activeElement.getAttribute('role'),'alert');
   }
+});
+
+await test('single scoring save applies valid points without a separate publication action',async()=>{
+  await mount();
+  assert.equal(Boolean(button('Đưa vào sử dụng')),false,'Scoring must not require a second approval');
+  await input(override('mc1'),'0,5');
+  rpcHook=name=>name==='admin_save_mock_exam_scoring'?{data:{...fixture(),exam:{...details.exam,scoring_ready:true,scoring_revision:8},revision:8},error:null}:null;
+  await click(button('Lưu cấu trúc điểm'));
+  assert.equal(saveCalls().at(-1).payload.p_publish,true);
+  assert.equal(saveCalls().at(-1).payload.p_overrides.mc1,0.5);
+  assert.equal(changed.at(-1).scoring_ready,true);
 });
 
 after(async()=>{await React.act(async()=>root.unmount());dom.window.close();});
